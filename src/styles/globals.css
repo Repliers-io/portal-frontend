@@ -1,0 +1,39 @@
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  background: white;
+  margin: 0px;
+  padding: 0px;
+  font: 16px/1.75 sans-serif;
+  overflow: visible;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  background: white; /* ios overscroll background */
+  height: 100vh;
+  height: -webkit-fill-available;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  overscroll-behavior: auto;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}

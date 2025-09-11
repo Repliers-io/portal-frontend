@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="38.646" height="33.139" viewBox="0 0 38.646 33.139">
+    <g transform="translate(1.25 1.768)">
+        <g transform="translate(0 16.937)">
+            <g transform="translate(25.396)" fill="none" stroke="#000" stroke-width="2.5">
+                <ellipse cx="6" cy="6.5" rx="6" ry="6.5" stroke="none"/>
+                <ellipse cx="6" cy="6.5" rx="4.75" ry="5.25" fill="none"/>
+            </g>
+            <line  x1="25.408" transform="translate(0 6.628)" fill="none" stroke="#000" stroke-linecap="round" stroke-width="2.5"/>
+            <line  y1="4.098" transform="translate(3.278 7.447)" fill="none" stroke="#000" stroke-linecap="round" stroke-width="2.5"/>
+            <line  y1="5.737" transform="translate(7.377 7.447)" fill="none" stroke="#000" stroke-linecap="round" stroke-width="2.5"/>
+        </g>
+        <g transform="translate(3.688 0)">
+            <line  x1="27.867" transform="translate(1.639 7.377)" fill="none" stroke="#000" stroke-linecap="round" stroke-width="2.5"/>
+            <line x1="7.377" y2="7.377" transform="translate(0)" fill="none" stroke="#000" stroke-linecap="round" stroke-width="2.5"/>
+            <line  x1="7.377" y1="7.377" transform="translate(0 7.377)" fill="none" stroke="#000" stroke-linecap="round" stroke-width="2.5"/>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,6 @@
+export { default as ArrayWidget } from './ArrayWidget'
+export { default as BarsWidget } from './BarsWidget'
+export { default as CountWidget } from './CountWidget'
+export { default as RankingWidget } from './RankingWidget'
+export { default as StatsWidget } from './StatsWidget'
+export { default as Widget } from './Widget'

@@ -1,0 +1,18 @@
+import { type ReactNode } from 'react'
+
+import Grid from '@mui/material/Grid2' // Grid version 2
+
+const GridSection = ({ children }: { children: ReactNode }) => {
+  return (
+    <Grid
+      container
+      columns={12}
+      spacing={2}
+      width="100%"
+      sx={{ mb: 3, pb: 3, borderBottom: 1, borderColor: 'divider' }}
+    >
+      {children}
+    </Grid>
+  )
+}
+export default GridSection

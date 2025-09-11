@@ -1,0 +1,162 @@
+{
+  "HomePage": {
+    "welcome": "DEFAULTNAME",
+    "welcomeDescription": "DEFAULTNAME serves over XX,XXX real estate professionals in DEFAULTSTATE. As a top-rated multiple listing service (MLS), we provide property information and innovative products.",
+    "justListed": "Just Listed",
+    "recentlySold": "Recently Sold",
+    "trackMarket": "Track the {city} Market in Real Time"
+  },
+  "Estimates": {
+    "locationBannerTitle": "{city} Home Value Estimate"
+  },
+  "Search": {
+    "autosuggestPlaceholder": "Enter a place or address"
+  },
+  "Charts": {
+    "timeRange": "Time range",
+    "timeRanges": {
+      "6": "6 Months",
+      "12": "1 Year",
+      "24": "2 Years",
+      "120": "10 Years"
+    },
+    "average": "Average",
+    "median": "Median",
+    "volume": "Volume",
+    "sold": "Sold",
+    "soldCondos": "Condos Sold",
+    "salePrice": "Sale Price",
+    "daysOnMarket": "Days on Market",
+    "medianSoldPrice": "Median Sold Price",
+    "medianDaysOnMarket": "Median Days On Market",
+    "averageDaysOnMarket": "Average Days On Market",
+    "soldPriceAndDaysOnMarketTitle": "Sold Price & Days On Market in {name}"
+  },
+  "Statistics": {
+    "insightsTitle": "{name} Insights",
+    "statsDisclaimer": "Generated based on property type and location.\nAverage values are derived using median calculations.",
+    "activeListings": "Active Listings",
+    "activeListingsValue": "{value, plural, =0 {0 active listings} =1 {1 active listing} other {# active listings}}",
+    "activeListingsMonth": "For {month}",
+    "activeListingsTooltip": "Active listings for {propertyClass} properties in {name} for {month}",
+    "soldPrices": "Median Sold Price",
+    "soldPricesValue": "${value, number}",
+    "soldPricesMonth": "For {month}",
+    "soldPricesTooltip": "Median sales price for {propertyClass} properties in {name} for {month}",
+    "newListings": "New Listings",
+    "newListingsTooltip": "New listings for {propertyClass} properties in {name}",
+    "soldListings": "{propertyClass, select, condo {Condo} residential {Residential} other {{propertyClass}}} Sold",
+    "soldListingsTooltip": "Number of sold listings for {propertyClass} properties in {name}",
+    "daysOnMarket": "Days on Market",
+    "daysOnMarketTooltip": "Median days on market for {propertyClass} properties in {name}"
+  },
+  "pdp": {
+    "sections": {
+      "home": {
+        "name": "Home Details"
+      },
+      "features": {
+        "name": "Features",
+        "groups": {
+          "bedsAndBaths": "Beds & Baths",
+          "heatingAndCooling": "Heating & Cooling",
+          "parkingAndGarage": "Parking & Garage",
+          "basement": "Basement",
+          "condoFeatures": "Condo Features"
+        }
+      },
+      "exterior": {
+        "name": "Exterior",
+        "groups": {
+          "construction": "Construction",
+          "lot": "Lot",
+          "constructionDetails": "Construction Details",
+          "waterAndSewer": "Water & Sewer",
+          "legal": "Legal",
+          "condoDetails": "Condo Details"
+        }
+      },
+      "appliances": {
+        "name": "Appliances & Equipment",
+        "groups": {
+          "appliancesIncluded": "Appliances Included",
+          "exclusions": "Exclusions",
+          "featuresEquipmentIncluded": "Features / Equipment Included",
+          "rentalEquipment": "Rental Equipment"
+        }
+      },
+      "neighborhood": {
+        "name": "Neighborhood"
+      },
+      "rooms": {
+        "name": "Rooms"
+      }
+    },
+    "fields": {
+      "category": "Category",
+      "style": "Style",
+      "type": "Type",
+      "fronting": "Fronting",
+      "secondaryDwellingUnit": "Secondary Dwelling Unit (SUD)",
+      "titleForm": "Title Form",
+      "taxesYear": "Taxes / Year",
+      "associationFeePOTL": "Association Fee/POTL",
+      "status": "Status",
+      "daysOnMarket": "Days on Market",
+      "listDate": "List Date",
+      "soldDate": "Sold Date",
+      "listingUpdatedOn": "Listing Updated On",
+      "yearBuilt": "Year Built",
+      "builderModel": "Builder / Model",
+      "lotSize": "Lot Size",
+      "totalBeds": "Total Beds",
+      "baths": "Baths",
+      "totalEnsuites": "Total Ensuites",
+      "heatingType": "Heating Type",
+      "heatingFuel": "Heating Fuel",
+      "airConditioning": "Air Conditioning",
+      "fireplaces": "Fireplaces",
+      "fuel": "Fuel",
+      "totalParking": "Total Parking",
+      "garageSpaces": "Garage Spaces",
+      "coveredSpaces": "Covered Spaces",
+      "garageType": "Garage Type",
+      "driveway": "Driveway",
+      "parkingDescription": "Parking Description",
+      "parkingType": "Parking Type",
+      "entrance": "Entrance",
+      "sizeEstimated": "Size (estimated)",
+      "acres": "Acres",
+      "frontage": "Frontage",
+      "depth": "Depth",
+      "irregularShape": "Irregular shape",
+      "lotImprovements": "Lot Improvements",
+      "foundationType": "Foundation Type",
+      "roofMaterial": "Roof Material",
+      "exterior": "Exterior",
+      "floorCovering": "Floor Covering",
+      "waterSupply": "Water Supply",
+      "sewer": "Sewer",
+      "brokerage": "Brokerage",
+      "legalDescription": "Legal Description",
+      "appliancesIncluded": "Appliances Included",
+      "exclusions": "Exclusions",
+      "featuresEquipmentIncluded": "Features / Equipment Included",
+      "rentalEquipment": "Rental Equipment",
+      "neighborhoodInfluences": "Neighborhood Influences",
+      "condoFees": "Condo Fees",
+      "feeIncludes": "Fee Includes",
+      "specialAssessment": "Special Assessment",
+      "storiesBuild": "#Stories (Build)",
+      "levelsUnit": "#Levels (Unit)",
+      "ccpName": "CCP# / Name",
+      "restrictions": "Restrictions",
+      "laundry": "Laundry",
+      "storageLocker": "Storage Locker"
+    }
+  },
+  "property": {
+    "daysOnMarket": "{count, plural, =0 {🔥 Listed today} =1 {1 day on market} other {# days on market}}",
+    "updatedDaysAgo": "{count, plural, =0 {Updated today} =1 {Updated 1 day ago} other {Updated # days ago}}"
+  }
+}
