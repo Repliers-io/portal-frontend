@@ -5,12 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:inspect": "npm run prebuild && cross-env NODE_OPTIONS='--inspect' next dev",
+    "dev:inspect": "cross-env NODE_OPTIONS='--inspect' next dev",
     "clean": "rimraf .next",
     "build": "npm run clean && next build",
     "start": "next start",
     "lint": "next lint",
-    "prebuild": "npm run generate:tsconfig && npm run generate:features",
     "prepare": "husky",
     "prettier": "prettier --check ./**/*.{ts,tsx,js}",
     "prettier:fix": "prettier  --write ./**/*.{ts,tsx,js}",
