@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="38.646" height="33.139" viewBox="0 0 38.646 33.139">
+    <g id="Сгруппировать_4012" data-name="Сгруппировать 4012" transform="translate(0 1.768)">
+        <g id="Сгруппировать_4010" data-name="Сгруппировать 4010" transform="translate(0 16.937)">
+            <g id="Эллипс_26" data-name="Эллипс 26" fill="none" stroke="#fff" stroke-width="2.5">
+                <ellipse cx="6" cy="6.5" rx="6" ry="6.5" stroke="none"/>
+                <ellipse cx="6" cy="6.5" rx="4.75" ry="5.25" fill="none"/>
+            </g>
+            <line id="Линия_329" data-name="Линия 329" x2="25.408" transform="translate(11.988 6.628)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5"/>
+            <line id="Линия_330" data-name="Линия 330" y1="4.098" transform="translate(34.118 7.447)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5"/>
+            <line id="Линия_331" data-name="Линия 331" y1="5.737" transform="translate(30.02 7.447)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5"/>
+        </g>
+        <g id="Сгруппировать_4011" data-name="Сгруппировать 4011" transform="translate(4.202)">
+            <line id="Линия_332" data-name="Линия 332" x2="27.867" transform="translate(0 7.377)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5"/>
+            <line id="Линия_333" data-name="Линия 333" x2="7.377" y2="7.377" transform="translate(22.13)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5"/>
+            <line id="Линия_334" data-name="Линия 334" y1="7.377" x2="7.377" transform="translate(22.13 7.377)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5"/>
+        </g>
+    </g>
+</svg>

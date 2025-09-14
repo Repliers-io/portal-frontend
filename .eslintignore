@@ -1,0 +1,5 @@
+.eslintrc.cjs
+jest.config.js
+next.config.mjs
+scripts/**/*
+coverage/**/*

@@ -1,0 +1,28 @@
+const paramNames = {
+  gridPage: 'gp',
+  apiPage: 'ap',
+  minPrice: 'pmin',
+  maxPrice: 'pmax',
+  baths: 'bt',
+  beds: 'bd',
+  parking: 'p',
+  garage: 'g',
+  homeType: 'ht',
+  sortBy: 'sort',
+  status: 'st',
+  amenities: 'am',
+  minSqFt: 'sqmin',
+  maxSqFt: 'sqmax',
+  minListDate: 'ldmin',
+  maxListDate: 'ldmax',
+  zoom: 'z',
+  query: 'q',
+  propertyType: 'pt',
+  listingStatus: 'ls',
+  daysOnMarket: 'dm',
+  soldWithin: 'sw',
+  yearBuiltFrom: 'yfrom',
+  yearBuiltTo: 'yto'
+}
+
+export default paramNames
