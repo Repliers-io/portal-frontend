@@ -72,7 +72,8 @@
     "react-hook-form": "^7.60.0",
     "recharts": "^3.0.2",
     "sharp": "^0.33.5",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "p-throttle": "^6.2.0"
   },
   "engines": {
     "node": "^v22.14.0",
