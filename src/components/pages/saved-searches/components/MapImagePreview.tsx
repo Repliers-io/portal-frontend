@@ -4,7 +4,7 @@ import type { Position } from 'geojson'
 import { Box } from '@mui/material'
 
 import { info } from '@configs/colors'
-import { mapboxToken } from '@configs/map'
+import mapConfig from '@configs/map'
 
 import useBreakpoints from 'hooks/useBreakpoints'
 import {
@@ -40,7 +40,7 @@ const PolygonPreviewMapImage = ({
 
   const imageSize = `${width}x${height + logoOffset}@2x`
   const staticStyleUrl = getMapboxStaticStyleUrl('map')
-  const staticImageUrl = `${staticStyleUrl}/${encodedJson}/${lng},${lat},${zoom}/${imageSize}?access_token=${mapboxToken}`
+  const staticImageUrl = `${staticStyleUrl}/${encodedJson}/${lng},${lat},${zoom}/${imageSize}?access_token=${mapConfig.mapboxDefaults.accessToken}`
 
   return (
     <Box

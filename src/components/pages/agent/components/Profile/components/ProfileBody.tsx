@@ -1,6 +1,6 @@
 import { Link, Stack, Typography } from '@mui/material'
 
-import { fubApiUrl } from '@configs/api'
+import apiConfig from '@configs/api'
 
 import { DateLabel } from 'components/atoms'
 
@@ -11,7 +11,7 @@ const ProfileBody = () => {
   const { client } = useAgentEstimates()
 
   const fubURL = client?.externalId
-    ? `${fubApiUrl}/${client?.externalId}`
+    ? `${apiConfig.fubApiUrl}/${client?.externalId}`
     : undefined
 
   if (!client) return null

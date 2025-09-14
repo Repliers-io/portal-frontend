@@ -13,7 +13,7 @@ import {
   Typography
 } from '@mui/material'
 
-import { mapboxDefaults, propertyPageAddressZoom } from '@configs/map'
+import mapConfig from '@configs/map'
 import { MapNavigation, MapStyleSwitch } from '@shared/Map'
 
 import ScrubbedText from 'components/atoms/ScrubbedText'
@@ -32,6 +32,8 @@ import {
   getMapUrl
 } from 'utils/map'
 import { formatShortAddress } from 'utils/properties'
+
+const { mapboxDefaults, propertyPageAddressZoom } = mapConfig
 
 const HomeMap = ({
   type = 'interactive'

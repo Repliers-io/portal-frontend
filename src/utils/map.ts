@@ -5,18 +5,10 @@ import queryString from 'query-string'
 
 import { lighten } from '@mui/material'
 
-import { gmapsApiKey } from '@configs/api'
-import { info } from '@configs/colors'
-import { secondary } from '@configs/colors'
-import {
-  defaultAddressZoom,
-  defaultPolygon,
-  mapboxDefaults,
-  mapboxToken,
-  type MapStyle,
-  mapStyles
-} from '@configs/map'
-import { paramNames } from '@configs/params'
+import apiConfig from '@configs/api'
+import { info, secondary } from '@configs/colors'
+import mapConfig, { type MapStyle } from '@configs/map'
+import paramsConfig from '@configs/params'
 import routes from '@configs/routes'
 
 import { type ApiBounds, type ApiCoords, type Property } from 'services/API'
@@ -25,6 +17,9 @@ import { toSafeNumber } from 'utils/formatters'
 import { getMakiSymbol } from 'utils/properties'
 
 type Polygon = Array<{ lat: number; lng: number }>
+
+const { defaultAddressZoom, defaultPolygon, mapboxDefaults, mapStyles } =
+  mapConfig
 
 /**
  * @description Function to convert custom polygon object from '@configs/map' module to mapbox bounds
@@ -56,7 +51,7 @@ export const getDefaultBounds = () => {
 }
 
 export const getZoom = (searchParams: URLSearchParams) =>
-  toSafeNumber(searchParams.get(paramNames.zoom)) || mapboxDefaults.zoom!
+  toSafeNumber(searchParams.get(paramsConfig.zoom)) || mapboxDefaults.zoom!
 
 export const getCoords = (searchParams: URLSearchParams) => {
   const firstParam = searchParams.keys().next().value || ''
@@ -140,7 +135,7 @@ export const getMapboxStaticImageUrl = ({
   const symbol = getMakiSymbol(property)
   const marker = getMapboxStaticMarker(longitude, latitude, symbol)
   const staticStyleUrl = getMapboxStaticStyleUrl('hybrid')
-  const staticImageUrl = `${staticStyleUrl}/${marker}/${longitude},${latitude},${zoom}/${imageSize}?access_token=${mapboxToken}`
+  const staticImageUrl = `${staticStyleUrl}/${marker}/${longitude},${latitude},${zoom}/${imageSize}?access_token=${mapConfig.mapboxDefaults.accessToken}`
 
   return staticImageUrl
 }
@@ -172,7 +167,7 @@ export const getGmapsStaticImageUrl = ({
     zoom: toGoogleZoom(zoom),
     maptype: 'hybrid',
     format: 'jpg',
-    key: gmapsApiKey
+    key: apiConfig.gmapsApiKey
   })
   const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap'
   const staticImageUrl = `${baseUrl}?${marker}&${params}`

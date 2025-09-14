@@ -11,7 +11,7 @@ import {
   TYPE_SEMIDETACHED,
   TYPE_TOWNHOME
 } from '@configs/filter-types'
-import { defaultBoardId } from '@configs/search'
+import searchConfig from '@configs/search'
 
 // justinhavre-avm temporary enable add estimate button
 export const enableClientsAddEstimate = false
@@ -164,7 +164,7 @@ export const defaultValues: FormValues = {
   address: undefined,
   point: undefined,
   unitNumber: '',
-  boardId: defaultBoardId,
+  boardId: searchConfig.defaultBoardId,
   listingType: 'residential',
   estimateId: undefined,
   clientId: undefined,

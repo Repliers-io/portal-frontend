@@ -38,7 +38,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
     ? await APISearch.fetchLocations({
         next: { tags: ['locations'], revalidate: 86400 }
       })
-    : false
+    : null
 
   const locale = await getLocale()
   const messages = await getMessages()

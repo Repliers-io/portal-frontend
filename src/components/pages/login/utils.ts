@@ -1,7 +1,9 @@
 import queryString from 'query-string'
 
-import routes, { loginRedirectRoute } from '@configs/routes'
-import { authCallbackKey } from '@configs/storage'
+import routes from '@configs/routes'
+import storageConfig from '@configs/storage'
+
+const { authCallbackKey } = storageConfig
 
 export const storeRedirectUrl = (forceLoginRedirect = false) => {
   if (typeof window === 'undefined') return
@@ -17,7 +19,7 @@ export const storeRedirectUrl = (forceLoginRedirect = false) => {
 
   // use default redirect page if the user came to the login page directly (no referer)
   if (forceLoginRedirect || (!redirectParam && path.includes(routes.login)))
-    redirectUrl = loginRedirectRoute
+    redirectUrl = routes.loginRedirect
 
   localStorage.setItem(authCallbackKey, redirectUrl)
 }

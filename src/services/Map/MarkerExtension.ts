@@ -3,7 +3,7 @@
 import { type MouseEvent } from 'react'
 import { type Map, Marker } from 'mapbox-gl'
 
-import { propertyCardSizes } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
 import { type ApiCluster as Cluster, type Property } from 'services/API'
 import { createMarkerElement, MAP_CONSTANTS, type Markers } from 'services/Map'
@@ -123,7 +123,8 @@ export class MarkerExtension {
             propertyCenter.lat
           ])
 
-          markerCenterPixels.y += Number(propertyCardSizes.drawer.height) / 2 // half of the drawer height
+          markerCenterPixels.y +=
+            Number(gridConfig.propertyCardSizes.drawer.height) / 2 // half of the drawer height
           const markerCenterCoords = map.unproject(markerCenterPixels)
 
           map.flyTo({

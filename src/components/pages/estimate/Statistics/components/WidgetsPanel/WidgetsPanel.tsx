@@ -6,16 +6,21 @@ import { useTranslations } from 'next-intl'
 import { type LocationStatsParams } from '@shared/Stats'
 
 import { useWidgetData } from '../../hooks'
+import { getLocationName } from '../../utils'
 
 import WidgetsCard from './WidgetsCard'
 import WidgetsPanelContainer from './WidgetsPanelContainer'
 
 const WidgetsPanel = (params: LocationStatsParams) => {
   const t = useTranslations('Statistics')
-  const { name = '', ...searchParams } = params
+  const name = getLocationName(params)
 
-  const { propertyClass } = searchParams
-  const { widgets, loading } = useWidgetData(searchParams)
+  const { propertyClass } = params
+  const { widgets, loading } = useWidgetData(params)
+
+  const propertyClassString = Array.isArray(propertyClass)
+    ? propertyClass.join(' / ')
+    : propertyClass
 
   return (
     <WidgetsPanelContainer name={name}>
@@ -24,11 +29,11 @@ const WidgetsPanel = (params: LocationStatsParams) => {
         const data = widgets[key as keyof typeof widgets]
         const month = data.labels[0]
 
-        const title = t(key, { propertyClass })
+        const title = t(key, { propertyClass: propertyClassString })
         const tooltip = t(`${key}Tooltip`, {
           name,
           month,
-          propertyClass
+          propertyClass: propertyClassString
         })
 
         return (

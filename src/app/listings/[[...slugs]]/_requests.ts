@@ -1,4 +1,4 @@
-import { defaultBoardId, pageSize } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import {
   type ApiBoardArea,
@@ -45,8 +45,8 @@ export const fetchListings = async ({
     neighborhood: hood,
     status: 'A',
     pageNum: page,
-    resultsPerPage: pageSize,
-    boardId: defaultBoardId,
+    resultsPerPage: searchConfig.pageSize,
+    boardId: searchConfig.defaultBoardId,
     ...getListingFields(),
     ...filters
   }

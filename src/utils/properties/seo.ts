@@ -1,5 +1,5 @@
 import routes from '@configs/routes'
-import { defaultBoardId } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import { type Property } from 'services/API'
 import { formatEnglishPrice } from 'utils/formatters'
@@ -128,6 +128,8 @@ export const getSeoTitle = (property: Property): string => {
 
   return result
 }
+
+const { defaultBoardId } = searchConfig
 
 export const parseSeoUrl = (url: string) => {
   const slugs = url.split('-')

@@ -1,6 +1,6 @@
 import queryString from 'query-string'
 
-import { defaultBoardId } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import {
   type ApiLocations,
@@ -54,7 +54,7 @@ class APISearch extends APIBase {
       listings: false,
       aggregates: 'map',
       clusterPrecision: 1,
-      boardId: defaultBoardId,
+      boardId: searchConfig.defaultBoardId,
       searchFields: 'address.city,address.neighborhood'
     } as any)
     // TODO: fix type of params mutation

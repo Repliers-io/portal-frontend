@@ -1,8 +1,4 @@
-import {
-  defaultAddressZoom,
-  defaultAreaZoom,
-  fallbackAreaZoom
-} from '@configs/map'
+import mapConfig from '@configs/map'
 
 import { type ApiBounds, type ApiQueryParams, APISearch } from 'services/API'
 import MapService, { MapSearch } from 'services/Map'
@@ -11,6 +7,8 @@ import { calcBoundsAtZoom, calcZoomLevel } from 'utils/map'
 
 import { getDefaultRectangle, getListingFields } from './params'
 import { type Filters } from './types'
+
+const { defaultAddressZoom, defaultAreaZoom, fallbackAreaZoom } = mapConfig
 
 class SearchService {
   private abortController: AbortController | undefined

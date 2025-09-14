@@ -8,6 +8,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 
 import { timeZone } from '@configs/i18n'
 
+import { type ApiLocations } from 'services/API'
 import DialogProvider from 'providers/DialogProvider'
 import FavoritesProvider from 'providers/FavoritesProvider'
 import FeaturesProvider from 'providers/FeaturesProvider'
@@ -40,10 +41,10 @@ const buildProvidersTree = (componentsWithProps: Array<ProviderComponent>) => {
 }
 
 type ProvidersProps = {
-  features: Record<string, unknown>
-  featureOptions: Record<string, unknown>
-  locations: Record<string, unknown>
   locale: string
+  features: Record<string, unknown>
+  featureOptions?: Record<string, unknown>
+  locations?: ApiLocations | null
   messages: Record<string, unknown>
   children: ReactNode
 }

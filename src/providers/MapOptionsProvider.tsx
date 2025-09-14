@@ -14,7 +14,7 @@ import {
   type Map as MapboxMap
 } from 'mapbox-gl'
 
-import { type MapStyle } from '@configs/map-styles'
+import { type MapStyle } from '@configs/map'
 
 import { getCoords, getZoom } from 'utils/map'
 
@@ -127,7 +127,10 @@ export const useMapOptions = () => {
       style: 'map' as MapStyle,
       setStyle: () => undefined,
       title: null,
-      setTitle: () => undefined
+      setTitle: () => undefined,
+      editMode: false,
+      setEditMode: () => undefined,
+      clearEditMode: () => undefined
     }
   }
   return context

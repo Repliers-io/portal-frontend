@@ -14,8 +14,8 @@ import {
 } from '@mui/material'
 import { type AutocompleteRenderInputParams } from '@mui/material/Autocomplete'
 
-import { defaultAddressZoom, defaultAreaZoom } from '@configs/map'
-import { minCharsToSuggest } from '@configs/search'
+import mapConfig from '@configs/map'
+import searchConfig from '@configs/search'
 import IcoSearch from '@icons/IcoSearch'
 
 import { APISearch } from 'services/API'
@@ -54,6 +54,9 @@ import {
   removeQueryParam,
   updateQueryParam
 } from './utils'
+
+const { minCharsToSuggest } = searchConfig
+const { defaultAddressZoom, defaultAreaZoom } = mapConfig
 
 const Autosuggestion = ({
   showButton = false,

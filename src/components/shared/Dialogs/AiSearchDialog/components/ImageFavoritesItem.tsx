@@ -9,8 +9,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Box, Button, IconButton, Stack } from '@mui/material'
 import { red } from '@mui/material/colors'
 
-import { propertyCardSizes } from '@configs/cards-grids'
-import { defaultBoardId } from '@configs/search'
+import gridConfig from '@configs/cards-grids'
+import searchConfig from '@configs/search'
 
 import { toSafeNumber } from 'utils/formatters'
 import { getSeoUrl } from 'utils/properties'
@@ -18,7 +18,7 @@ import { getCDNPath } from 'utils/urls'
 
 import { cardHeight, cardWidth } from '../constants'
 
-const propertyCard = propertyCardSizes['normal']
+const propertyCard = gridConfig.propertyCardSizes.normal
 
 const FavoritesItem = ({
   image,
@@ -46,7 +46,10 @@ const FavoritesItem = ({
   const [, mlsNumber, startImage] = matches
   const mlsLink = getSeoUrl(
     { mlsNumber },
-    { boardId: defaultBoardId, startImage: toSafeNumber(startImage) }
+    {
+      boardId: searchConfig.defaultBoardId,
+      startImage: toSafeNumber(startImage)
+    }
   )
 
   const width = embedded ? cardWidth : Number(propertyCard.width)

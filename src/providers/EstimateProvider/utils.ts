@@ -1,5 +1,6 @@
 import { type UseFormReturn } from 'react-hook-form'
 
+import apiConfig from '@configs/api'
 import {
   type EstimateData,
   type EstimateListingType,
@@ -16,7 +17,6 @@ import {
 } from '@configs/estimate'
 import { listingTypeMappings } from '@configs/estimate'
 import { TYPE_RESIDENTIAL } from '@configs/filter-types'
-import { CDN } from '@configs/hosts'
 
 import { type ApiEstimateParams } from 'services/API'
 import { toSafeNumber } from 'utils/formatters'
@@ -381,7 +381,9 @@ export const cleanApiData = (data: any): Partial<FormValues> => {
 
   // convert rawImgUrl to CDN path or keep it as is if it already contains CDN
   const imageUrl =
-    rawImgUrl && !rawImgUrl.includes(CDN) ? getCDNPath(rawImgUrl) : rawImgUrl
+    rawImgUrl && !rawImgUrl.includes(apiConfig.repliersCdn)
+      ? getCDNPath(rawImgUrl)
+      : rawImgUrl
 
   const cleaned = {
     ...copy,

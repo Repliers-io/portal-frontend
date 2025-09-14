@@ -4,13 +4,15 @@ import queryString from 'query-string'
 
 import { Box, Paper, Stack } from '@mui/material'
 
-import { savedSearchCard } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import routes from '@configs/routes'
 
 import { type ApiSavedSearch } from 'services/API'
 import { useSaveSearch } from 'providers/SaveSearchProvider'
 
 import { MapImagePreview, SavedSearchFooter, SavedSearchHeader } from '.'
+
+const { savedSearchCard } = gridConfig
 
 const SavedSearchCard = ({ search }: { search: ApiSavedSearch }) => {
   const { editId, deleteId, processing } = useSaveSearch()

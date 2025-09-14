@@ -6,7 +6,7 @@ import React, { useState } from 'react'
 
 import { Box, Tab, Tabs } from '@mui/material'
 
-import { widgetSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { type PropertyClass } from '@configs/filters'
 
 import useBreakpoints from 'hooks/useBreakpoints'
@@ -87,7 +87,7 @@ export const StatsTabs = ({
             key={index}
             sx={{
               px: 0,
-              pt: widgetSpacing,
+              pt: gridConfig.widgetSpacing,
               display: index === value ? 'block' : 'none'
             }}
           >

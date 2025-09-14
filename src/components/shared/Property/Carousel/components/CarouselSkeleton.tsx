@@ -1,13 +1,13 @@
 import { Stack } from '@mui/material'
 
-import { cardCarouselSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { SkeletonCard } from '@shared/Property'
 
 const CarouselSkeleton = () => {
   return (
     <Stack
-      py={cardCarouselSpacing}
-      spacing={cardCarouselSpacing}
+      py={gridConfig.cardCarouselSpacing}
+      spacing={gridConfig.cardCarouselSpacing}
       direction="row"
       justifyContent="center"
     >

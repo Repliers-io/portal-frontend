@@ -10,7 +10,7 @@ import React, {
 } from 'react'
 import { jwtDecode, type JwtPayload } from 'jwt-decode'
 
-import { profileKey } from '@configs/storage'
+import storageConfig from '@configs/storage'
 
 import {
   APIAuth,
@@ -85,6 +85,8 @@ type UserContextType = {
   loginWithToken: (token: string) => ProfilePromise
   logout: () => void
 }
+
+const { profileKey } = storageConfig
 
 // TODO: could become part of APIAuth module
 const parseAuthResponse = (response: AuthCallbackResponse) => {

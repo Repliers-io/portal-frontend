@@ -2,7 +2,7 @@ import React from 'react'
 
 import { alpha, Paper } from '@mui/material'
 
-import { type PropertyCardSize, propertyCardSizes } from '@configs/cards-grids'
+import gridConfig, { type PropertyCardSize } from '@configs/cards-grids'
 
 import { getCardName } from 'utils/properties'
 
@@ -23,7 +23,7 @@ const CardContainer = ({
   const sizeMap = size === 'map'
   const sizeDrawer = size === 'drawer'
 
-  const { width, height } = propertyCardSizes[size]
+  const { width, height } = gridConfig.propertyCardSizes[size]
 
   return (
     <Paper

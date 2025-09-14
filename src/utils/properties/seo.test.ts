@@ -1,4 +1,4 @@
-import { defaultBoardId } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import {
   property1,
@@ -58,12 +58,12 @@ describe('utils/properties/seo', () => {
       city: 'Ottawa',
       zip: 'K1L 7Z9',
       mlsNumber: '12346',
-      boardId: defaultBoardId
+      boardId: searchConfig.defaultBoardId
     })
 
     expect(parseSeoUrl('X12346X')).toMatchObject({
       mlsNumber: 'X12346X',
-      boardId: defaultBoardId
+      boardId: searchConfig.defaultBoardId
     })
   })
 

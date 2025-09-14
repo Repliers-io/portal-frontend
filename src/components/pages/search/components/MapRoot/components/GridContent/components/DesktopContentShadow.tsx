@@ -1,8 +1,10 @@
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
 import { ContentShadow } from 'components/atoms'
 
 import { useMapOptions } from 'providers/MapOptionsProvider'
+
+const { gridSpacing } = gridConfig
 
 const DesktopContentShadow = ({ visible }: { visible: boolean }) => {
   const { layout } = useMapOptions()

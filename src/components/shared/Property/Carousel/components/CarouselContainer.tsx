@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Box } from '@mui/material'
 
-import { cardCarouselSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
 import useBreakpoints from 'hooks/useBreakpoints'
 
@@ -22,7 +22,7 @@ const CarouselContainer = ({ children }: { children: React.ReactNode }) => {
           userSelect: 'none',
           mx: {
             xs: 0,
-            lg: cardCarouselSpacing / -2
+            lg: gridConfig.cardCarouselSpacing / -2
           },
           width: {
             xs: 'auto',

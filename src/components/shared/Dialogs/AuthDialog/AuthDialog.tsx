@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type React from 'react'
 
 import routes from '@configs/routes'
-import { authCallbackKey } from '@configs/storage'
+import storageConfig from '@configs/storage'
 import { storeRedirectUrl } from '@pages/login/utils'
 
 import { useDialog } from 'providers/DialogProvider'
@@ -15,6 +15,8 @@ import { BaseResponsiveDialog } from '..'
 import { AuthForm } from '.'
 
 export const dialogName = 'auth'
+
+const { authCallbackKey } = storageConfig
 
 const AuthDialog = () => {
   const { visible, hideDialog } = useDialog(dialogName)

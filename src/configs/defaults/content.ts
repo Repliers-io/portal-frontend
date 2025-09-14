@@ -1,6 +1,6 @@
 import { type Metadata } from 'next'
 
-import type { ToolbarConfig } from '@templates/Header/components/ToolbarMenu'
+import { type ToolbarConfig } from '@templates/Header/components/ToolbarMenu'
 
 const content = {
   siteLogo: { url: '/logo.svg', width: 36, height: 36 },

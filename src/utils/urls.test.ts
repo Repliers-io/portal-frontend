@@ -1,4 +1,4 @@
-import { CDN } from '@configs/hosts'
+import apiConfig from '@configs/api'
 
 import {
   getCDNPath,
@@ -10,7 +10,7 @@ import {
 describe('utils/urls', () => {
   it('should return image path with the correct size', () => {
     const filename = 'image.jpg'
-    const expectedPath = `${CDN}/${filename}?&webp&class=large`
+    const expectedPath = `${apiConfig.repliersCdn}/${filename}?&webp&class=large`
     expect(getCDNPath(filename, 'large')).toBe(expectedPath)
   })
 

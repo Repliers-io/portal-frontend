@@ -1,4 +1,4 @@
-import { apiRequestTimeout } from '@configs/api'
+import apiConfig from '@configs/api'
 
 import { clearToken, expired, getToken } from 'utils/tokens'
 import { getForwardedFrom } from 'utils/xff'
@@ -57,7 +57,10 @@ class APIBase {
       response = await this.fetchRaw(request, options)
     } else {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), apiRequestTimeout) // 10 seconds
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        apiConfig.apiRequestTimeout
+      ) // 10 seconds
 
       response = await this.fetchRaw(request, {
         ...options,

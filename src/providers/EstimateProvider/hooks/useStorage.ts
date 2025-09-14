@@ -2,7 +2,9 @@ import { useCallback } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
 
 import { type FormValues } from '@configs/estimate'
-import { estimateDataKey } from '@configs/storage'
+import storageConfig from '@configs/storage'
+
+const { estimateDataKey } = storageConfig
 
 import { setApiValues } from '../utils'
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { cdnHost, inspirations } from '@configs/ai-search'
+import aiConfig from '@configs/ai-search'
 
 import { useAiSearch } from 'providers/AiSearchProvider'
 import { useDialog } from 'providers/DialogProvider'
@@ -8,6 +8,8 @@ import { useFeatures } from 'providers/FeaturesProvider'
 import { useMapOptions } from 'providers/MapOptionsProvider'
 
 import { BrowserContainer, InspirationsGroup, InspirationsItem } from '.'
+
+const { inspirations, cdnHost } = aiConfig
 
 const InspirationsBrowser = () => {
   const features = useFeatures()

@@ -9,13 +9,15 @@ import {
 } from '@mui/material'
 
 import routes from '@configs/routes'
-import { cookieKey } from '@configs/storage'
+import storageConfig from '@configs/storage'
 
 import { useDialog } from 'providers/DialogProvider'
 
 import { BaseResponsiveDialog } from '.'
 
 const dialogName = 'cookie'
+
+const { cookieKey } = storageConfig
 
 const CookieDialog = () => {
   const { showDialog, hideDialog } = useDialog(dialogName)

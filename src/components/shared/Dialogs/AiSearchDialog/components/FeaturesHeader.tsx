@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Typography } from '@mui/material'
 
-import { examples } from '@configs/ai-search'
+import aiConfig from '@configs/ai-search'
 
 import { useAiSearch } from 'providers/AiSearchProvider'
 import { useDialog } from 'providers/DialogProvider'
@@ -23,7 +23,7 @@ const FeaturesHeader = () => {
     <Typography align="center" sx={{ py: 2, px: { xs: 0, md: 10 } }}>
       Use AI to personalise your search. Describe features that you are looking
       for (e.g.
-      {examples.map(([label, color]) => (
+      {aiConfig.examples.map(([label, color]) => (
         <React.Fragment key={label}>
           <FeatureButton color={color} onClick={addFeature}>
             {label}

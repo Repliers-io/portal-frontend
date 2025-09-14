@@ -5,7 +5,7 @@ import { useFormContext } from 'react-hook-form'
 import { Box } from '@mui/material'
 
 import { dateFormat } from '@configs/i18n'
-import { defaultBoardId, vowBoardId } from '@configs/search'
+import searchConfig from '@configs/search'
 import { PropertyCarousel } from '@shared/Property'
 
 import { APIEstimate, type ApiQueryParams, type Property } from 'services/API'
@@ -48,7 +48,7 @@ const SoldAndSimilarPropertyCarousels = () => {
       minSoldDate,
       status: 'U',
       lastStatus: ['Sld'],
-      boardId: vowBoardId
+      boardId: searchConfig.vowBoardId
     })
       .then((listings) => setRecentlySolds(listings))
       .catch((e) => console.error('RecentlySolds::Error fetching data', e))
@@ -56,7 +56,7 @@ const SoldAndSimilarPropertyCarousels = () => {
     APIEstimate.fetchComparables({
       ...compParams,
       status: 'A',
-      boardId: defaultBoardId
+      boardId: searchConfig.defaultBoardId
     })
       .then((listings) => setSimilars(listings))
       .catch((e) => console.error('Similars::Error fetching data', e))

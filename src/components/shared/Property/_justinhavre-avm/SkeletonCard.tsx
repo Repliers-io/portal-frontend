@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Skeleton } from '@mui/material'
 
-import { type PropertyCardSize, propertyCardSizes } from '@configs/cards-grids'
+import gridConfig, { type PropertyCardSize } from '@configs/cards-grids'
 
 const SkeletonCard = ({
   size = 'normal',
@@ -14,7 +14,7 @@ const SkeletonCard = ({
   return (
     <Skeleton
       variant="rounded"
-      sx={{ ...sx, ...propertyCardSizes[size], borderRadius: 3 }}
+      sx={{ ...sx, ...gridConfig.propertyCardSizes[size], borderRadius: 3 }}
     />
   )
 }

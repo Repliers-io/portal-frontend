@@ -1,11 +1,17 @@
-export const tokenKey = 'token'
-export const profileKey = 'profile'
-export const polygonKey = 'polygon'
-export const cookieKey = 'cookie'
-export const growthBookKey = 'growthbook'
-export const authCallbackKey = 'authCallback'
-export const lastAuthKey = 'lastAuth'
-export const nlpTokenKey = 'nlpToken'
-export const nlpHistoryKey = 'nlpHistory'
-export const estimateDataKey = 'estimateData'
-export const estimateStepKey = 'estimateStep'
+const config = {
+  tokenKey: 'token',
+  profileKey: 'profile',
+  polygonKey: 'polygon',
+  cookieKey: 'cookie',
+  growthBookKey: 'growthbook',
+  authCallbackKey: 'authCallback',
+  lastAuthKey: 'lastAuth',
+  nlpTokenKey: 'nlpToken',
+  nlpHistoryKey: 'nlpHistory',
+  estimateDataKey: 'estimateData',
+  estimateStepKey: 'estimateStep'
+}
+
+export type StorageConfig = Record<keyof typeof config, string>
+
+export default config

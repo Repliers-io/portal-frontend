@@ -5,7 +5,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 
 import { Box } from '@mui/material'
 
-import { cardCarouselSpacing, propertyCardSizes } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
 import { type Property } from 'services/API'
 import useBreakpoints from 'hooks/useBreakpoints'
@@ -28,6 +28,8 @@ type PropertyCarouselProps = {
   onCardClick?: (e: React.MouseEvent) => void
 }
 
+const { cardCarouselSpacing, propertyCardSizes } = gridConfig
+
 const PropertyCarousel = ({
   title = '',
   loop = true,
@@ -41,7 +43,7 @@ const PropertyCarousel = ({
 
   const carouselWidth = useMemo(() => {
     return wideScreen || !clientSide
-      ? Number(propertyCardSizes['normal'].width) * slidesToShow +
+      ? Number(propertyCardSizes.normal.width) * slidesToShow +
           cardCarouselSpacing * 8 * (slidesToShow - 1)
       : '100%'
   }, [wideScreen, slidesToShow])

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Box, Skeleton } from '@mui/material'
 
-import { nlpHistoryKey, nlpTokenKey } from '@configs/storage'
+import storageConfigs from '@configs/storage'
 
 import { APIChat } from 'services/API'
 import { useSearch } from 'providers/SearchProvider'
@@ -17,6 +17,8 @@ import {
   minContainerStartWidth
 } from './constants'
 import { type ChatItem } from './types'
+
+const { nlpTokenKey, nlpHistoryKey } = storageConfigs
 
 const AiChat = () => {
   const clientSide = useClientSide()

@@ -1,7 +1,8 @@
-import { resultsPerPage } from '@configs/search'
-import { pageSize } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import { type Property } from 'services/API'
+
+const { pageSize, resultsPerPage } = searchConfig
 
 export const pagesInResponse = Math.ceil(resultsPerPage / pageSize)
 

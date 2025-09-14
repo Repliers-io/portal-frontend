@@ -12,8 +12,8 @@ import { useLocale, useMessages } from 'next-intl'
 
 import { Stack } from '@mui/material'
 
-import { mapTopOffset } from '@configs/cards-grids'
-import { mapboxDefaults, mapboxToken } from '@configs/map'
+import gridConfig from '@configs/cards-grids'
+import mapConfig from '@configs/map'
 import { PropertyDialog, SaveSearchDialog } from '@shared/Dialogs'
 import { MapNavigation, MapStyleSwitch } from '@shared/Map'
 
@@ -54,6 +54,8 @@ type MapRootProps = {
   onMove: (bounds: LngLatBounds, center: LngLat, zoom: number) => void
   onLoad: (bounds: LngLatBounds, center: LngLat, zoom: number) => void
 }
+
+const { mapboxDefaults } = mapConfig
 
 const MapRoot = ({ zoom, center, polygon, onMove, onLoad }: MapRootProps) => {
   const locale = useLocale()
@@ -136,7 +138,6 @@ const MapRoot = ({ zoom, center, polygon, onMove, onLoad }: MapRootProps) => {
     const map = new MapboxMap({
       container,
       ...mapboxDefaults,
-      accessToken: mapboxToken,
       style: getMapStyleUrl(style),
       // we should use `defaultBounds` rectangle if there is no `center` point
       // passed in the URL
@@ -301,7 +302,7 @@ const MapRoot = ({ zoom, center, polygon, onMove, onLoad }: MapRootProps) => {
         left: 0,
         right: 0,
         bottom: 0,
-        top: mapTopOffset,
+        top: gridConfig.mapTopOffset,
         position: 'fixed'
       }}
     >

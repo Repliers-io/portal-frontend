@@ -2,7 +2,7 @@ import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 
 import { Box } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
 import useBreakpoints from 'hooks/useBreakpoints'
 
@@ -14,6 +14,7 @@ import DesktopContentShadow from './DesktopContentShadow'
 interface ScrollContainerProps {
   children: React.ReactNode
 }
+const { gridSpacing } = gridConfig
 
 const GridScrollContainer = forwardRef<HTMLElement, ScrollContainerProps>(
   ({ children }, ref) => {

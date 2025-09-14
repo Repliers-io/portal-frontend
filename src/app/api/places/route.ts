@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import queryString from 'query-string'
 
-import { gmapsApiUrl as api, googlePlacesApiKey as key } from '@configs/api'
+import apiConfig from '@configs/api'
 
 import { type ApiCoords } from 'services/API'
 import { type GooglePlaceDetailsResponse } from 'services/Map'
 
 const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || ''
+const { gmapsApiUrl: api, googlePlacesApiKey: key } = apiConfig
 
 export async function GET(request: NextRequest) {
   const referer = request.headers.get('referer')

@@ -1,13 +1,7 @@
 import { type FeatureCollection } from 'geojson'
 import queryString from 'query-string'
 
-import {
-  mapboxToken,
-  proximitySearchCenter,
-  proximitySearchCountry,
-  proximitySearchLanguage,
-  proximitySearchLimit
-} from '@configs/map'
+import mapConfig from '@configs/map'
 
 import {
   type ApiAddress,
@@ -22,6 +16,13 @@ import APIBase from '../API/APIBase'
 
 const mapboxApiUrl = 'https://api.mapbox.com/search/searchbox/v1'
 
+const {
+  proximitySearchCenter,
+  proximitySearchCountry,
+  proximitySearchLanguage,
+  proximitySearchLimit
+} = mapConfig
+
 class MapSearch extends APIBase {
   async fetchMapboxSuggestion(
     query: string
@@ -30,7 +31,7 @@ class MapSearch extends APIBase {
       q: query,
       types: 'street,postcode,address',
       session_token: getSessionToken(),
-      access_token: mapboxToken,
+      access_token: mapConfig.mapboxDefaults.accessToken,
       country: proximitySearchCountry,
       language: proximitySearchLanguage,
       limit: proximitySearchLimit,
@@ -50,7 +51,7 @@ class MapSearch extends APIBase {
 
     const params = queryString.stringify({
       session_token: getSessionToken(),
-      access_token: mapboxToken
+      access_token: mapConfig.mapboxDefaults.accessToken
     })
 
     const url = `${mapboxApiUrl}/retrieve/${mapbox_id}?${params}`

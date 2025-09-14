@@ -4,7 +4,7 @@ import React from 'react'
 
 import { Container, Stack } from '@mui/material'
 
-import { gridSpacing, savedSearchCard } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { SaveSearchDialog } from '@shared/Dialogs'
 import { EmptySavedSearch } from '@shared/EmptyStates'
 
@@ -13,6 +13,8 @@ import { LoadingContent } from 'components/atoms'
 import { useSaveSearch } from 'providers/SaveSearchProvider'
 
 import { SavedSearchCard } from './components'
+
+const { gridSpacing, savedSearchCard } = gridConfig
 
 const gridColumnsWidth = Array.from({ length: 3 }, (_, index) => {
   const columns = index + 1

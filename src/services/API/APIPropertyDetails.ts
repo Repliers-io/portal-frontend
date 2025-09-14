@@ -1,6 +1,6 @@
 import queryString from 'query-string'
 
-import { similarListingsRadius } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import { type ApiSimilarResponse, type Property } from 'services/API'
 import { getListingFields } from 'services/Search'
@@ -24,7 +24,7 @@ class APIPropertyDetails extends APIBase {
     const searchParams = queryString.stringify({
       fields,
       boardId,
-      radius: similarListingsRadius,
+      radius: searchConfig.similarListingsRadius,
       sortBy: 'createdOnDesc',
       listPriceRange: '200000'
     })

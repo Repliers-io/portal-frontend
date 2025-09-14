@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import queryString from 'query-string'
 
-import { gmapsApiKey, gmapsApiUrl } from '@configs/api'
+import apiConfig from '@configs/api'
 import IcoMap from '@icons/IcoMap'
 
 import { useProperty } from 'providers/PropertyProvider'
@@ -9,6 +9,8 @@ import { useProperty } from 'providers/PropertyProvider'
 import { size } from '../constants'
 
 import CardTemplate from './CardTemplate'
+
+const { gmapsApiKey: key, gmapsApiUrl } = apiConfig
 
 const MapCard = () => {
   const {
@@ -20,7 +22,7 @@ const MapCard = () => {
   const [mapStaticImage, setMapStaticImage] = useState('')
 
   const center = `${latitude},${longitude}`
-  const url = `https://www.google.com/maps/search/?api=1&query=${center}&zoom=15`
+  const staticGmapsUrl = `https://www.google.com/maps/search/?api=1&query=${center}&zoom=15`
 
   useEffect(() => {
     const params = queryString.stringify({
@@ -30,7 +32,7 @@ const MapCard = () => {
       scale: 2,
       format: 'webp',
       maptype: 'satellite',
-      key: gmapsApiKey
+      key
     })
 
     setMapStaticImage(`${gmapsApiUrl}staticmap?${params}`)
@@ -38,8 +40,8 @@ const MapCard = () => {
 
   return (
     <CardTemplate
-      url={url}
       title="Map"
+      url={staticGmapsUrl}
       description="See property on map"
       backgroundImage={mapStaticImage}
       icon={<IcoMap size={36} color="white" />}

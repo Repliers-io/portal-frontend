@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Box, Stack, Typography } from '@mui/material'
 
-import { widgetSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { type PropertyClass } from '@configs/filters'
 import { StatsGraph, StatsTabs } from '@shared/Stats'
 
@@ -25,7 +25,7 @@ const CityDashboard = ({
       >
         My {city} Dashboard
       </Typography>
-      <Stack spacing={widgetSpacing}>
+      <Stack spacing={gridConfig.widgetSpacing}>
         <StatsTabs city={city} onTabChange={setPropertyClass} />
         {showChart && <StatsGraph city={city} propertyClass={propertyClass} />}
       </Stack>

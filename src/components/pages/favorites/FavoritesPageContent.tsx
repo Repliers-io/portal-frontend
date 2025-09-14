@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 
 import { Container, Stack } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 // TODO: fix constants import from @pages alias
 import { gridColumnsMediaQueries } from '@pages/search/components/MapRoot/constants'
 import { PropertyDialog } from '@shared/Dialogs'
@@ -16,6 +16,8 @@ import { LoadingContent } from 'components/atoms'
 import { useDialog } from 'providers/DialogProvider'
 import { useFavorites } from 'providers/FavoritesProvider'
 import useBreakpoints from 'hooks/useBreakpoints'
+
+const { gridSpacing } = gridConfig
 
 const FavoritesPageContent = () => {
   const { wideScreen } = useBreakpoints()

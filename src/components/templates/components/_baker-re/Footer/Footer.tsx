@@ -188,8 +188,13 @@ const Footer = () => {
                     >
                       <Box sx={{ pb: 1.5 }}>Head Office</Box>
                       <Box>
-                        3080 Yonge Street, <nobr>Suite 3056</nobr> <br />
-                        <nobr>Toronto, Ontario,</nobr> <nobr>M4N 3N1</nobr>
+                        3080 Yonge Street,{' '}
+                        <span style={{ whiteSpace: 'nowrap' }}>Suite 3056</span>{' '}
+                        <br />
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          Toronto, Ontario,
+                        </span>{' '}
+                        <span style={{ whiteSpace: 'nowrap' }}>M4N 3N1</span>
                       </Box>
                     </Link>
                     <Link href="mailto:mls@baker-re.com">mls@baker-re.com</Link>

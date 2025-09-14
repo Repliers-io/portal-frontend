@@ -1,13 +1,13 @@
 import queryString from 'query-string'
 
+import apiConfig from '@configs/api'
 import { stepNames } from '@configs/estimate'
-import { CDN } from '@configs/hosts'
 import routes from '@configs/routes'
 
 import { joinNonEmpty } from 'utils/strings'
 
 export const getCDNPath = (fileName: string, size = 'large') =>
-  fileName ? `${CDN}/${fileName}?&webp&class=${size}` : ''
+  fileName ? `${apiConfig.repliersCdn}/${fileName}?&webp&class=${size}` : ''
 
 export const getYoutubeVideoId = (url: string) => {
   const regex =

@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Box, Container, Stack } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 // TODO: fix constants import from @pages alias
 import { gridColumnsMediaQueries } from '@pages/search/components/MapRoot/constants'
 import { EmptyCatalogListings } from '@shared/EmptyStates'
@@ -89,8 +89,8 @@ const CatalogPageContent = ({
           disableGutters
           sx={{
             ...gridColumnsMediaQueries,
-            px: gridSpacing,
-            pt: gridSpacing
+            px: gridConfig.gridSpacing,
+            pt: gridConfig.gridSpacing
           }}
         >
           {listings?.length > 0 ? (

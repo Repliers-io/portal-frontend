@@ -2,11 +2,13 @@ import React from 'react'
 
 import { Box, Stack } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
 import useBreakpoints from 'hooks/useBreakpoints'
 
 import { gridColumnsMediaQueries, gridSideContainerWidth } from '../constants'
+
+const { gridSpacing } = gridConfig
 
 const FiltersTransitionContainer = ({
   children

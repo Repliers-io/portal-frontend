@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import queryString from 'query-string'
 
-import { gmapsApiKey as key, gmapsApiUrl as api } from '@configs/api'
+import apiConfig from '@configs/api'
 
 import { type PropertyAddress } from 'services/API'
 import { getHeading, type Location } from 'utils/geo'
 import { formatFullAddress, sanitizeStreetNumber } from 'utils/properties'
 
 const gmapsDomain = 'https://www.google.com/maps/@?api=1'
+const { gmapsApiUrl: api, googlePlacesApiKey: key } = apiConfig
 
 export type MapCoordinates = {
   latitude: number | string

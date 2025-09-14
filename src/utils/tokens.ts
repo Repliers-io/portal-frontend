@@ -3,7 +3,9 @@ import cookies from 'js-cookie'
 import { jwtDecode } from 'jwt-decode'
 import { v4 as uuidv4 } from 'uuid'
 
-import { tokenKey } from '@configs/storage'
+import storageConfig from '@configs/storage'
+
+const { tokenKey } = storageConfig
 
 const clientSide = typeof window !== 'undefined'
 

@@ -9,7 +9,7 @@ import {
   Typography
 } from '@mui/material'
 
-import { widgetSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { type PropertyClass } from '@configs/filters'
 import { StatsGraph, StatsTabs } from '@shared/Stats'
 
@@ -99,7 +99,7 @@ const CityAccordion = ({
           transition: { sm: 'opacity 0.2s linear' }
         }}
       >
-        <Stack spacing={widgetSpacing}>
+        <Stack spacing={gridConfig.widgetSpacing}>
           <StatsTabs key={city} city={city} onTabChange={setPropertyClass} />
           <StatsGraph city={city} propertyClass={propertyClass} />
         </Stack>

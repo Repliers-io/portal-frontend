@@ -13,7 +13,7 @@ import {
   Stack
 } from '@mui/material'
 
-import { spaces } from '@configs/ai-search'
+import aiConfig from '@configs/ai-search'
 import IcoAi from '@icons/IcoAi'
 
 import { useSearch } from 'providers/SearchProvider'
@@ -186,7 +186,7 @@ const AiSpacesSelect = ({ size }: { size?: 'medium' | 'small' }) => {
         slotProps={{ list: { role: 'listbox' } }}
         sx={{ '& .MuiPaper-root': { minWidth: 160 } }}
       >
-        {spaces.map((item) => (
+        {aiConfig.spaces.map((item) => (
           <MenuItem
             key={item}
             selected={item === value}

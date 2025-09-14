@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 import { Pagination, Skeleton, Stack } from '@mui/material'
 
-import { pageSize } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import useClientSide from 'hooks/useClientSide'
 
@@ -21,13 +21,13 @@ const CatalogPagination = ({
 }) => {
   const router = useRouter()
   const clientSide = useClientSide()
-  const pages = Math.ceil(count / pageSize)
+  const pages = Math.ceil(count / searchConfig.pageSize)
 
   const handlePageChange = (e: React.ChangeEvent<unknown>, value: number) => {
     router.push(`${window?.location.pathname}?page=${value}`)
   }
 
-  return count > pageSize ? (
+  return count > searchConfig.pageSize ? (
     clientSide ? (
       <Pagination
         size="small"

@@ -2,7 +2,7 @@
 
 import { Container } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 // TODO: fix constants import from @pages alias
 import { gridColumnsMediaQueries } from '@pages/search/components/MapRoot/constants'
 import { ImageFavoritesList } from '@shared/Dialogs/AiSearchDialog/components'
@@ -16,7 +16,7 @@ const ImageFavoritesPageContent = () => {
       disableGutters
       sx={{
         ...(mobile ? {} : gridColumnsMediaQueries),
-        px: { xs: 0, sm: gridSpacing }
+        px: { xs: 0, sm: gridConfig.gridSpacing }
       }}
     >
       <ImageFavoritesList />

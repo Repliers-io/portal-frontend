@@ -19,7 +19,7 @@ import {
 
 import { measurementSystem } from '@configs/i18n'
 import defaultLocation from '@configs/location'
-import { mapboxToken } from '@configs/map'
+import mapConfig from '@configs/map'
 import { joiResolver } from '@hookform/resolvers/joi'
 
 import { SelectLabel } from 'components/atoms'
@@ -105,7 +105,7 @@ const SaveSearchForm = ({
       setLoadingArea(true)
       const response = await fetch(
         'https://api.mapbox.com/geocoding/v5/mapbox.places/' +
-          `${center.lng},${center.lat}.json?access_token=${mapboxToken}`
+          `${center.lng},${center.lat}.json?access_token=${mapConfig.mapboxDefaults.accessToken}`
       )
       const data = await response.json()
 

@@ -6,7 +6,7 @@ import { type LngLatLike, Map as MapboxMap } from 'mapbox-gl'
 
 import { Box } from '@mui/material'
 
-import { fallbackAreaZoom, mapboxDefaults } from '@configs/map'
+import mapConfig from '@configs/map'
 import { MapStyleSwitch } from '@shared/Map'
 
 import { useMapOptions } from 'providers/MapOptionsProvider'
@@ -17,6 +17,8 @@ import {
   getPositionBounds,
   removePolygon
 } from 'utils/map'
+
+const { fallbackAreaZoom, mapboxDefaults } = mapConfig
 
 const CatalogMap = ({
   center,

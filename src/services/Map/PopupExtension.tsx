@@ -9,7 +9,7 @@ import { payload } from 'features'
 import { type Map, type Marker, Popup } from 'mapbox-gl'
 import { NextIntlClientProvider } from 'next-intl'
 
-import { propertyCardSizes } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { timeZone } from '@configs/i18n'
 import { PropertyCard } from '@shared/Property'
 
@@ -75,7 +75,7 @@ export class PopupExtension {
 
     // mapbox cant calculate popup' width/height correctly,
     // so we have to set them manually
-    const { width, height } = propertyCardSizes.map
+    const { width, height } = gridConfig.propertyCardSizes.map
     container.style.width = `${width}px`
     container.style.height = `${height}px`
 

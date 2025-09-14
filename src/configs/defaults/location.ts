@@ -1,20 +1,11 @@
 const location = {
-  stateCode: 'ON',
-  state: 'Ontario',
-  city: 'Toronto',
+  stateCode: 'NC',
+  state: 'North Carolina',
+  city: 'Charlotte',
   // HOME PAGE STATS
-  defaultFilters: {
-    city: ['Toronto']
-  },
+  defaultFilters: {},
   // DASHBOARD LIST
-  defaultCities: [
-    'Newmarket',
-    'Mississauga',
-    'Brampton',
-    'Vaughan',
-    'Richmond Hill',
-    'Markham'
-  ]
+  defaultCities: ['Kansas City', 'Nashville', 'Charlotte', 'Denver', 'Austin']
 }
 
 export default location

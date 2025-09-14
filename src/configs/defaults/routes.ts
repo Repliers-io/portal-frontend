@@ -31,11 +31,12 @@ const routes = {
   // static pages
   cookies: '/cookies-policy',
   privacy: '/privacy-policy',
-  terms: '/terms-of-use'
+  terms: '/terms-of-use',
+
+  // will be set to home or dashboard or agent
+  loginRedirect: '/'
 }
 
 export type Routes = Record<keyof typeof routes, string>
-
-export const loginRedirectRoute = routes.home
 
 export default routes

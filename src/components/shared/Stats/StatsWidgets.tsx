@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Box, Container, Stack, Typography } from '@mui/material'
 
-import { widgetSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { type PropertyClass } from '@configs/filters'
 import { StatsGraph, StatsTabs } from '@shared/Stats'
 
@@ -25,7 +25,7 @@ export const StatsWidgets = (
     <SearchProvider>
       <Box sx={{ pt: { xs: 2, md: 6 }, pb: 2 }}>
         <Container maxWidth="lg">
-          <Stack spacing={widgetSpacing}>
+          <Stack spacing={gridConfig.widgetSpacing}>
             <Typography
               variant="h2"
               sx={{ mb: { xs: 0, md: -8 }, whiteSpace: 'pre-line' }}

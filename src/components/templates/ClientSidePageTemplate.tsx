@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react'
 import queryString from 'query-string'
 
-import routes, { loginRedirectRoute } from '@configs/routes'
+import routes from '@configs/routes'
 
 import { useDialog } from 'providers/DialogProvider'
 import { useUser } from 'providers/UserProvider'
@@ -64,7 +64,7 @@ const ClientSidePageTemplate = ({
     redirectTriggered.current = true
     const currentRoute = window.location.pathname + window.location.search
     const params =
-      loginRedirectRoute === currentRoute
+      routes.loginRedirect === currentRoute
         ? '' // do not add default redirect route to login url, as it will do this automatically
         : queryString.stringify({
             redirect: currentRoute

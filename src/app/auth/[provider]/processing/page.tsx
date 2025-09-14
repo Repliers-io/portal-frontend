@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { CircularProgress, Stack, Typography } from '@mui/material'
 
 import routes from '@configs/routes'
-import { authCallbackKey } from '@configs/storage'
+import storageConfig from '@configs/storage'
 import { PageTemplate } from '@templates'
 
 import { type AuthProvider } from 'services/API'
@@ -18,6 +18,8 @@ type AuthProcessingPageProps = {
     provider: AuthProvider
   }>
 }
+
+const { authCallbackKey } = storageConfig
 
 const AuthPage = (props: AuthProcessingPageProps) => {
   const params = use(props.params)

@@ -1,4 +1,4 @@
-import { type MapStyle } from '@configs/map-styles'
+import { type MapStyle } from '@configs/map'
 
 export type Params = {
   layout: 'map' | 'grid'

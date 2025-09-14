@@ -5,8 +5,8 @@ import { useSearchParams } from 'next/navigation'
 
 import { Box, Pagination, Stack } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
-import { pageSize } from '@configs/search'
+import gridConfig from '@configs/cards-grids'
+import searchConfig from '@configs/search'
 import { EmptyListings } from '@shared/EmptyStates'
 import { PropertyCard, PropertyCarousel, SkeletonCard } from '@shared/Property'
 
@@ -31,6 +31,8 @@ import { getUniqueKey } from 'utils/properties'
 import { updateWindowHistory } from 'utils/urls'
 
 import { GridScrollContainer, MultiUnitHeader } from './components'
+
+const { gridSpacing } = gridConfig
 
 const GridContent = ({
   onCardClick
@@ -57,7 +59,7 @@ const GridContent = ({
   const { search, filters, polygon, list, loading, count, page, multiUnits } =
     useSearch()
 
-  const pagesCount = Math.ceil(count / pageSize)
+  const pagesCount = Math.ceil(count / searchConfig.pageSize)
 
   // TODO: marker highlighting should be moved inside the Card component
   const hoverMarker = ({ mlsNumber }: Property) => {
@@ -201,7 +203,7 @@ const GridContent = ({
         >
           {!page || (loading && !clientProperties.length) ? (
             // `page: 0` is a special state after first initial load, before any searches/saves
-            Array.from({ length: pageSize }).map((_v, index) => (
+            Array.from({ length: searchConfig.pageSize }).map((_v, index) => (
               <SkeletonCard key={index} />
             ))
           ) : !loading && !clientProperties.length ? (
@@ -219,7 +221,7 @@ const GridContent = ({
           )}
         </Stack>
 
-        {count > pageSize && !showMultiUnits && (
+        {count > searchConfig.pageSize && !showMultiUnits && (
           <Box textAlign="center">
             <Pagination
               size="small"

@@ -1,10 +1,10 @@
-import {
-  gridColumns,
-  gridSpacing,
-  propertyCardSizes
-} from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 
-const cardWidth = Number(propertyCardSizes['normal'].width)
+const { gridColumns, gridSpacing, propertyCardSizes } = gridConfig
+
+const cardWidth = Number(propertyCardSizes.normal.width)
+
+// TODO: constants below should be moved to gridConfig
 
 export const gridSideContainerWidth = {
   xs: '100%',

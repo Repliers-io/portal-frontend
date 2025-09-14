@@ -1,4 +1,4 @@
-import { trieMaxResults } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import TrieNode from './TrieNode'
 
@@ -47,7 +47,7 @@ class TrieSearch<T> {
     }
   }
 
-  search(prefix: string, limit: number = trieMaxResults): T[] {
+  search(prefix: string, limit: number = searchConfig.trieMaxResults): T[] {
     let node = this.r
     // eslint-disable-next-line no-restricted-syntax
     for (const char of prefix) {

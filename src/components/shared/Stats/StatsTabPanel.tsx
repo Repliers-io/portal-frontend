@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Box } from '@mui/material'
 
-import { widgetSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { type PropertyClass } from '@defaults/filters'
 import { ArrayWidget, BarsWidget, CountWidget } from '@shared/Widgets'
 import calendarImg from 'assets/common/calendar.svg'
@@ -79,7 +79,7 @@ export const StatsTabPanel = ({
       ref={ref}
       display="grid"
       gridTemplateColumns={{ sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
-      gap={widgetSpacing}
+      gap={gridConfig.widgetSpacing}
       sx={{
         '& > *': {
           height: '220px'

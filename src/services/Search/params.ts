@@ -6,12 +6,14 @@ import {
   defaultFilters,
   listingFields
 } from '@configs/filters'
-import { clusterLimit, resultsPerPage } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import { nonDefaultFilter } from 'utils/filters'
 import { getDefaultBounds, toRectangle } from 'utils/map'
 
 import type { Filters } from './types'
+
+const { clusterLimit, resultsPerPage } = searchConfig
 
 export const getListingFields = () => ({
   listings: true,

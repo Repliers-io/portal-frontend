@@ -1,6 +1,6 @@
 import { Stack } from '@mui/material'
 
-import { gridSpacing } from '@configs/cards-grids'
+import gridConfig from '@configs/cards-grids'
 import { EmptyImageFavorites } from '@shared/EmptyStates'
 
 import { LoadingContent } from 'components/atoms'
@@ -53,7 +53,7 @@ const ImageFavoritesList = ({ embedded }: { embedded?: boolean }) => {
       width="100%"
       flexWrap="wrap"
       direction="row"
-      spacing={{ xs: 2, sm: embedded ? 2 : gridSpacing }}
+      spacing={{ xs: 2, sm: embedded ? 2 : gridConfig.gridSpacing }}
       justifyContent={{
         xs: 'center',
         sm: images.length > 4 ? 'flex-start' : 'center'

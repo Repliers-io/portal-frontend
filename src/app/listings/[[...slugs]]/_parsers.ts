@@ -1,6 +1,6 @@
 import { type ListingType, listingTypes } from '@configs/filters'
-import defaultLocation from '@configs/location'
-import { defaultBoardId } from '@configs/search'
+import locationConfig from '@configs/location'
+import searchConfig from '@configs/search'
 
 import { type ApiSortBy } from 'services/API'
 import { type Filters } from 'services/Search'
@@ -78,7 +78,7 @@ function parseFiltersSegment(segment: string) {
 export const parseUrlParams = (params: string[]) => {
   const initialState = {
     location: {
-      state: defaultLocation.stateCode,
+      state: locationConfig.stateCode,
       area: '',
       city: '',
       neighborhood: '',
@@ -100,7 +100,7 @@ export const parseUrlParams = (params: string[]) => {
       if (match) {
         acc.localAddress ||= beautify(match[1])
         acc.listingId ||= match[2]
-        acc.boardId = match[4] || String(defaultBoardId)
+        acc.boardId = match[4] || String(searchConfig.defaultBoardId)
       }
     } else if (zipCode(segment)) {
       acc.location.zipCode = beautify(segment).toUpperCase()

@@ -11,7 +11,7 @@ import {
   Typography
 } from '@mui/material'
 
-import { lastAuthKey } from '@defaults/storage'
+import storageConfig from '@configs/storage'
 
 import { APIAuth, type LogInRequest, type SignUpRequest } from 'services/API'
 import { useFeatures } from 'providers/FeaturesProvider'
@@ -43,6 +43,7 @@ import {
 export type AuthFlow = 'login' | 'signup'
 export type AuthStep = 'input' | 'verify'
 
+const { lastAuthKey } = storageConfig
 const resendOtpDuration = 60 // seconds
 
 // NOTE: `onSuccess` callback should manually process successful login,

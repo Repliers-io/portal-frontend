@@ -1,4 +1,4 @@
-export const paramNames = {
+const paramNames = {
   gridPage: 'gp',
   apiPage: 'ap',
   minPrice: 'pmin',
@@ -24,3 +24,5 @@ export const paramNames = {
   yearBuiltFrom: 'yfrom',
   yearBuiltTo: 'yto'
 }
+
+export default paramNames

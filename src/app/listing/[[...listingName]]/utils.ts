@@ -1,6 +1,6 @@
 import { cache } from 'react'
 
-import { defaultBoardId } from '@configs/search'
+import searchConfig from '@configs/search'
 
 import { APIPropertyDetails, type ApiQueryParams } from 'services/API'
 import SearchService, { getListingFields } from 'services/Search'
@@ -14,8 +14,8 @@ export const parseParams = (params: Params, searchParams: SearchParams) => {
 
   const boardId = Number(
     (slugs.at(-1) || '').match(/^\d{1,3}$/)
-      ? slugs.pop() || defaultBoardId
-      : defaultBoardId
+      ? slugs.pop() || searchConfig.defaultBoardId
+      : searchConfig.defaultBoardId
   )
 
   const listingId =
