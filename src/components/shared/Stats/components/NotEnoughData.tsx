@@ -15,7 +15,7 @@ export const NotEnoughData = () => {
         backdropFilter: 'blur(20px)'
       }}
     >
-      <Typography variant="h6">Not enough data</Typography>
+      <Typography variant="h6">No data</Typography>
     </Box>
   )
 }

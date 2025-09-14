@@ -168,7 +168,7 @@ export const restricted = (property: Property) =>
   !publicPermission(property) || sold(property)
 
 export const scrubbed = (value: Primitive) =>
-  String(value) === scrubbedDataString || String(value) === scrubbedDateString
+  ['0', scrubbedDataString, scrubbedDateString].includes(String(value))
 
 export const getStatusLabel = (property: Property) => {
   if (sold(property)) return 'Sold'

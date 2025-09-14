@@ -35,7 +35,8 @@ export const StatsTabPanel = ({
 }: StatsTabPanelProps) => {
   const t = useTranslations('Charts')
   const [stats, setStats] = useState<ApiStatisticResponse | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [attempts, setAttempts] = useState(0)
+  const [hasError, setHasError] = useState(false)
   const [visible, ref] = useIntersectionObserver()
 
   const active = stats?.widgets?.active
@@ -52,7 +53,6 @@ export const StatsTabPanel = ({
     try {
       if (!propertyClass) return
 
-      setLoading(true)
       const propertyClassArray = (
         propertyClass === 'all' ? ['residential', 'condo'] : [propertyClass]
       ) as PropertyClass[]
@@ -65,14 +65,15 @@ export const StatsTabPanel = ({
       setStats(response)
     } catch (error) {
       console.error('[StatsTabPanel] error fetching data', error)
+      setHasError(true)
     } finally {
-      setLoading(false)
+      setAttempts((prev) => prev + 1)
     }
   }
 
   useEffect(() => {
-    if (visible && !stats && !loading) fetchData()
-  }, [visible, loading, stats])
+    if (visible && !stats && !attempts) fetchData()
+  }, [visible, stats, attempts])
 
   return (
     <Box
@@ -92,6 +93,7 @@ export const StatsTabPanel = ({
           icon={houseImg}
           data={activeCount}
           title={`${label} For Sale`}
+          error={hasError}
         />
       </Box>
       <Box gridColumn="span 1" order={{ xs: 3, sm: 5, md: 2 }}>
@@ -101,6 +103,7 @@ export const StatsTabPanel = ({
           data={soldCounts}
           title={`${label} Sold`}
           formatter={(value) => toSafeString(value)}
+          error={hasError}
         />
       </Box>
       <Box
@@ -114,6 +117,7 @@ export const StatsTabPanel = ({
           icon={houseImg}
           data={prices}
           title="Sales Price"
+          error={hasError}
         />
       </Box>
       <Box gridColumn="span 1" order={{ xs: 2, sm: 3, md: 4 }}>
@@ -122,6 +126,7 @@ export const StatsTabPanel = ({
           icon={calendarImg}
           data={daysOnMarket}
           title={t('averageDaysOnMarket')}
+          error={hasError}
         />
       </Box>
       <Box gridColumn="span 1" order={{ xs: 4, sm: 2, md: 4 }}>
@@ -131,6 +136,7 @@ export const StatsTabPanel = ({
           icon={salesImg}
           title="Sales Volume"
           formatter={(v) => formatPrice(v)}
+          error={hasError}
         />
       </Box>
     </Box>

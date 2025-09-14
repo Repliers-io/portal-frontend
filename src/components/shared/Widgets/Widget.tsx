@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-import { Box, Paper, Stack } from '@mui/material'
+import { Box, Paper, Stack, Typography } from '@mui/material'
 
 import useIntersectionObserver from 'hooks/useIntersectionObserver'
 
@@ -12,6 +12,7 @@ export type WidgetProps = {
   icon?: string
   index?: number
   loading?: boolean
+  error?: boolean
   onVisible?: () => void
   children?: React.ReactNode
 }
@@ -21,6 +22,7 @@ const Widget = ({
   icon,
   index = -1,
   loading = true,
+  error = false,
   onVisible = () => false,
   children,
   ...props
@@ -59,7 +61,7 @@ const Widget = ({
                   : {}
               }
             >
-              {children}
+              {error ? <Typography variant="h6">No data</Typography> : children}
             </Box>
           </Box>
         </Stack>

@@ -97,7 +97,6 @@ export const formatLongNumber = (
 }
 
 export const formatPrice = (value: Primitive, currency = '$') => {
-  if (scrubbed(value)) return ''
   const number = toSafeNumber(value)
   return `${number < 0 ? '-' : ''}${currency}${formatLongNumber(number)}`
 }

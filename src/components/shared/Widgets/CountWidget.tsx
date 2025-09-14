@@ -10,7 +10,7 @@ type CountWidgetProps = WidgetProps & {
 
 const CountWidget = ({ data, ...props }: CountWidgetProps) => {
   return (
-    <Widget {...props} loading={typeof data !== 'number'}>
+    <Widget {...props} loading={typeof data !== 'number' && !props.error}>
       {typeof data === 'number' && (
         <Typography
           variant="h5"

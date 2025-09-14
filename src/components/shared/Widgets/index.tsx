@@ -1,5 +1,5 @@
 export { default as ArrayWidget } from './ArrayWidget'
-export { default as BarsWidget } from './BarsWidget'
+export { default as BarsWidget } from './BarsWidget/BarsWidget'
 export { default as CountWidget } from './CountWidget'
 export { default as RankingWidget } from './RankingWidget'
 export { default as StatsWidget } from './StatsWidget'

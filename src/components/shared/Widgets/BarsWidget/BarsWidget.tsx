@@ -20,7 +20,12 @@ const BarsWidget = ({ data, ...props }: BarsWidgetProps) => {
   const barTypeLabels = ['Average', 'Median']
 
   return (
-    <Widget {...props} loading={!data} index={0} onVisible={toggleVisibility}>
+    <Widget
+      {...props}
+      index={0}
+      loading={!data && !props.error}
+      onVisible={toggleVisibility}
+    >
       {data && (
         <Stack spacing={2} justifyContent="space-evenly" sx={{ width: '100%' }}>
           <ChartBulletList labels={barTypeLabels} colors={colors} />

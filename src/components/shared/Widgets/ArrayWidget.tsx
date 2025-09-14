@@ -19,7 +19,7 @@ const ArrayWidget = ({
   ...props
 }: ArrayWidgetProps) => {
   return (
-    <Widget {...props} loading={!data}>
+    <Widget {...props} loading={!data && !props.error}>
       {data && (
         <Stack
           spacing={1}

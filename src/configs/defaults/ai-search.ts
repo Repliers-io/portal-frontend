@@ -20,7 +20,7 @@ const config = {
     ['dock', '#99E'],
     ['white kitchen with golden hardware', '#DB6']
   ],
-  cdnHost: 'https://dev-smartmls-com.condosportal.ca',
+  cdnHost: 'https://portal.repliers.com',
   inspirations: [
     {
       group: 'exterior',
