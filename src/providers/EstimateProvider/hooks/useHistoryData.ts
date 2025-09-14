@@ -26,7 +26,7 @@ const notResidentialErrorMessage =
 const homeClasses = ['CondoProperty', 'ResidentialProperty']
 const multiTypes = [TYPE_MULTI_FAMILY, TYPE_SEMIDETACHED, TYPE_TOWNHOME]
   .flat()
-  .map((type) => type.toLowerCase())
+  .map((type) => String(type).toLowerCase())
 
 const useHistoryData = (formMethods: UseFormReturn<FormValues>) => {
   const features = useFeatures()
