@@ -3,7 +3,7 @@ import Image from 'next/legacy/image'
 
 import { Box } from '@mui/material'
 
-import { blurredImageRadius } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import {
   ImagePlaceholder,
@@ -39,7 +39,9 @@ const ImageContainer = ({
   const [loaded, setLoaded] = useState(false)
   // first element of the gallery should be eagerly loaded
   const imageSrc = getCDNPath(src, size)
-  const style = blurred ? { filter: `blur(${blurredImageRadius}px)` } : {}
+  const style = blurred
+    ? { filter: `blur(${propsConfig.blurredImageRadius}px)` }
+    : {}
 
   return (
     <Box

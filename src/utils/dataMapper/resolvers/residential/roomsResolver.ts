@@ -1,4 +1,4 @@
-import { scrubbedDataString } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { type ApiRooms, type Property } from 'services/API'
 import { formatImperialDistance } from 'utils/formatters'
@@ -59,7 +59,7 @@ const transformRoomsByFloors = (property: Property) => {
       // generate keys with suffixes for rooms with the same description,
       // for example, 'Bedroom', 'Bedroom (2)', 'Bedroom (3)'
       while (floors[room.level][description]) {
-        if (room.description === scrubbedDataString) {
+        if (room.description === propsConfig.scrubbedDataString) {
           // add invisible space to avoid duplicates
           description = room.description + ' '.repeat(counter++)
         } else {
@@ -104,7 +104,7 @@ const roomsResolver = (property: Property) => {
           const [label, room] = item
 
           const roomNullsToScrubs = [room.width, room.length]
-            .map((v) => (v === 'null' ? scrubbedDataString : v))
+            .map((v) => (v === 'null' ? propsConfig.scrubbedDataString : v))
             .map(formatImperialDistance)
 
           return {

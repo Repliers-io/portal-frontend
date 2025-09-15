@@ -3,7 +3,7 @@ import { useState } from 'react'
 import AspectRatioOutlinedIcon from '@mui/icons-material/AspectRatioOutlined'
 import { Box, IconButton } from '@mui/material'
 
-import { minImagesToShow123Gallery } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { useDialog } from 'providers/DialogProvider'
 import { useFeatures } from 'providers/FeaturesProvider'
@@ -30,7 +30,7 @@ const DialogGalleryButton = ({
   const gridGalleryFlag =
     features.pdpGridGallery &&
     (!features.pdpFullscreenGallery ||
-      images.length >= minImagesToShow123Gallery)
+      images.length >= propsConfig.minImagesToShow123Gallery)
 
   const handleGalleryClick = () => {
     if (gridGalleryFlag) {

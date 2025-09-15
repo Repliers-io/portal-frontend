@@ -12,7 +12,7 @@ import {
 } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
-import { dateFormat, timeFormat } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 import { APIContact, type ErrorCause } from 'services/API'
 import { useEstimate } from 'providers/EstimateProvider'
@@ -78,8 +78,8 @@ const ScheduleMeeting = () => {
       email,
       estimateId: estimateId as number,
       phone: sanitizePhoneNumber(phone),
-      date: date.format(dateFormat),
-      time: time.format(timeFormat)
+      date: date.format(i18nConfig.dateFormat),
+      time: time.format(i18nConfig.timeFormat)
     })
       .then(() => {
         showSnackbar('Message has been sent', 'success')

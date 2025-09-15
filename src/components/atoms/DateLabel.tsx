@@ -3,10 +3,10 @@
 import React from 'react'
 import dayjs from 'dayjs'
 
-import { dateFormatShort } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 const DateLabel = React.memo(({ value = '' }: { value: string | number }) => {
-  return <span>{dayjs(value).format(dateFormatShort)}</span>
+  return <span>{dayjs(value).format(i18nConfig.dateFormatShort)}</span>
 })
 
 DateLabel.displayName = 'DateLabel'

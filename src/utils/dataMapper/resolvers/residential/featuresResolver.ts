@@ -1,5 +1,5 @@
 // Features section
-import sections from '@configs/pdp'
+import sections from '@configs/pdp-sections'
 
 import { type Property } from 'services/API'
 

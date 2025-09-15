@@ -3,7 +3,7 @@
 import Joi from 'joi'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
-import { phoneNumberLocale } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 export const validateEmail = (email: string, maxLen = 70): boolean => {
   // Check if email is empty or exceeds the maximum length
@@ -37,13 +37,13 @@ export const validateEmail = (email: string, maxLen = 70): boolean => {
 }
 
 export const validatePhone = (value: string) =>
-  isValidPhoneNumber(value, phoneNumberLocale)
+  isValidPhoneNumber(value, i18nConfig.phoneNumberLocale)
 
 export const validatePhoneSchema = Joi.string()
   .trim()
   .custom((value, helpers) => {
     if (!value) return ''
-    if (!isValidPhoneNumber(value, phoneNumberLocale))
+    if (!isValidPhoneNumber(value, i18nConfig.phoneNumberLocale))
       return helpers.error('libphonenumber.invalid')
     return value
   })

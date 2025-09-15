@@ -1,11 +1,19 @@
+import { type CountryCode } from 'libphonenumber-js'
+
 import { type Currency } from 'utils/formatters'
 
-export const dateFormat = 'YYYY-MM-DD'
-export const dateFormatShort = 'MMM D, YYYY'
-export const dateFormatMonthYear = 'MMM YYYY'
-export const timeFormat = 'hh:mm A'
-export const phoneNumberLocale = 'CA'
+const config = {
+  dateFormat: 'YYYY-MM-DD',
+  dateFormatShort: 'MMM D, YYYY',
+  dateFormatMonthYear: 'MMM YYYY',
+  timeFormat: 'hh:mm A',
+  timeZone: 'America/Toronto',
+  phoneNumberLocale: 'CA' as CountryCode,
+  measurementSystem: 'imperial' as 'imperial' | 'metric',
+  // numbers and currency
+  currency: 'USD' as Currency,
+  numberFormat: 'en-US',
+  fractionDigits: 2
+}
 
-export const measurementSystem: 'imperial' | 'metric' = 'imperial'
-export const currency: Currency = 'USD'
-export const timeZone = 'America/Toronto'
+export default config

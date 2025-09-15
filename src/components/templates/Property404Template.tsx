@@ -4,10 +4,7 @@ import React from 'react'
 
 import { Typography } from '@mui/material'
 
-import {
-  type ListingLastStatus,
-  listingLastStatusMapping
-} from '@configs/properties'
+import propsConfig, { type ListingLastStatus } from '@configs/properties'
 import { PropertyCarousel } from '@shared/Property'
 
 import { FullscreenView } from 'components/atoms'
@@ -31,7 +28,7 @@ export const extractLastStatus = (message?: string, divider = '. ') => {
   const lastStatus = message.includes(divider)
     ? message.split(divider)[1]
     : message
-  return listingLastStatusMapping[lastStatus as ListingLastStatus]
+  return propsConfig.listingLastStatusMapping[lastStatus as ListingLastStatus]
 }
 
 const Property40XTemplate = ({

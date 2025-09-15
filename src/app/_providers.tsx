@@ -6,7 +6,7 @@ import type React from 'react'
 import { ThemeProvider } from '@mui/material'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 
-import { timeZone } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 import { type ApiLocations } from 'services/API'
 import DialogProvider from 'providers/DialogProvider'
@@ -39,6 +39,7 @@ const buildProvidersTree = (componentsWithProps: Array<ProviderComponent>) => {
     initialComponent
   )
 }
+const { timeZone } = i18nConfig
 
 type ProvidersProps = {
   locale: string

@@ -1,7 +1,7 @@
 import type dayjs from 'dayjs'
 import { type ManipulateType } from 'dayjs'
 
-import { dateFormat } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 import { type Primitive } from 'utils/formatters'
 
@@ -11,7 +11,7 @@ export const formatPastDate = (
   date: dayjs.Dayjs,
   value: number,
   type: ManipulateType
-) => date.subtract(value, type).format(dateFormat)
+) => date.subtract(value, type).format(i18nConfig.dateFormat)
 
 // not sure we need to keep our own implementation,
 // there are many libraries for that

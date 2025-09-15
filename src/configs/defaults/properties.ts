@@ -1,15 +1,3 @@
-export const premiumCondoPrice = 950000
-export const premiumResidentialPrice = 1125000
-
-export const blurredImageRadius = 20 // px
-export const minImagesToShow123Gallery = 6
-export const notAvailableString = 'N/A'
-export const scrubbedDataString = '!scrubbed!'
-export const scrubbedDateString = '1900-06-21T01:39:00.000Z'
-
-export const scrubbedDescriptionLabel =
-  'You have to be logged in to see the description.'
-
 export type ListingLastStatus =
   | 'Sus'
   | 'Exp'
@@ -24,17 +12,31 @@ export type ListingLastStatus =
   | 'Ext'
   | 'New'
 
-export const listingLastStatusMapping: Record<ListingLastStatus, string> = {
-  Sus: 'Suspended',
-  Exp: 'Expired',
-  Sld: 'Sold',
-  Ter: 'Terminated',
-  Dft: 'Deal Fell Through',
-  Lsd: 'Leased',
-  Sc: 'Sold Conditionally',
-  Sce: 'Sold Conditionally with Escape Clause',
-  Lc: 'Leased Conditionally',
-  Pc: 'Price Change',
-  Ext: 'Extension',
-  New: 'New'
+const config = {
+  premiumCondoPrice: 950_000,
+  premiumResidentialPrice: 1_125_000,
+  blurredImageRadius: 20, // px
+  minImagesToShow123Gallery: 6,
+  notAvailableString: 'N/A',
+  // scrubbed data
+  scrubbedDataString: '!scrubbed!',
+  scrubbedDateString: '1900-06-21T01:39:00.000Z',
+  scrubbedDescriptionLabel: 'You have to be logged in to see the description.',
+  // listing status labels
+  listingLastStatusMapping: {
+    Sus: 'Suspended',
+    Exp: 'Expired',
+    Sld: 'Sold',
+    Ter: 'Terminated',
+    Dft: 'Deal Fell Through',
+    Lsd: 'Leased',
+    Sc: 'Sold Conditionally',
+    Sce: 'Sold Conditionally with Escape Clause',
+    Lc: 'Leased Conditionally',
+    Pc: 'Price Change',
+    Ext: 'Extension',
+    New: 'New'
+  } as Record<ListingLastStatus, string>
 }
+
+export default config

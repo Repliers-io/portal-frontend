@@ -1,4 +1,4 @@
-import { notAvailableString } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { type Primitive } from './formatters'
 
@@ -25,7 +25,8 @@ export const pluralize = (
   return word!.replace('$', Number(count).toLocaleString())
 }
 
-export const notNA = (str: string) => str && str !== notAvailableString
+export const notNA = (str: string) =>
+  str && str !== propsConfig.notAvailableString
 
 export const joinNonEmpty = (items: Primitive[], separator = ', ') => {
   return items

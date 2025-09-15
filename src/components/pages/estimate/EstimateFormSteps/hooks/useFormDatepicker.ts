@@ -2,10 +2,11 @@ import dayjs, { type Dayjs } from 'dayjs'
 import type React from 'react'
 import { useFormContext } from 'react-hook-form'
 
-import { dateFormat } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 import { useFormField } from '.'
 
+const { dateFormat } = i18nConfig
 const DATE_PLACEHOLDER_REGEX = /^(MM|DD|YYYY)[-/](MM|DD|YYYY)[-/](MM|DD|YYYY)$/
 
 const empty = (value: string) => {

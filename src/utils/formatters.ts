@@ -1,23 +1,18 @@
 import dayjs from 'dayjs'
 import parsePhoneNumber, { AsYouType } from 'libphonenumber-js'
 
-import {
-  currency as defaultCurrency,
-  dateFormatShort,
-  phoneNumberLocale
-} from '@configs/i18n'
-import { scrubbedDataString } from '@configs/properties'
+import i18nConfig from '@configs/i18n'
+import propsConfig from '@configs/properties'
 
 import { parseFootInch } from './numbers'
 import { scrubbed } from './properties'
 
-const fractionDigits = 2
-const numberFormat = 'en-US'
-
 export type Primitive = string | number | boolean | bigint | null | undefined
 
 export const formatPhoneNumber = (value: string | null | undefined) => {
-  const phoneNumber = value ? parsePhoneNumber(value, phoneNumberLocale) : ''
+  const phoneNumber = value
+    ? parsePhoneNumber(value, i18nConfig.phoneNumberLocale)
+    : ''
   if (!phoneNumber) return ''
 
   return phoneNumber.formatNational()
@@ -30,7 +25,7 @@ export const formatPhoneNumberAsYouType = (
   // backspace handling
   if (newVal.length < (currentVal || '').length) return newVal
   // library formating
-  return new AsYouType(phoneNumberLocale).input(newVal)
+  return new AsYouType(i18nConfig.phoneNumberLocale).input(newVal)
 }
 
 type FormatDateOptions = {
@@ -41,16 +36,17 @@ type FormatDateOptions = {
 export const formatDate = (
   date: string | number | Date | null | undefined,
   options: FormatDateOptions = {
-    template: dateFormatShort,
+    template: i18nConfig.dateFormatShort,
     utc: false
   }
 ): string | null => {
   if (!date) return null
 
-  const { template = dateFormatShort, utc = false } = options
+  const { template = i18nConfig.dateFormatShort, utc = false } = options
   const parsedDate = dayjs(date)
 
-  if (scrubbed(date as Primitive)) return scrubbedDataString
+  // TODO: not sure if we need to check for scrubbed here
+  if (scrubbed(date as Primitive)) return propsConfig.scrubbedDataString
   if (!parsedDate.isValid()) return null
 
   return utc ? parsedDate.utc().format(template) : parsedDate.format(template)
@@ -80,7 +76,7 @@ export const formatPercentage = (value: Primitive) => {
 
 export const formatLongNumber = (
   value: Primitive,
-  fractions = fractionDigits
+  fractions = i18nConfig.fractionDigits
 ) => {
   const suffixes = ['', 'K', 'M', 'B', 'T']
 
@@ -107,9 +103,9 @@ export const formatPrice = (value: Primitive, currency = '$') => {
  */
 export const formatEnglishNumber = (
   value: Primitive,
-  maximumFractionDigits = 2
+  maximumFractionDigits = i18nConfig.fractionDigits
 ) => {
-  return new Intl.NumberFormat(numberFormat, {
+  return new Intl.NumberFormat(i18nConfig.numberFormat, {
     style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits
@@ -120,10 +116,10 @@ export type Currency = 'USD' | 'CAD' | 'EUR' | 'GBP'
 
 export const formatEnglishPrice = (
   value: Primitive,
-  maximumFractionDigits = 2,
-  currency: Currency = defaultCurrency
+  maximumFractionDigits = i18nConfig.fractionDigits,
+  currency: Currency = i18nConfig.currency
 ) => {
-  return new Intl.NumberFormat(numberFormat, {
+  return new Intl.NumberFormat(i18nConfig.numberFormat, {
     currency,
     style: 'currency',
     minimumFractionDigits: 0,
