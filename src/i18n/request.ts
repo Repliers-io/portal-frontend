@@ -1,8 +1,9 @@
 import { getRequestConfig } from 'next-intl/server'
 import deepmerge from 'deepmerge'
 
-import { timeZone } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
+const { timeZone } = i18nConfig
 const env = String(process.env.NEXT_PUBLIC_APP_CONFIGURATION || '').trim()
 
 export default getRequestConfig(async () => {

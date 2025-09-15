@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 
-import { scrubbedDescriptionLabel } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { type Property, type PropertyAddress } from 'services/API'
 
@@ -68,7 +68,9 @@ export const formatMetadata = (property: Property, host?: string | null) => {
 
   return {
     title: getSeoTitle(property),
-    description: scrubbed(description) ? scrubbedDescriptionLabel : description,
+    description: scrubbed(description)
+      ? propsConfig.scrubbedDescriptionLabel
+      : description,
     openGraph
   }
 }

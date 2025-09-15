@@ -17,7 +17,7 @@ import {
   Typography
 } from '@mui/material'
 
-import { measurementSystem } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 import defaultLocation from '@configs/location'
 import mapConfig from '@configs/map'
 import { joiResolver } from '@hookform/resolvers/joi'
@@ -112,7 +112,7 @@ const SaveSearchForm = ({
       const area = getAreaName(data.features, zoom)
       if (area) {
         const radius =
-          measurementSystem === 'metric'
+          i18nConfig.measurementSystem === 'metric'
             ? getRadiusDecimal(position)
             : getRadiusImperial(position)
 

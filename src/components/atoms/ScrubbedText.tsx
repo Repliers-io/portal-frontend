@@ -3,7 +3,7 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import { scrubbedDataString } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 export const ScrubbedSkeleton = ({ value = '***' }: { value?: string }) => (
   <span
@@ -44,7 +44,7 @@ const ScrubbedText = React.memo(
       )
       const str = renderToStaticMarkup(children)
       scrubbedHtml = str.replaceAll(
-        new RegExp(scrubbedDataString, 'gi'),
+        new RegExp(propsConfig.scrubbedDataString, 'gi'),
         skeletonMarkup
       )
     }

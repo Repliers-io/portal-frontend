@@ -1,4 +1,4 @@
-import sections from '@configs/pdp-condo'
+import sections from '@configs/pdp-condo-sections'
 
 import { type Property } from 'services/API'
 

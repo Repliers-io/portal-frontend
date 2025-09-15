@@ -11,12 +11,7 @@ import {
   TYPE_LAND
 } from '@configs/filter-types'
 import { aiQuality, aiQualityFeatureNames } from '@configs/filters'
-import {
-  premiumCondoPrice,
-  premiumResidentialPrice,
-  scrubbedDataString,
-  scrubbedDateString
-} from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import {
   type Property,
@@ -57,6 +52,13 @@ export {
   getSeoUrl,
   parseSeoUrl
 } from './seo'
+
+const {
+  premiumCondoPrice,
+  premiumResidentialPrice,
+  scrubbedDataString,
+  scrubbedDateString
+} = propsConfig
 
 export const premium = (property: Property) => {
   const { listPrice } = property

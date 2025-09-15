@@ -4,7 +4,7 @@ import { useFormContext } from 'react-hook-form'
 
 import { Box } from '@mui/material'
 
-import { dateFormat } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 import searchConfig from '@configs/search'
 import { PropertyCarousel } from '@shared/Property'
 
@@ -13,7 +13,7 @@ import { useEstimate } from 'providers/EstimateProvider'
 import { toSafeString } from 'utils/formatters'
 
 const comparablesCount = 8
-const minSoldDate = dayjs().subtract(2, 'month').format(dateFormat)
+const minSoldDate = dayjs().subtract(2, 'month').format(i18nConfig.dateFormat)
 
 const SoldAndSimilarPropertyCarousels = () => {
   const { estimateData } = useEstimate()

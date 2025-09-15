@@ -3,7 +3,7 @@ import Image from 'next/legacy/image'
 
 import { Box, IconButton, Stack } from '@mui/material'
 
-import { blurredImageRadius } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { useDialog } from 'providers/DialogProvider'
 import { useFeatures } from 'providers/FeaturesProvider'
@@ -137,7 +137,7 @@ const ThumbnailsRibbon = ({
       borderRadius: 2,
       ...(blurred && {
         pointerEvents: 'none',
-        '& img': { filter: `blur(${blurredImageRadius}px)` }
+        '& img': { filter: `blur(${propsConfig.blurredImageRadius}px)` }
       })
     }),
     [browserWidth, blurred]

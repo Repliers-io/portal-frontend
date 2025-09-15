@@ -10,7 +10,7 @@ import { type Map, type Marker, Popup } from 'mapbox-gl'
 import { NextIntlClientProvider } from 'next-intl'
 
 import gridConfig from '@configs/cards-grids'
-import { timeZone } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 import { PropertyCard } from '@shared/Property'
 
 import { type Property } from 'services/API'
@@ -54,7 +54,7 @@ export class PopupExtension {
       <NextIntlClientProvider
         locale={this.locale}
         messages={this.messages}
-        timeZone={timeZone}
+        timeZone={i18nConfig.timeZone}
       >
         <ThemeProvider theme={theme}>
           <FeaturesProvider payload={payload}>

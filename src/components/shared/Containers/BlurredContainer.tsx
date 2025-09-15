@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Button, Paper, Stack, type StackOwnProps } from '@mui/material'
 
-import { blurredImageRadius } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 interface Props extends StackOwnProps {
   children: React.ReactNode
@@ -24,7 +24,7 @@ const BlurredContainer: React.FC<Props> = ({
 }) => {
   const blurredStyles = {
     pointerEvents: 'none',
-    filter: `blur(${blurredImageRadius}px)`
+    filter: `blur(${propsConfig.blurredImageRadius}px)`
   }
 
   const overlayStyles = {

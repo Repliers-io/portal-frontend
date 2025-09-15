@@ -5,7 +5,7 @@ import SmartDisplayOutlinedIcon from '@mui/icons-material/SmartDisplayOutlined'
 import ViewDayOutlinedIcon from '@mui/icons-material/ViewDayOutlined'
 import { IconButton, Stack, Tooltip } from '@mui/material'
 
-import { minImagesToShow123Gallery } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { FallInTransition } from 'components/atoms'
 
@@ -66,7 +66,7 @@ const LeftSideButtons = ({ sticky }: { sticky: boolean }) => {
           )}
           {features.pdpGridGallery &&
             (!features.pdpFullscreenGallery ||
-              images.length >= minImagesToShow123Gallery) && (
+              images.length >= propsConfig.minImagesToShow123Gallery) && (
               <Tooltip
                 arrow
                 enterDelay={200}

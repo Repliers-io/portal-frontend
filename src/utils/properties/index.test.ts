@@ -1,4 +1,4 @@
-import { premiumCondoPrice, premiumResidentialPrice } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { type Property, type PropertyDetails } from 'services/API'
 
@@ -12,6 +12,8 @@ import {
   restricted,
   sold
 } from '.'
+
+const { premiumCondoPrice, premiumResidentialPrice } = propsConfig
 
 describe('utils/properties', () => {
   const condoProperty = {

@@ -1,12 +1,12 @@
 import parsePhoneNumber from 'libphonenumber-js'
 
-import { phoneNumberLocale } from '@configs/i18n'
-import { scrubbedDataString } from '@configs/properties'
+import i18nConfig from '@configs/i18n'
+import propsConfig from '@configs/properties'
 
 import { type PropertyAddress } from 'services/API'
 
 export const sanitizeScrubbed = (value: string) =>
-  String(value).replaceAll(scrubbedDataString, '')
+  String(value).replaceAll(propsConfig.scrubbedDataString, '')
 
 export const sanitizeStreetNumber = (value: string) =>
   sanitizeScrubbed(String(value)).match(/^0+$/) ? '' : value
@@ -33,7 +33,7 @@ export const sanitizeAddress = (address: PropertyAddress) => {
   ]
 
   return parts
-    .map((part) => part?.trim().replaceAll(scrubbedDataString, ''))
+    .map((part) => part?.trim().replaceAll(propsConfig.scrubbedDataString, ''))
     .filter(Boolean)
     .join('-')
     .replace(/#/g, '')
@@ -45,7 +45,7 @@ export const sanitizeAddress = (address: PropertyAddress) => {
 
 export const sanitizePhoneNumber = (value: string | null | undefined) => {
   if (!value) return ''
-  const phoneNumber = parsePhoneNumber(value, phoneNumberLocale)
+  const phoneNumber = parsePhoneNumber(value, i18nConfig.phoneNumberLocale)
   return (phoneNumber?.number || '').replace('+', '')
 }
 

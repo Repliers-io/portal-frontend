@@ -1,7 +1,7 @@
 /* eslint-disable react/no-danger */
 import { Stack, Typography } from '@mui/material'
 
-import { scrubbedDescriptionLabel } from '@configs/properties'
+import propsConfig from '@configs/properties'
 
 import { ScrubbedText } from 'components/atoms'
 
@@ -31,7 +31,7 @@ const HomeDescription = () => {
       >
         {scrubbed(description) ? (
           <p>
-            <ScrubbedText replace={scrubbedDescriptionLabel} />
+            <ScrubbedText replace={propsConfig.scrubbedDescriptionLabel} />
           </p>
         ) : (
           <div

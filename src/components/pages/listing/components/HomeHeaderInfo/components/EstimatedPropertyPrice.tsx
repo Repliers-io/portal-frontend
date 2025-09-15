@@ -4,7 +4,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 // import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
 import { Stack, Tooltip, Typography } from '@mui/material'
 
-import { dateFormatMonthYear } from '@configs/i18n'
+import i18nConfig from '@configs/i18n'
 
 import { type Property } from 'services/API'
 import { formatDate, formatEnglishPrice } from 'utils/formatters'
@@ -18,7 +18,9 @@ const OriginalPropertyPrice = ({ property }: { property: Property }) => {
   const { value, date, confidence } = estimate
   const roundedValue = Math.round(value)
 
-  const formattedDate = formatDate(date, { template: dateFormatMonthYear })
+  const formattedDate = formatDate(date, {
+    template: i18nConfig.dateFormatMonthYear
+  })
 
   return (
     <Stack spacing={1}>

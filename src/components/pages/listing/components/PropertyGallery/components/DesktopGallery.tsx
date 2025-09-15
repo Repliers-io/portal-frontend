@@ -3,7 +3,7 @@ import Image from 'next/legacy/image'
 
 import { Box, CircularProgress, Stack } from '@mui/material'
 
-import { blurredImageRadius } from '@configs/properties'
+import propsConfig from '@configs/properties'
 import {
   AiSubmitButton,
   GalleryControls,
@@ -81,7 +81,7 @@ const DesktopGallery = ({
         aspectRatio: { sm: '3/2', md: 'auto' },
         ...(blurred && {
           pointerEvents: 'none',
-          '& img': { filter: `blur(${blurredImageRadius}px)` }
+          '& img': { filter: `blur(${propsConfig.blurredImageRadius}px)` }
         })
       }}
       onTouchEnd={toggleControls}
