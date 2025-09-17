@@ -11,7 +11,7 @@ const RoundButton = ({
 }: {
   children: React.ReactNode
   onClick: (e: React.MouseEvent) => void
-  href?: string | null
+  href?: string
   active?: boolean
   activeColor?: string
   normalColor?: string

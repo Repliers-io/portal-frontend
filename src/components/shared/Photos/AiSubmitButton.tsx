@@ -25,7 +25,7 @@ const AiSubmitButton = ({
 
   let submit = null
   let setLayout = null
-  let searchUrl = null
+  let searchUrl // undefined
 
   try {
     // WARN: DO NOT DO THIS UNLESS YOU FULLY UNDERSTAND THE CONSEQUENCES
@@ -62,6 +62,7 @@ const AiSubmitButton = ({
           </RoundButton>
         ) : (
           <Button
+            href={searchUrl}
             variant="outlined"
             startIcon={<IcoAi />}
             onClick={handleClick}
