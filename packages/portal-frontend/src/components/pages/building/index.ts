@@ -1,0 +1,1 @@
+export { BuildingPageContent } from './BuildingPageContent'

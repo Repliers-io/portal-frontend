@@ -1,0 +1,22 @@
+export default {
+  index: 'Overview',
+  'site-anatomy': 'Site Anatomy',
+  architecture: 'Architecture',
+  'shared-components': 'Shared Components',
+  middleware: 'Middleware',
+  'multi-tenant': 'Multi-tenant System',
+  'feature-flag-removal': 'Feature Removal',
+  'removing-growthbook': 'Removing GrowthBook',
+  exporting: 'Code Export',
+  'state-management': 'State Management',
+  'url-state-sync': 'URL & State Sync',
+  authentication: 'Authentication',
+  i18n: 'Internationalization',
+  'agent-portal': 'Agent Portal',
+  'api-services': 'API Services',
+  'data-models': 'Data Models',
+  'data-mappers': 'Data Mappers',
+  'map-overlays': 'Map Overlays',
+  development: 'Development Guide',
+  reference: 'Reference'
+}

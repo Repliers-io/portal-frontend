@@ -1,0 +1,106 @@
+import { Callout } from 'nextra/components'
+
+# API Services
+
+The frontend reaches data through a set of **service classes** under `src/services/API/`,
+each extending a shared `APIBase`. They call a **proxy backend** at `NEXT_PUBLIC_API_URL`
+(`apiUrl` = `NEXT_PUBLIC_API_URL + /api`), which forwards to the Repliers API.
+
+<Callout type="warning">
+  The frontend **never** calls the Repliers API directly — always the proxy
+  (`@configs/api` `apiUrl`). Don't hard-code Repliers hosts.
+</Callout>
+
+## Request flow (search)
+
+```
+User filters (Filters)                         services/Search/types.ts
+   │  adapter / processParams  (services/Search)
+   ▼
+Raw query params (ApiQueryParams)              services/API/types/search.ts
+   │  APISearch.fetch({ get, post })
+   ▼
+Proxy backend  →  Repliers API  →  MLS
+   ▼
+ApiQueryResponse { listings: ApiListing[], count, statistics, aggregates }
+   │  transformers (services/Search) + utils/dataMapper resolvers
+   ▼
+UI-ready listings
+```
+
+## `APIBase`
+
+`src/services/API/APIBase.ts` — the shared fetch layer every service extends:
+
+| Member                           | Purpose                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getAbsoluteUrl(url)`            | Prefixes a relative path with `apiUrl` (absolute URLs pass through).                                                                        |
+| `getHeaders()`                   | Async — sets `Content-Type`, `X-Forwarded-*` (via `getForwardedFrom`), and `Authorization: Bearer <token>` when a non-expired token exists. |
+| `fetchRaw(request, options)`     | `fetch` wrapper; on `401` clears the token, on a network failure returns a synthetic `503`.                                                 |
+| `fetchJSON<T>(request, options)` | Adds an `AbortController` timeout (`apiRequestTimeout`), parses JSON, resolves `T` on `ok`, else rejects `ApiError`. Server-side calls retry transient failures first — see below.  |
+| `ApiError(status, data)`         | Thrown on non-OK responses; carries the HTTP `status` and parsed `data`.                                                                    |
+
+### Retries on transient failures
+
+Server-side calls (build prerender, SSR, ISR regeneration) retry before surfacing an
+error: `408, 425, 429, 500, 502, 503, 504, 522, 524` — plus the synthetic `503`
+`fetchRaw` returns for aborts and network errors. Attempts are capped by
+`apiRequestRetries` (3) with a linear `apiRetryBackoff` (1s × attempt) between them,
+both from `@configs/api`. Browser calls never retry, so user-facing failures stay
+immediate.
+
+The data behind these calls is required, not optional — a page must not prerender
+with map geometry or counts silently missing, so a build fails loudly once the
+retries are exhausted.
+
+```ts
+import { APISearch } from 'services/API'
+
+const response = await APISearch.fetch({ get: params }) // → ApiQueryResponse
+```
+
+## Service classes
+
+All are exported from `services/API` (`src/services/API/index.ts`) as singletons and use
+`fetch*`-style methods (not `getX`/`postX`):
+
+| Class                                | Responsibility                                                                      |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `APISearch`                          | Listing search — `fetch()` → `/listings/search` (GET or POST) → `ApiQueryResponse`. |
+| `APIListingDetails`                  | A single listing's details + similar listings.                                      |
+| `APILocations`                       | Locations / geography (`/locations`).                                               |
+| `APIEstimate`                        | AVM estimate create / fetch.                                                        |
+| `APIFavorites` / `APIImageFavorites` | Saved listings / saved photos.                                                      |
+| `APISavedSearch`                     | Saved searches (CRUD + alerts).                                                     |
+| `APIUser` / `APIAuth`                | User profile / authentication (redirect flow, OTP).                                 |
+| `APIAgent` / `APIFubUser`            | Agent portal / Follow Up Boss user.                                                 |
+| `APIBuildings`                       | Buildings / condos data.                                                            |
+| `APIChat`                            | AI NLP — `fetchReply()` turns a query into filters.                                 |
+| `APIContact`                         | Contact-form submissions.                                                           |
+| `APIWidgets`                         | Embeddable widget content.                                                          |
+| `APIPropertyGeometry`                | Property geometry / boundaries.                                                     |
+| `APIBase` / `ApiError`               | Base fetch layer + typed error.                                                     |
+
+`locationsToGeoJson` (same folder) converts location records to GeoJSON for the map.
+
+## Transformers (where they really live)
+
+There is **no** `services/API/transformers/` directory. Filter/response transformation lives
+in:
+
+- `services/Search/` — `adapter.ts` / `transformers.ts` map `Filters` ↔ `ApiQueryParams`
+  (the `processParams` pipeline).
+- `src/utils/dataMapper/` — resolvers (condo / residential) normalize a raw `ApiListing` into
+  the detail sections the PDP renders.
+
+## Caching
+
+Data fetching is native `fetch` + Next.js caching, with a custom production cache handler
+(`cache-handler.js`, wired via `next.config.js` when `NODE_ENV=production`) backed by Redis
+(`redis`) with ISR (`revalidate`) on server routes — **not** React Query or SWR (neither is a
+dependency).
+
+## Related
+
+- [Data Models](/technical-guide/data-models) — `Filters`, `ApiListing`, and the status model.
+- [State Management](/technical-guide/state-management) — the providers that consume these services.

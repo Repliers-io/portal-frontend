@@ -1,0 +1,46 @@
+[
+  {
+    "source": "/ny",
+    "destination": "/locations"
+  },
+  {
+    "source": "/ny/:path*",
+    "destination": "/locations/:path*"
+  },
+  {
+    "source": "/privacy-policy",
+    "destination": "/page/privacy-policy"
+  },
+  {
+    "source": "/terms-of-use",
+    "destination": "/page/terms-of-use"
+  },
+  {
+    "source": "/cookies-policy",
+    "destination": "/page/cookies-policy"
+  },
+  {
+    "source": "/dmca-notice",
+    "destination": "/page/dmca-notice"
+  },
+  {
+    "source": "/accessibility",
+    "destination": "/page/accessibility"
+  },
+  {
+    "source": "/contact-us",
+    "destination": "/page/contact-us"
+  },
+  {
+    "source": "/subscribe",
+    "destination": "/page/subscribe"
+  },
+  {
+    "source": "/about",
+    "destination": "/page/about"
+  },
+  {
+    "source": "/sale",
+    "destination": "/estimate"
+  }
+]

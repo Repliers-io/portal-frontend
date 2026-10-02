@@ -1,0 +1,48 @@
+import { Callout } from 'nextra/components'
+
+# Site Anatomy
+
+A technical fast-navigation map of the site. Each row is a user-facing section; the columns
+deep-link into that section's **How it works** page — providers, component tree, and config.
+Use this when you know _what part of the app_ you're touching and want its internals.
+
+<Callout type="info">
+  The functional "what & why" of each section lives in the [Product
+  Guide](/product-guide); the technical anatomy lives on each section's **How it
+  works** sub-page. This page ties them together. Global state (app-wide
+  providers) is in [State Management](/technical-guide/state-management).
+</Callout>
+
+## Global providers
+
+Every section renders inside the app-wide provider tree (`app/_providers.tsx`):
+
+```
+NextIntl → MUI cache → Theme → UserProvider → DialogProvider → SnackbarProvider
+  → [FavoritesProvider?] → [SaveSearchProvider?] → [ImageFavoritesProvider?]
+```
+
+The last three are feature-gated at build time. Section-specific ("scoped") providers mount
+inside their own routes — see each section below and
+[State Management](/technical-guide/state-management).
+
+## Sections
+
+| Section              | Functional                                | How it works                                                                                                                                                                                                                                | Scoped providers                                                            |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Search & Map**     | [overview](/product-guide/search)         | [providers](/product-guide/search/technical#providers) · [components](/product-guide/search/technical#component-tree) · [config](/product-guide/search/technical#configuration) · [gotchas](/product-guide/search/technical#gotchas--hints) | `MapOptionsProvider` · `SearchProvider` · `AiSearchProvider`                |
+| Home (widgets)       | [overview](/product-guide/home)           | [components](/product-guide/home/technical#component-tree) · [config](/product-guide/home/technical#configuration) · [gotchas](/product-guide/home/technical#gotchas--hints)                                                                | — (global only)                                                             |
+| Listing detail (PDP) | [overview](/product-guide/listing-detail) | [providers](/product-guide/listing-detail/technical#providers) · [components](/product-guide/listing-detail/technical#component-tree) · [gotchas](/product-guide/listing-detail/technical#gotchas--hints)                                   | `ListingProvider` · `ListingDetailsProvider` · `LiveByDemographicsProvider` |
+| Estimates (AVM)      | [overview](/product-guide/estimate)       | [providers](/product-guide/estimate/technical#providers) · [components](/product-guide/estimate/technical#component-tree) · [config](/product-guide/estimate/technical#configuration)                                                       | `EstimateProvider` · `EstimateStepsProvider` · `SelectOptionsProvider`      |
+| Market dashboard     | [overview](/product-guide/dashboard)      | [providers](/product-guide/dashboard/technical#providers) · [components](/product-guide/dashboard/technical#component-tree) · [config](/product-guide/dashboard/technical#configuration)                                                    | `SearchProvider`                                                            |
+| Locations catalog    | [overview](/product-guide/locations)      | [providers](/product-guide/locations/technical#providers) · [components](/product-guide/locations/technical#component-tree) · [config](/product-guide/locations/technical#configuration)                                                    | `LocationProvider`                                                          |
+| CMS / Blog & Widgets | [overview](/product-guide/cms-content)    | [service layer](/product-guide/cms-content/technical#the-cms-service-layer) · [config](/product-guide/cms-content/technical#configuration) · [gotchas](/product-guide/cms-content/technical#gotchas--hints)                                 | `BuildingProvider` (detail); none for blog/pages                            |
+| User features        | [overview](/product-guide/user-features)  | [providers](/product-guide/user-features/technical#providers) · [config](/product-guide/user-features/technical#configuration) · [gotchas](/product-guide/user-features/technical#gotchas--hints)                                           | global favorites/saved + `SearchProvider`                                   |
+| AI Chat (built-in)   | [overview](/product-guide/ai-chat)        | [flow](/product-guide/ai-chat/technical#how-it-works) · [config](/product-guide/ai-chat/technical#configuration) · [gotchas](/product-guide/ai-chat/technical#gotchas--hints)                                                               | `ChatContent` in Search (uses `SearchProvider`)                             |
+| AI Agent (external)  | [overview](/product-guide/ai-agent)       | [protocol](/product-guide/ai-agent/technical#the-message-protocol) · [modes](/product-guide/ai-agent/technical#modes) · [config](/product-guide/ai-agent/technical#configuration)                                                           | `SupportAgent` in Search (postMessage)                                      |
+
+<Callout type="info">
+  This map is filled in section by section. **Search & Map** is the first
+  fully-wired row; the rest link to their functional pages until their **How it
+  works** sub-pages land.
+</Callout>

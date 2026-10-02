@@ -1,0 +1,29 @@
+# Webhooks
+
+`src/routes/webhooks/` — inbound callbacks from external systems. Not JWT-protected:
+each webhook has its own authorizer middleware.
+
+## Follow Up Boss — `POST /webhooks/boss/people`
+
+Authorized by `middleware.boss.webhook.auth`
+(`src/providers/middleware/boss.webhook.auth.ts`): the raw request body is verified
+against the `fub-signature` header using `BOSS_SYSTEM_KEY`; anything else gets
+`401 Invalid signature`.
+
+The handler does **not** process the change inline — `BossWebhooksService` records a
+job in the database and publishes the event to the NATS stream
+(`<stream>.people.create` / `.update` / `.delete` subjects); the
+[worker process](/architecture/events-and-messaging#nats-streams--the-worker)
+consumes it. This keeps webhook responses fast and makes processing retryable
+(`ack`/`nak` semantics).
+
+Configuration:
+
+| Variable | Purpose |
+|---|---|
+| `BOSS_WEBHOOK_ENABLED` | Master switch |
+| `BOSS_WEBHOOK_BASEURL` | Public callback base URL registered with FUB |
+| `BOSS_WEBHOOK_CLIENT_TAGS_CSV` | Tags that mark which CRM people belong to this portal |
+| `BOSS_WEBHOOK_USE_NGROK` + `NGROK_AUTHTOKEN` | Tunnel for local webhook development |
+
+See [Follow Up Boss](/integrations/follow-up-boss) for the full people-sync picture.

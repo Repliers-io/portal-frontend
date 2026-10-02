@@ -1,0 +1,85 @@
+# Events & Messaging
+
+## Respond first, report second
+
+User actions that must reach the CRM (contact forms, listing views, estimate
+requests) never block on it. Such routes chain **two** handlers:
+
+```ts
+router.post("/contactus", authMiddleware,
+  async (ctx, next) => { /* validate → service → ctx.body = "OK" */ next() },
+  (ctx, next) => {
+    const mw = ctx.state.container.resolve("middleware.eventsCollection");
+    const selector = ctx.state.container.resolve(SelectContactUsParams);
+    return mw({ selector: selector.select, options: { allowIncognito: true } })(ctx, next);
+  });
+```
+
+1. The **primary handler** does the real work and responds `OK`.
+2. The **events-collection handler** reports the interaction as a side effect — it
+   must never fail or delay the user response.
+
+- **Selectors** (`src/services/eventsCollection/selectors/`) — one per action
+  (`SelectContactUsParams`, `SelectRequestInfoParams`, `SelectScheduleParams`,
+  `SelectSubscribeNewsletterParams`, `SelectUnsubscribedParams`,
+  `selectViewPropertyParams`, …). Each maps `ctx` to a CRM event request, or `null`
+  to skip.
+- Contact selectors attach an email or phone only when present (`contactEntries` in
+  `baseEventCollectionSelector.ts`) — an instance may make either optional, and the
+  CRM must not receive an empty entry.
+- `allowIncognito: true` lets guest interactions be reported too.
+
+## EventsCollectionService
+
+`src/services/eventsCollection/eventsCollection.ts` wraps the Follow Up Boss service:
+
+- `eventsCreate(params)` — **fire-and-forget** (`.then/.catch`, no `await`; the
+  sanctioned exception to the await-everything rule). Merges
+  `config.eventsCollection.defaultEventFields`, assigns the agent and tags.
+- `noteCreate(params)` — resolves the CRM person (by explicit id, via the user's
+  `externalId`, or by email lookup), then creates a note.
+- `assignAgent` deliberately has **no default-agent fallback** — a lead must never
+  flip from its real agent to the default one.
+
+### Lead tags
+
+Tags on a created person come from three independent places:
+
+- **Carried by the request** — e.g. `/contact/contactus` accepts an optional `tags`
+  list (validated: ≤5 labels, ≤50 chars). The selector copies it into `person.tags`,
+  so a new form can name its own tags with no backend change.
+- **Derived on the server** — inquiry selectors fetch the listing and pick
+  `config.eventsCollection.formTags.inquiry.{sale|rent}` from `property.forRent`.
+- **Configured per event** — `config.eventsCollection.eventTags`, keyed by selector:
+  newsletter signup, estimate-appointment note, and unsubscribe (`PATCH /user` with
+  `preferences.unsubscribe` reports an `Unsubscribed` event). Env:
+  `SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_{SUBSCRIBE_NEWSLETTER|SCHEDULE_ESTIMATE|UNSUBSCRIBED}`.
+
+`assignTags` concatenates `defaultPersonFields.tags` with the selector's tags (unless
+`ignoreDefaultTags`).
+
+## NATS streams & the worker
+
+Asynchronous work runs through NATS JetStream in a **separate process**
+(`src/worker.ts`):
+
+- Stream definitions + workers live in `src/streams/`; the registry is
+  `streams/index.ts`. Each worker extends `StreamWorker` (`streams/worker.ts`), which
+  dispatches by message subject through an `eventMap` and handles
+  `working`/`ack`/`term`/`nak` acknowledgments.
+- The entry point connects with `p-retry`, binds to the consumer named by
+  `NATS_WORKER_CONSUMER_STREAM` / `NATS_WORKER_CONSUMER_NAME`, and consumes in an
+  endless loop that re-establishes itself on failure. A `correlationId` message
+  header is bound into the logger for tracing.
+- Today's single stream handles CRM people sync (`<stream>.people.upsert` from the
+  app, `.people.create` / `.update` / `.delete` from CRM webhooks) — see
+  [Follow Up Boss](/integrations/follow-up-boss).
+- `NATS_ENABLED=false` (the default) replaces NATS with a dummy implementation and
+  the worker exits with a warning — publishing becomes a no-op, nothing breaks.
+
+## Outbound messages
+
+OTP codes and inquiry notifications are delivered through the **Repliers Messages
+API** (`services/repliers/messages.ts`) — real emails/SMS to real people. With
+`SMTP_ENABLED=true` delivery switches to a static Gmail account
+(`services/smtp.ts`, nodemailer) — see [Email](/integrations/email).

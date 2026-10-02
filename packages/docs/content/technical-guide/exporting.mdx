@@ -1,0 +1,123 @@
+import { Callout } from 'nextra/components'
+
+# Code Export
+
+The monorepo can emit two kinds of standalone artifacts: a full **open-source** copy of the
+codebase (defaults tenant, whole monorepo) and a **single-tenant frontend** promoted to its
+own repo. Both strip the internals that must not ship and produce an installable project.
+
+<Callout type="info">
+  Pair a tenant export with [Feature
+  Removal](/technical-guide/feature-flag-removal) to produce a lean build:
+  export the tenant, then delete the code behind its disabled flags. See also
+  [Multi-tenant System](/technical-guide/multi-tenant) for how overrides
+  resolve.
+</Callout>
+
+## Two products
+
+| Command                         | Output                          | Scope                                | Use case                  |
+| ------------------------------- | ------------------------------- | ------------------------------------ | ------------------------- |
+| `pnpm copy:opensource`          | `../opensource-portal-monorepo` | Whole monorepo, `defaults` tenant    | Public OSS release        |
+| `pnpm export:frontend <tenant>` | `../<tenant>-frontend`          | Frontend only, one tenant, flat root | Standalone tenant handoff |
+
+Both share pure helpers in `scripts/oss-shared.ts` (exclusion globs, file scan, the
+`next.config` brace-matcher, package.json filtering, and the fork flattener).
+
+## Open-source monorepo export
+
+```bash
+pnpm copy:opensource
+```
+
+Runs three scripts into `../opensource-portal-monorepo`:
+
+1. **`copy-oss.ts`** — mirrors `packages/**`, keeping only the `defaults` tenant. Excludes
+   every other tenant (config folders **and** `_<tenant>/` component forks), secrets
+   (`.env*`), the override machinery (`webpack-override.js`, `turbopack-override.js`,
+   `generate-tsconfig.js`, `fetch-features.ts`), `middleware.ts`, and build/test artifacts
+   (`coverage`, `.turbo`, `test-results`, `playwright-report`). `_opensource/` override
+   folders are flattened onto their siblings.
+2. **`copy-oss-package.ts`** — rebuilds the root + frontend `package.json`: drops
+   blacklisted deps, strips instance-specific and internal scripts, and renames `dev:only` →
+   `dev` (so the shipped `dev`/`build` skip the internal prebuild).
+3. **`copy-oss-configs.ts`** — copies the config whitelist, **strips the `webpack` and
+   `turbopack` sections from `next.config.js`** (the `OverridePlugin` is internal — the export
+   runs on **Turbopack**), copies a whitelist of `public/` assets plus the root
+   `pnpm-workspace.yaml` + `.npmrc`, then generates `pnpm-lock.yaml` (`pnpm install --lockfile-only`).
+
+## Standalone tenant export
+
+```bash
+pnpm export:frontend <tenant>      # e.g. pnpm export:frontend justinhavre-avm
+```
+
+Produces `../<tenant>-frontend/` — the contents of `packages/portal-frontend` promoted to the
+repo root (no monorepo wrapper, no `ai-agent-client` / `docs` / backend). `scripts/export-frontend-tenant.ts`:
+
+1. **Mirror + filter** — copies the frontend, keeping **both** `defaults` and `<tenant>`
+   configs/content/icons, filtering every other tenant.
+2. **Flatten forks** — physically overlays `_<tenant>/` (and `_opensource/`) component forks
+   onto their default siblings, since the resolver plugin does not ship (see gotcha below).
+3. **Bake tsconfig** — writes a static, tenant-first `tsconfig.json` (`@configs`/`@content`
+   resolve `<tenant>` → `defaults`; `@icons` falls back to `defaults` when the tenant has no
+   icon overrides).
+4. **Transform `next.config.js`** — strips `webpack`/`turbopack` and rewrites
+   `outputFileTracingRoot` to `__dirname` (the frontend is now its own root).
+5. **Standalone `package.json`** — removes `workspaces`, resets `dev`/`build`/`start` to clean
+   **Turbopack** forms (no `--webpack`), and merges root-level devDeps (e.g. `@types/suncalc`)
+   that were previously hoisted.
+6. **Assets + env** — copies the default public whitelist plus `public/<tenant>/`, and writes
+   a non-secret `.env` with `NEXT_PUBLIC_APP_CONFIGURATION=<tenant>`.
+7. **Lockfile** — generates `pnpm-lock.yaml` (`pnpm install --lockfile-only`).
+
+The config **alias mechanism stays live** (tenant-first tsconfig paths), while the component
+`_<tenant>/` forks are resolved at export time by flattening.
+
+## Gotchas
+
+<Callout type="warning">
+  **Exports install with pnpm and run on Turbopack.** Both exports ship a `pnpm-lock.yaml`
+  (matching the monorepo and the Heroku deploy) — install with `pnpm install`, not npm. Because
+  the `webpack` block is stripped, the exports run on **Turbopack**; the `OverridePlugin` (and
+  `--webpack`) stay in the main repo only, where `_<tenant>/` forks still need the resolver. A
+  side effect: deep type-imports into a package's `.d.ts` tree (e.g. `recharts/types/util/types`)
+  that webpack tolerated will fail Turbopack resolution — import the type from the package's
+  public entry instead.
+</Callout>
+
+<Callout type="warning">
+  **Fork flattening rewrites relative imports.** A fork file lives one directory deeper (inside
+  `_<tenant>/`), so it is authored with an extra `..` to reach the real tree (`../components`
+  in a fork means the sibling `components/`). When flattened up a level, the flattener strips
+  one `..` from every specifier that climbs out of the fork, and removes any competing parent
+  file/dir of the same base name so the fork wins default resolution.
+</Callout>
+
+<Callout type="info">
+  **The export is the first full type-check of a tenant.** In the monorepo, `tsc` always sees
+  the `defaults` components — the `_<tenant>/` overrides are webpack-only. After a tenant export
+  the overrides are flattened in, so `pnpm --filter portal-frontend type-check` in the exported
+  folder surfaces tenant-only type issues for the first time. Only `TS2307` (module-not-found)
+  breaks the build; the rest is tolerated by `typescript.ignoreBuildErrors`.
+</Callout>
+
+<Callout type="warning">
+  **Two traps to re-audit on any rename.** (1) The copy scripts hardcode source filenames, so
+  renaming a root config or a `scripts/` file silently breaks the export — re-audit
+  `oss-shared.ts` + the three copy scripts. (2) A shared/default file that hardcodes another
+  tenant's `_<other>/` path breaks every export that strips that tenant; grep
+  `from '..._<tenant>/'` in non-fork files.
+</Callout>
+
+## After export
+
+```bash
+cd ../<tenant>-frontend
+pnpm install
+pnpm build             # or: npx tsc --noEmit -p tsconfig.json
+```
+
+A full production `build` also needs the tenant's runtime env (API proxy URL, Mapbox key,
+etc.) — the export ships only the non-secret tenant selector. To trim further, apply the
+[Feature Removal](/technical-guide/feature-flag-removal) map for the tenant's disabled flags.

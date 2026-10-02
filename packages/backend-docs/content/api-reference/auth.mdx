@@ -1,0 +1,27 @@
+# Auth
+
+`src/routes/auth.ts`. Flows and mechanics are described in
+[Architecture → Authentication](/architecture/authentication); this page is the
+endpoint map.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /auth/login` | Start OTP login — sends the code/link; the response body is a static `true` (no user enumeration). A repeat inside the resend cooldown gets `403` + `Retry-After` |
+| `POST /auth/otp` | Exchange the OTP code for a JWT |
+| `POST /auth/signup` | Create the user and send the verification email |
+| `POST /auth/refresh` | *(strict)* Issue a fresh token with the same expiration period |
+| `POST /auth/logout` | *(strict)* Revoke the token — it stays blocklisted until its natural expiry |
+| `GET /auth/:provider/url` | OAuth: URL to redirect the user to (e.g. Google) |
+| `POST /auth/:provider/cb` | OAuth callback: authorize and return a JWT |
+| `POST /auth/repliers-token` | Exchange a Repliers token for a portal JWT |
+| `POST /auth/embed` | Token flow for embedded contexts |
+
+Notes:
+
+- `router.param("provider")` validates the provider segment before any `:provider`
+  route runs.
+- Logout blocklists the token's `jti` (`repository/blocklist.ts`); koa-jwt's
+  `isRevoked` hook (`providers/middleware/jwt/config.ts`) checks it on every
+  authenticated request — the stateless-JWT escape hatch.
+- With `AUTH_EMAILTOKEN_ENABLED`, long-lived email tokens act as login credentials;
+  `AUTH_EMAILTOKEN_AUTO_OTP` re-sends a fresh OTP when an expired token is presented.

@@ -1,0 +1,84 @@
+# Portal Technical Guide
+
+**Version:** 1.1
+**Last Updated:** July 2026
+**Audience:** Frontend Developers
+
+## Overview
+
+Portal is a Next.js frontend application that provides property search websites for real estate professionals. The frontend never calls the Repliers MLS API directly: it talks to a proxy backend (`NEXT_PUBLIC_API_URL`), which forwards requests to the Repliers API. It supports multiple client deployments through a multi-tenant architecture.
+
+## Tech Stack
+
+| Category            | Technology                                   |
+| ------------------- | -------------------------------------------- |
+| **Framework**       | Next.js 16 (App Router)                      |
+| **Language**        | TypeScript                                   |
+| **UI Library**      | MUI v7 (Material UI)                         |
+| **Styling**         | Emotion (CSS-in-JS)                          |
+| **Maps**            | Mapbox GL, Mapbox GL Draw                    |
+| **Forms**           | React Hook Form + Joi validation             |
+| **i18n**            | next-intl                                    |
+| **State**           | React Context (Providers)                    |
+| **Node**            | 22+ (the frontend pins engines.node to 24.x) |
+| **Package Manager** | pnpm 10+                                     |
+
+## Key Concepts
+
+| Concept              | Description                                       |
+| -------------------- | ------------------------------------------------- |
+| **Multi-tenant**     | One codebase serves multiple branded client sites |
+| **Override Pattern** | Tenant-specific files override defaults           |
+| **Providers**        | React Context for global state management         |
+| **API Services**     | Modules for Repliers API communication            |
+| **Feature Flags**    | Toggle features per tenant                        |
+
+## Quick Links
+
+| Topic                                                     | Description                            |
+| --------------------------------------------------------- | -------------------------------------- |
+| [Architecture](/technical-guide/architecture)             | Monorepo structure, components, routes |
+| [Multi-tenant](/technical-guide/multi-tenant)             | Override pattern, path aliases         |
+| [Content Management](/technical-guide/content-management) | CMS clients, MDX, fallback system      |
+| [State Management](/technical-guide/state-management)     | Providers, hooks, context              |
+| [API Services](/technical-guide/api-services)             | Repliers API, data flow                |
+| [Data Models](/technical-guide/data-models)               | Types, transformers                    |
+| [Development](/technical-guide/development)               | Setup, commands, env vars              |
+| [Reference](/technical-guide/reference)                   | Statuses, types, flags                 |
+
+## Architecture at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         PORTAL                               │
+│                      (Next.js App)                           │
+├─────────────────────────────────────────────────────────────┤
+│  Components  │  Providers  │  Services  │  Configs          │
+└──────────────┴─────────────┴────────────┴───────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     PROXY BACKEND                            │
+│                   (NEXT_PUBLIC_API_URL)                      │
+├─────────────────────────────────────────────────────────────┤
+│         Forwards frontend requests to the Repliers API      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      REPLIERS API                            │
+├─────────────────────────────────────────────────────────────┤
+│  Listings  │  Users  │  Favorites  │  Estimates  │  Search  │
+└────────────┴─────────┴─────────────┴─────────────┴──────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       MLS DATA                               │
+│              (NWMLS, TRREB, CREB, etc.)                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Related Documentation
+
+- [Product Guide](/product-guide) - Features, user flows, business context
+- [Glossary](/glossary) - Real estate terminology

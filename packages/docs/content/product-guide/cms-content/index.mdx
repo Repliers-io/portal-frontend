@@ -1,0 +1,58 @@
+import { Callout } from 'nextra/components'
+
+# Blog & CMS
+
+Portal renders **editorial content** (blog) and **static/marketing pages** from an external
+CMS, with local files as a fallback. The CMS is **pluggable** — it is not tied to WordPress.
+
+<Callout type="info">
+  Building or debugging this? See [How it
+  works](/product-guide/cms-content/technical) for the CMS service layer,
+  per-route resolution, and config. For the "which source, when" guide see
+  [Content Management](/product-guide/content-management).
+</Callout>
+
+## Not WordPress-only
+
+A tenant chooses a CMS **client per content type** (blog vs pages). Portal ships three:
+
+| Client        | Typical use                                                                      |
+| ------------- | -------------------------------------------------------------------------------- |
+| **WordPress** | Full blog + pages via the WP REST API (posts, categories, tags, authors, menus). |
+| **Ghost**     | Headless editorial content via the Ghost Content API.                            |
+| **Markdown**  | Simpler content served as Markdown.                                              |
+
+If the CMS has no entry for a requested page, Portal falls back to a **local file** in the
+codebase. Legal pages (terms, privacy, cookies, DMCA, accessibility) are intentionally
+**local-only** and version-controlled.
+
+## Static pages go through the CMS too
+
+It's not just the blog. The `/page/*` and `/pages/*` routes — About, Contact, marketing and
+custom pages — resolve through the **same CMS layer**, each with a rule:
+
+| Rule          | Meaning                   | Example                                            |
+| ------------- | ------------------------- | -------------------------------------------------- |
+| `localOnly`   | Always the local file     | terms, privacy, cookies                            |
+| `remoteOnly`  | Always the CMS            | everything under `blog/*`                          |
+| `remoteFirst` | CMS first, local fallback | about, contact, and the default for any other page |
+
+So the same page can be edited by a content team in the CMS or shipped in the repo, and the
+route decides which wins. The exact rules live in `@configs/cms` — see
+[How it works → Configuration](/product-guide/cms-content/technical#configuration).
+
+## What you get
+
+- **Blog** — index, posts, categories, tags, and author pages (`/blog/*`, `/authors`, `/author/*`).
+- **Static & marketing pages** — `/page/*`, `/pages/*` with breadcrumbs and hierarchy.
+- **Navigation from CMS** — menus can be sourced from WordPress.
+- **Embeddable widgets** — `/widgets/*` render CMS-driven blocks for external embedding.
+
+## Configuration
+
+| Config / env                           | Drives                                                            |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| `@configs/cms`                         | Per-route resolution rules (local vs remote).                     |
+| `@configs/blog`                        | Blog module options.                                              |
+| `CMS_PAGES_CLIENT` / `CMS_BLOG_CLIENT` | Which client (wordpress / ghost / markdown) serves pages vs blog. |
+| `WORDPRESS_API_*` / `GHOST_API_*`      | Credentials/endpoints for the chosen client.                      |

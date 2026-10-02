@@ -1,6 +1,0 @@
-export { default as AddressSection } from './AddressSection'
-export { default as ContactsSection } from './ContactsSection'
-export { default as ExpensesSection } from './ExpensesSection'
-export { default as IntentionsSection } from './IntentionsSection'
-export { default as LotInformationSection } from './LotInformationSection'
-export { default as MortgageSection } from './MortgageSection'

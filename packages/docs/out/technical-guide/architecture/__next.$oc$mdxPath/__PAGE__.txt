@@ -1,0 +1,228 @@
+1:"$Sreact.fragment"
+2:I[27700,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"TOCProvider"]
+3:I[18237,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"Sidebar"]
+4:I[76076,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"ClientWrapper"]
+9:I[63896,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"HeadingAnchor"]
+a:I[42924,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"ToggleWordWrapButton"]
+b:I[61084,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"CopyToClipboard"]
+1b:I[63294,["/repliers-portal-docs/_next/static/chunks/40h66zs-j2gl-.js","/repliers-portal-docs/_next/static/chunks/26tj21i6d0-_3.js","/repliers-portal-docs/_next/static/chunks/3s-is4py9nvrd.js","/repliers-portal-docs/_next/static/chunks/1geke5vehsrwb.js","/repliers-portal-docs/_next/static/chunks/2c67_a5wnxh8l.js"],"OutletBoundary"]
+1c:"$Sreact.suspense"
+5:T1dd3,# Architecture
+
+Portal is organized as a monorepo with a clear separation between components, routes, and configurations.
+
+## Monorepo Structure
+
+```
+/smartmls-frontend
+│
+├── packages/
+│   ├── portal-frontend/          ← Next.js application (main)
+│   │   ├── src/
+│   │   │   ├── app/                  Next.js App Router (routes)
+│   │   │   ├── components/           UI components
+│   │   │   ├── configs/              Tenant configurations
+│   │   │   ├── providers/            React Context providers
+│   │   │   ├── services/             API clients
+│   │   │   ├── hooks/                Custom React hooks
+│   │   │   ├── utils/                Utility functions
+│   │   │   ├── features/             Feature flags
+│   │   │   └── i18n/                 Translations
+│   │   └── ...
+│   │
+│   ├── ai-agent-client/          ← Vite + React (AI agent)
+│   │
+│   └── docs/                     ← Nextra documentation (this site)
+│
+├── package.json                  ← Root package.json (workspaces)
+└── CLAUDE.md                     ← AI assistant instructions
+```
+
+## Components Structure
+
+```
+/src/components/
+│
+├── pages/                         ← PAGE CONTENT (most work happens here)
+│   ├── home/
+│   │   ├── HomePageContent.tsx       ← Default implementation
+│   │   ├── _<tenant>/
+│   │   │   └── HomePageContent.tsx   ← Tenant override
+│   │   └── components/
+│   │       ├── HeroBanner.tsx
+│   │       ├── FeaturedProperties.tsx
+│   │       └── ...
+│   ├── search/
+│   ├── listing/                      ← PDP (Property Details Page)
+│   ├── estimate/
+│   ├── blog/
+│   └── dashboard/
+│
+├── templates/                     ← LAYOUT TEMPLATES
+│   ├── Header/
+│   │   ├── Header.tsx
+│   │   ├── _<tenant>/Header.tsx      ← Tenant override
+│   │   └── components/
+│   ├── Footer/
+│   └── PageTemplate/
+│
+├── shared/                        ← REUSABLE COMPONENTS
+│   ├── Cards/
+│   │   ├── PropertyCard.tsx
+│   │   └── PropertyCardSkeleton.tsx
+│   ├── Filters/
+│   ├── Map/
+│   ├── Stats/
+│   └── CmsWidgets/
+│
+└── atoms/                         ← BASE UI ELEMENTS
+    └── Button, Input, Typography, etc.
+```
+
+### Component Placement Guide
+
+| Folder       | When to Use                                  |
+| ------------ | -------------------------------------------- |
+| `pages/`     | Page-specific content and components         |
+| `templates/` | Layout components (Header, Footer, wrappers) |
+| `shared/`    | Components used on 2+ pages                  |
+| `atoms/`     | Base UI elements (rarely changed)            |
+
+## App Router (Routes)
+
+```
+/app
+│
+├── /                              ← HOME PAGE
+│   └── Landing with search, featured properties
+│
+├── /search/[layout]               ← SEARCH PAGE
+│   ├── /search/map                    Map view
+│   └── /search/grid                   Grid cards view
+│
+├── /listing/[[...listingName]]    ← PROPERTY DETAILS (PDP)
+│   └── Full property information page
+│
+├── /locations/[[...slugs]]        ← LOCATION CATALOG
+│   ├── /locations/                    All regions
+│   ├── /locations/[area]/             Region (King County)
+│   ├── /locations/[area]/[city]/      City (Seattle)
+│   └── /locations/[area]/[city]/[neighborhood]/
+│
+├── /blog                          ← BLOG
+│   ├── /blog/                         Article list
+│   ├── /blog/[slug]                   Single article
+│   └── /blog/category/[cat]           Category page
+│
+├── /pages/[slug]                  ← CMS PAGES
+│   └── Dynamic WordPress pages
+│
+├── /estimate                      ← HOME VALUATION
+├── /dashboard                     ← MARKET DASHBOARD
+├── /favorites                     ← USER FAVORITES
+├── /saved-searches                ← SAVED SEARCHES
+├── /recently-viewed               ← RECENTLY VIEWED
+├── /profile                       ← USER PROFILE
+├── /login                         ← AUTHENTICATION
+│
+└── /(StaticPages)                 ← STATIC PAGES (route group)
+    ├── /about
+    ├── /contact-us
+    ├── /privacy-policy
+    └── /terms-of-use
+```
+
+## Route Groups
+
+Next.js App Router uses route groups (folders with parentheses) for organization without affecting URLs:
+
+| Route Group     | Purpose                              |
+| --------------- | ------------------------------------ |
+| `(ClientPages)` | Pages requiring client-side features |
+| `(StaticPages)` | Static marketing pages               |
+| `(Estimates)`   | Estimate flow pages                  |
+
+## File Conventions
+
+| File            | Purpose               |
+| --------------- | --------------------- |
+| `page.tsx`      | Route page component  |
+| `layout.tsx`    | Shared layout wrapper |
+| `loading.tsx`   | Loading UI            |
+| `error.tsx`     | Error boundary        |
+| `not-found.tsx` | 404 page              |
+
+## Import Aliases
+
+| Alias          | Resolves To                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `@configs/*`   | `src/configs/[tenant]/*` → `src/configs/defaults/*`           |
+| `@content/*`   | `src/content/[tenant]/*` → `src/content/defaults/*`           |
+| `@icons/*`     | `src/assets/icons/[tenant]/*` → `src/assets/icons/defaults/*` |
+| `@defaults/*`  | `src/configs/defaults/*` (always)                             |
+| `@templates`   | `src/components/templates`                                    |
+| `@templates/*` | `src/components/templates/components/*`                       |
+| `@pages/*`     | `src/components/pages/*`                                      |
+| `@shared/*`    | `src/components/shared/*`                                     |
+
+## Build Process
+
+```
+pnpm frontend:dev
+        │
+        ▼
+┌───────────────────┐
+│  prebuild script  │
+│  ┌─────────────┐  │
+│  │ generate:   │  │  Reads NEXT_PUBLIC_APP_CONFIGURATION
+│  │ tsconfig    │  │  Generates tsconfig.json with paths
+│  └─────────────┘  │
+│  ┌─────────────┐  │
+│  │ generate:   │  │  Generates static feature flags
+│  │ features    │  │
+│  └─────────────┘  │
+│  ┌─────────────┐  │
+│  │ generate:   │  │  Generates rewrites.generated.json
+│  │ rewrites    │  │
+│  └─────────────┘  │
+│  ┌─────────────┐  │
+│  │ generate:   │  │  Generates the deployment id
+│  │ deployment- │  │
+│  │ id          │  │
+│  └─────────────┘  │
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│   next dev        │
+│   (development)   │
+└───────────────────┘
+```0:{"rsc":["$","$1","c",{"children":[["$","div",null,{"className":"x:mx-auto x:flex x:max-w-(--nextra-content-width)","children":["$","$L2",null,{"value":[{"value":"Monorepo Structure","id":"monorepo-structure","depth":2},{"value":"Components Structure","id":"components-structure","depth":2},{"value":"Component Placement Guide","id":"component-placement-guide","depth":3},{"value":"App Router (Routes)","id":"app-router-routes","depth":2},{"value":"Route Groups","id":"route-groups","depth":2},{"value":"File Conventions","id":"file-conventions","depth":2},{"value":"Import Aliases","id":"import-aliases","depth":2},{"value":"Build Process","id":"build-process","depth":2}],"children":[["$","$L3",null,{}],["$","$L4",null,{"metadata":{"title":"Architecture","filePath":"content/technical-guide/architecture.mdx","timestamp":1783004847000},"sourceCode":"$5","children":["$L6","$L7"]}]]}]}],null,"$L8"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Z11uwPfePAvnTB8P3pPB1"}
+6:["$","div",null,{"id":"nextra-skip-nav"}]
+7:["$","main",null,{"data-pagefind-body":true,"children":[["$","h1",null,{"className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-bold x:mt-2 x:text-4xl","children":["Architecture","$undefined"]}],"\n",["$","p",null,{"className":"x:not-first:mt-[1.25em] x:leading-7","children":"Portal is organized as a monorepo with a clear separation between components, routes, and configurations."}],"\n",["$","h2",null,{"id":"monorepo-structure","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["Monorepo Structure",["$","$L9",null,{"id":"monorepo-structure"}]]}],"\n",["$","div",null,{"data-pagefind-ignore":"all","className":"nextra-code x:relative x:not-first:mt-[1.25em]","children":["$undefined",["$","pre",null,{"className":"x:group x:focus-visible:nextra-focus x:overflow-x-auto x:subpixel-antialiased x:text-[.9em] x:bg-white x:dark:bg-black x:py-4 x:ring-1 x:ring-inset x:ring-gray-300 x:dark:ring-neutral-700 x:contrast-more:ring-gray-900 x:contrast-more:dark:ring-gray-50 x:contrast-more:contrast-150 x:rounded-md not-prose","tabIndex":"0","children":[["$","div",null,{"className":"x:group-hover:opacity-100 x:group-focus:opacity-100 x:opacity-0 x:transition x:focus-within:opacity-100 x:flex x:gap-1 x:absolute x:right-4 x:top-2","children":[["$","$La",null,{"children":["$","svg",null,{"viewBox":"0 0 24 24","fill":"currentColor","height":"1em","children":["$","path",null,{"d":"M4 19h6v-2H4v2zM20 5H4v2h16V5zm-3 6H4v2h13.25c1.1 0 2 .9 2 2s-.9 2-2 2H15v-2l-3 3l3 3v-2h2c2.21 0 4-1.79 4-4s-1.79-4-4-4z"}]}]}],["$","$Lb",null,{"className":""}]]}],["$","code",null,{"className":"nextra-code","dir":"ltr","children":[["$","span",null,{"children":["$","span",null,{"children":"/smartmls-frontend"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── packages/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── portal-frontend/          ← Next.js application (main)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   ├── src/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── app/                  Next.js App Router (routes)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── components/           UI components"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── configs/              Tenant configurations"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── providers/            React Context providers"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── services/             API clients"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── hooks/                Custom React hooks"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── utils/                Utility functions"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   ├── features/             Feature flags"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   └── i18n/                 Translations"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   └── ..."}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── ai-agent-client/          ← Vite + React (AI agent)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── docs/                     ← Nextra documentation (this site)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── package.json                  ← Root package.json (workspaces)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"└── CLAUDE.md                     ← AI assistant instructions"}]}]]}]]}]]}],"\n",["$","h2",null,{"id":"components-structure","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["Components Structure","$Lc"]}],"\n","$Ld","\n","$Le","\n","$Lf","\n","$L10","\n","$L11","\n","$L12","\n","$L13","\n","$L14","\n","$L15","\n","$L16","\n","$L17","\n","$L18","\n","$L19","\n","$L1a"]}]
+8:["$","$L1b",null,{"children":["$","$1c",null,{"name":"Next.MetadataOutlet","children":"$@1d"}]}]
+c:["$","$L9",null,{"id":"components-structure"}]
+d:["$","div",null,{"data-pagefind-ignore":"all","className":"nextra-code x:relative x:not-first:mt-[1.25em]","children":["$undefined",["$","pre",null,{"className":"x:group x:focus-visible:nextra-focus x:overflow-x-auto x:subpixel-antialiased x:text-[.9em] x:bg-white x:dark:bg-black x:py-4 x:ring-1 x:ring-inset x:ring-gray-300 x:dark:ring-neutral-700 x:contrast-more:ring-gray-900 x:contrast-more:dark:ring-gray-50 x:contrast-more:contrast-150 x:rounded-md not-prose","tabIndex":"0","children":[["$","div",null,{"className":"x:group-hover:opacity-100 x:group-focus:opacity-100 x:opacity-0 x:transition x:focus-within:opacity-100 x:flex x:gap-1 x:absolute x:right-4 x:top-2","children":[["$","$La",null,{"children":["$","svg",null,{"viewBox":"0 0 24 24","fill":"currentColor","height":"1em","children":["$","path",null,{"d":"M4 19h6v-2H4v2zM20 5H4v2h16V5zm-3 6H4v2h13.25c1.1 0 2 .9 2 2s-.9 2-2 2H15v-2l-3 3l3 3v-2h2c2.21 0 4-1.79 4-4s-1.79-4-4-4z"}]}]}],["$","$Lb",null,{"className":""}]]}],["$","code",null,{"className":"nextra-code","dir":"ltr","children":[["$","span",null,{"children":["$","span",null,{"children":"/src/components/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── pages/                         ← PAGE CONTENT (most work happens here)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── home/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   ├── HomePageContent.tsx       ← Default implementation"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   ├── _<tenant>/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   │   └── HomePageContent.tsx   ← Tenant override"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   └── components/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │       ├── HeroBanner.tsx"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │       ├── FeaturedProperties.tsx"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │       └── ..."}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── search/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── listing/                      ← PDP (Property Details Page)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── estimate/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── blog/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── dashboard/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── templates/                     ← LAYOUT TEMPLATES"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── Header/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   ├── Header.tsx"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   ├── _<tenant>/Header.tsx      ← Tenant override"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   └── components/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── Footer/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── PageTemplate/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── shared/                        ← REUSABLE COMPONENTS"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── Cards/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   ├── PropertyCard.tsx"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   │   └── PropertyCardSkeleton.tsx"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── Filters/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── Map/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── Stats/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── CmsWidgets/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"└── atoms/                         ← BASE UI ELEMENTS"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"    └── Button, Input, Typography, etc."}]}]]}]]}]]}]
+e:["$","h3",null,{"id":"component-placement-guide","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-8 x:text-2xl","children":["Component Placement Guide",["$","$L9",null,{"id":"component-placement-guide"}]]}]
+f:["$","table",null,{"className":"x:block x:overflow-x-auto nextra-scrollbar x:not-first:mt-[1.25em] x:p-0","children":[["$","thead",null,{"children":["$","tr",null,{"children":[["$","th",null,{"children":"Folder","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}],["$","th",null,{"children":"When to Use","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]}],["$","tbody",null,{"children":[["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"pages/"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Page-specific content and components","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"templates/"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Layout components (Header, Footer, wrappers)","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"shared/"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Components used on 2+ pages","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"atoms/"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Base UI elements (rarely changed)","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]]}]]}]
+10:["$","h2",null,{"id":"app-router-routes","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["App Router (Routes)",["$","$L9",null,{"id":"app-router-routes"}]]}]
+11:["$","div",null,{"data-pagefind-ignore":"all","className":"nextra-code x:relative x:not-first:mt-[1.25em]","children":["$undefined",["$","pre",null,{"className":"x:group x:focus-visible:nextra-focus x:overflow-x-auto x:subpixel-antialiased x:text-[.9em] x:bg-white x:dark:bg-black x:py-4 x:ring-1 x:ring-inset x:ring-gray-300 x:dark:ring-neutral-700 x:contrast-more:ring-gray-900 x:contrast-more:dark:ring-gray-50 x:contrast-more:contrast-150 x:rounded-md not-prose","tabIndex":"0","children":[["$","div",null,{"className":"x:group-hover:opacity-100 x:group-focus:opacity-100 x:opacity-0 x:transition x:focus-within:opacity-100 x:flex x:gap-1 x:absolute x:right-4 x:top-2","children":[["$","$La",null,{"children":["$","svg",null,{"viewBox":"0 0 24 24","fill":"currentColor","height":"1em","children":["$","path",null,{"d":"M4 19h6v-2H4v2zM20 5H4v2h16V5zm-3 6H4v2h13.25c1.1 0 2 .9 2 2s-.9 2-2 2H15v-2l-3 3l3 3v-2h2c2.21 0 4-1.79 4-4s-1.79-4-4-4z"}]}]}],["$","$Lb",null,{"className":""}]]}],["$","code",null,{"className":"nextra-code","dir":"ltr","children":[["$","span",null,{"children":["$","span",null,{"children":"/app"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /                              ← HOME PAGE"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── Landing with search, featured properties"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /search/[layout]               ← SEARCH PAGE"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── /search/map                    Map view"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── /search/grid                   Grid cards view"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /listing/[[...listingName]]    ← PROPERTY DETAILS (PDP)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── Full property information page"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /locations/[[...slugs]]        ← LOCATION CATALOG"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── /locations/                    All regions"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── /locations/[area]/             Region (King County)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── /locations/[area]/[city]/      City (Seattle)"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── /locations/[area]/[city]/[neighborhood]/"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /blog                          ← BLOG"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── /blog/                         Article list"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   ├── /blog/[slug]                   Single article"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── /blog/category/[cat]           Category page"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /pages/[slug]                  ← CMS PAGES"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   └── Dynamic WordPress pages"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /estimate                      ← HOME VALUATION"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /dashboard                     ← MARKET DASHBOARD"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /favorites                     ← USER FAVORITES"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /saved-searches                ← SAVED SEARCHES"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /recently-viewed               ← RECENTLY VIEWED"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"├── /profile                       ← USER PROFILE"}]}],"\n","$L1e","\n","$L1f","\n","$L20","\n","$L21","\n","$L22","\n","$L23","\n","$L24"]}]]}]]}]
+12:["$","h2",null,{"id":"route-groups","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["Route Groups",["$","$L9",null,{"id":"route-groups"}]]}]
+13:["$","p",null,{"className":"x:not-first:mt-[1.25em] x:leading-7","children":"Next.js App Router uses route groups (folders with parentheses) for organization without affecting URLs:"}]
+14:["$","table",null,{"className":"x:block x:overflow-x-auto nextra-scrollbar x:not-first:mt-[1.25em] x:p-0","children":[["$","thead",null,{"children":["$","tr",null,{"children":[["$","th",null,{"children":"Route Group","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}],["$","th",null,{"children":"Purpose","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]}],["$","tbody",null,{"children":[["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"(ClientPages)"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Pages requiring client-side features","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"(StaticPages)"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Static marketing pages","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"(Estimates)"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Estimate flow pages","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]]}]]}]
+15:["$","h2",null,{"id":"file-conventions","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["File Conventions",["$","$L9",null,{"id":"file-conventions"}]]}]
+16:["$","table",null,{"className":"x:block x:overflow-x-auto nextra-scrollbar x:not-first:mt-[1.25em] x:p-0","children":[["$","thead",null,{"children":["$","tr",null,{"children":[["$","th",null,{"children":"File","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}],["$","th",null,{"children":"Purpose","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]}],["$","tbody",null,{"children":[["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"page.tsx"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Route page component","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"layout.tsx"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Shared layout wrapper","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"loading.tsx"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Loading UI","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"error.tsx"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"Error boundary","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"not-found.tsx"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":"404 page","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]]}]]}]
+17:["$","h2",null,{"id":"import-aliases","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["Import Aliases",["$","$L9",null,{"id":"import-aliases"}]]}]
+18:["$","table",null,{"className":"x:block x:overflow-x-auto nextra-scrollbar x:not-first:mt-[1.25em] x:p-0","children":[["$","thead",null,{"children":["$","tr",null,{"children":[["$","th",null,{"children":"Alias","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}],["$","th",null,{"children":"Resolves To","className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:font-semibold x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]}],["$","tbody",null,{"children":[["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@configs/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":[["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/configs/[tenant]/*"}]," → ",["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/configs/defaults/*"}]],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@content/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":[["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/content/[tenant]/*"}]," → ",["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/content/defaults/*"}]],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@icons/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":[["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/assets/icons/[tenant]/*"}]," → ",["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/assets/icons/defaults/*"}]],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@defaults/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":[["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/configs/defaults/*"}]," (always)"],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@templates"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/components/templates"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@templates/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/components/templates/components/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}],"$L25","$L26"]}]]}]
+19:["$","h2",null,{"id":"build-process","className":"x:tracking-tight x:text-slate-900 x:dark:text-slate-100 x:font-semibold x:target:animate-[fade-in_1.5s] x:mt-10 x:border-b x:pb-1 x:text-3xl nextra-border","children":["Build Process",["$","$L9",null,{"id":"build-process"}]]}]
+1a:["$","div",null,{"data-pagefind-ignore":"all","className":"nextra-code x:relative x:not-first:mt-[1.25em]","children":["$undefined",["$","pre",null,{"className":"x:group x:focus-visible:nextra-focus x:overflow-x-auto x:subpixel-antialiased x:text-[.9em] x:bg-white x:dark:bg-black x:py-4 x:ring-1 x:ring-inset x:ring-gray-300 x:dark:ring-neutral-700 x:contrast-more:ring-gray-900 x:contrast-more:dark:ring-gray-50 x:contrast-more:contrast-150 x:rounded-md not-prose","tabIndex":"0","children":[["$","div",null,{"className":"x:group-hover:opacity-100 x:group-focus:opacity-100 x:opacity-0 x:transition x:focus-within:opacity-100 x:flex x:gap-1 x:absolute x:right-4 x:top-2","children":[["$","$La",null,{"children":["$","svg",null,{"viewBox":"0 0 24 24","fill":"currentColor","height":"1em","children":["$","path",null,{"d":"M4 19h6v-2H4v2zM20 5H4v2h16V5zm-3 6H4v2h13.25c1.1 0 2 .9 2 2s-.9 2-2 2H15v-2l-3 3l3 3v-2h2c2.21 0 4-1.79 4-4s-1.79-4-4-4z"}]}]}],["$","$Lb",null,{"className":""}]]}],["$","code",null,{"className":"nextra-code","dir":"ltr","children":[["$","span",null,{"children":["$","span",null,{"children":"pnpm frontend:dev"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"        │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"        ▼"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"┌───────────────────┐"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  prebuild script  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  ┌─────────────┐  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ generate:   │  │  Reads NEXT_PUBLIC_APP_CONFIGURATION"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ tsconfig    │  │  Generates tsconfig.json with paths"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  └─────────────┘  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  ┌─────────────┐  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ generate:   │  │  Generates static feature flags"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ features    │  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  └─────────────┘  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  ┌─────────────┐  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ generate:   │  │  Generates rewrites.generated.json"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ rewrites    │  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  └─────────────┘  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  ┌─────────────┐  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ generate:   │  │  Generates the deployment id"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ deployment- │  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  │ id          │  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│  └─────────────┘  │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"└─────────┬─────────┘"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"          │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"          ▼"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"┌───────────────────┐"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   next dev        │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"│   (development)   │"}]}],"\n",["$","span",null,{"children":["$","span",null,{"children":"└───────────────────┘"}]}]]}]]}]]}]
+1d:null
+1e:["$","span",null,{"children":["$","span",null,{"children":"├── /login                         ← AUTHENTICATION"}]}]
+1f:["$","span",null,{"children":["$","span",null,{"children":"│"}]}]
+20:["$","span",null,{"children":["$","span",null,{"children":"└── /(StaticPages)                 ← STATIC PAGES (route group)"}]}]
+21:["$","span",null,{"children":["$","span",null,{"children":"    ├── /about"}]}]
+22:["$","span",null,{"children":["$","span",null,{"children":"    ├── /contact-us"}]}]
+23:["$","span",null,{"children":["$","span",null,{"children":"    ├── /privacy-policy"}]}]
+24:["$","span",null,{"children":["$","span",null,{"children":"    └── /terms-of-use"}]}]
+25:["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@pages/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/components/pages/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]
+26:["$","tr",null,{"children":[["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"@shared/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}],["$","td",null,{"children":["$","code",null,{"className":"nextra-code","dir":"ltr","children":"src/components/shared/*"}],"className":"x:m-0 x:border x:border-gray-300 x:px-4 x:py-2 x:dark:border-gray-600"}]],"className":"x:m-0 x:border-t x:border-gray-300 x:p-0 x:dark:border-gray-600 x:even:bg-gray-100 x:even:dark:bg-gray-600/20"}]

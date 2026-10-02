@@ -1,0 +1,91 @@
+import { Callout } from 'nextra/components'
+
+# Removing GrowthBook
+
+Feature flags are **already fully static at runtime** — the app reads
+`src/configs/<tenant>/features.ts` (tenant-first, then `defaults`) via `@configs/features`.
+GrowthBook is used **only at build time** by `scripts/fetch-features.ts` (`generate:features`,
+run from `prebuild`), which re-syncs those committed config files. When offline or without a
+client key it skips and uses the committed configs, so the build never depends on the service.
+
+<Callout type="info">
+  Removing GrowthBook changes nothing at runtime — it only drops the optional
+  build-time sync. See [Capabilities &
+  Flags](/getting-started/capabilities-and-flags#how-flags-are-set) for how the
+  sync works. After removal, `features.ts` is edited by hand.
+</Callout>
+
+## Checklist
+
+### 1. `packages/portal-frontend/package.json` (required)
+
+Drop the `generate:features` step from `prebuild`:
+
+```diff
+- "prebuild": "pnpm run generate:tsconfig && pnpm run generate:features && pnpm run generate:rewrites && pnpm run generate:deployment-id",
++ "prebuild": "pnpm run generate:tsconfig && pnpm run generate:rewrites && pnpm run generate:deployment-id",
+```
+
+Remove the two scripts and the dependency:
+
+```jsonc
+"generate:features": "tsx scripts/fetch-features.ts",
+"generate:features:all": "tsx scripts/fetch-features.ts --all",
+// ...
+"@growthbook/growthbook": "^1.6.5",
+```
+
+### 2. Delete the only importer (required)
+
+```
+packages/portal-frontend/scripts/fetch-features.ts
+```
+
+### 3. Dead-code cleanup (optional but recommended)
+
+These reference GrowthBook but are already inert:
+
+- `src/configs/defaults/storage.ts` — remove `growthBookKey: 'growthbook'` (used only by the disabled cookie in `proxy.ts`).
+- `src/proxy.ts` — remove the two commented `storageConfig` / `growthBookKey` lines, the `GrowthBook UUID cookie (disabled …)` doc-comment bullet, and the disabled cookie block before `return NextResponse.next()`.
+- `src/configs/defaults/rewrites.ts` — the header comment mentions "GrowthBook features"; change to "static feature flags".
+- `scripts/generate-rewrites.ts` — drop the `(same convention as fetch-features.ts)` note.
+
+### 4. Refresh the lockfile (required)
+
+```bash
+pnpm install
+```
+
+Removes `@growthbook/growthbook` from `pnpm-lock.yaml`.
+
+### 5. Environment variables (optional)
+
+`NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY`, `NEXT_PUBLIC_GROWTHBOOK_API_HOST`,
+`NEXT_PUBLIC_GROWTHBOOK_INIT` in the `.env.*` files become unused and can be deleted. They are
+secrets — never commit them regardless.
+
+## Verify
+
+No source references remain:
+
+```bash
+grep -rni growthbook packages/portal-frontend/src packages/portal-frontend/scripts
+```
+
+(should return nothing, or only text inside committed `features.ts` comments). Then confirm
+the type-check is unchanged:
+
+```bash
+pnpm --filter portal-frontend type-check
+```
+
+The app still boots and flags resolve — now solely from the committed
+`src/configs/<tenant>/features.ts`.
+
+## After removal
+
+<Callout type="warning">
+  `features.ts` files become the single source of truth and are edited by hand. To add or flip
+  a flag, edit `src/configs/<tenant>/features.ts` (or the `defaults` one). There is no longer a
+  command that regenerates them, and the "Generated — do not edit by hand" header no longer applies.
+</Callout>

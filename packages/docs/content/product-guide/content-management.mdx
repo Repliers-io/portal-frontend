@@ -1,0 +1,79 @@
+# Content Management
+
+Portal supports multiple content sources for flexibility and control.
+
+## Content Sources
+
+The CMS layer is **pluggable** — a tenant picks a client per content type
+(`CMS_PAGES_CLIENT` / `CMS_BLOG_CLIENT`). Portal ships three clients plus a local fallback:
+
+| Source                | Description                                      | Managed By             |
+| --------------------- | ------------------------------------------------ | ---------------------- |
+| **WordPress**         | External CMS (REST API) with admin interface     | Client or content team |
+| **Ghost**             | External headless CMS (Content API)              | Client or content team |
+| **Markdown**          | Remote/served Markdown content                   | Content team           |
+| **Local Files (MDX)** | Content in the codebase (fallback + legal pages) | Developers             |
+
+Both **blog** posts and **static pages** (`/page/*`, `/pages/*`) flow through this same CMS
+layer — see [Blog & CMS → How it works](/product-guide/cms-content/technical) for the
+per-route resolution rules (which pages are local-only, remote-only, or remote-first).
+
+## How It Works
+
+```
+User opens a page (e.g., /contact-us)
+              │
+              ▼
+    Portal checks WordPress/Ghost
+              │
+   ┌──────────┴──────────┐
+   │                     │
+Found                Not Found
+   │                     │
+   ▼                     ▼
+Render CMS          Fallback to
+content             local MDX file
+```
+
+Portal first tries to fetch content from the configured CMS (WordPress or Ghost). If the page doesn't exist there, it automatically uses local MDX files as a fallback.
+
+## When to Use What
+
+| Content Type          | Recommended Source | Reason                                  |
+| --------------------- | ------------------ | --------------------------------------- |
+| Blog posts            | WordPress          | Frequent updates, categories, SEO tools |
+| News & announcements  | WordPress          | Easy to publish quickly                 |
+| About, Services       | WordPress or MDX   | Depends on update frequency             |
+| Privacy Policy, Terms | MDX                | Rarely changes, requires legal review   |
+| Contact page          | MDX                | Uses Portal forms and widgets           |
+
+## Benefits
+
+### WordPress/Ghost
+
+- Non-technical users can edit content
+- Built-in SEO tools
+- Media management
+- Scheduling and drafts
+
+### Local MDX Files
+
+- Version controlled (Git)
+- Code review for changes
+- Can embed React components (forms, widgets)
+- No external dependency
+- Guaranteed availability
+
+## Content Types
+
+| Type         | Source           | Examples                       |
+| ------------ | ---------------- | ------------------------------ |
+| Blog Posts   | WordPress        | Market updates, buying guides  |
+| Pages        | WordPress or MDX | About, Services, Guides        |
+| Static Pages | MDX              | Privacy, Terms, Contact        |
+| Widgets      | Code             | Contact forms, Subscribe forms |
+
+## Related
+
+- [Technical Guide: Content Management](/technical-guide/content-management) — Developer documentation
+- [Integrations](/product-guide/integrations) — All external services

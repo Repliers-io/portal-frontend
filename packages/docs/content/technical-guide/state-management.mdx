@@ -1,0 +1,98 @@
+import { Callout } from 'nextra/components'
+
+# State Management
+
+Portal uses **React Context only** (no Redux/Zustand). State is split between a small set of
+**global** providers (mounted app-wide) and many **scoped** providers (mounted only inside
+the section that needs them).
+
+## Global providers
+
+Composed in `src/app/_providers.tsx`, outermost → innermost:
+
+```
+NextIntlClientProvider        i18n messages / locale / timeZone
+└─ AppRouterCacheProvider     MUI ↔ Next.js App Router cache
+   └─ ThemeProvider           MUI theme (from styles/theme + @configs/theme)
+      └─ UserProvider         auth state, profile, role, token refresh   → useUser()
+         └─ DialogProvider    modal/dialog visibility & stacking          → useDialog(name)
+            └─ SnackbarProvider  toast notifications                       → useSnackbar()
+               └─ [FavoritesProvider?]      saved listings                → useFavorites()
+                  └─ [SaveSearchProvider?]  saved searches                → useSaveSearch()
+                     └─ [ImageFavoritesProvider?]  saved photos           → useImageFavorites()
+```
+
+<Callout type="info">
+  The bottom three are **feature-gated at build time** — mounted only when
+  `features.favorites` / `features.saveSearch` / `features.imageFavorites` are
+  on for the tenant. Feature flags are static config, not a runtime provider
+  (there is no `FeaturesProvider`).
+</Callout>
+
+## Scoped providers
+
+These mount inside a specific route/template, close to where their state is used. Full
+per-section detail is on each section's **How it works** page — see [Site Anatomy](/technical-guide/site-anatomy).
+
+| Provider                                                | Hook(s)                                                                                 | Responsibility                                                                             | Mounted in                                      |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `SearchProvider`                                        | `useSearch`, `useSearchActions`                                                         | Filters, results, clusters, multi-units. Split read/write contexts.                        | Search, dashboard, locations, listing (similar) |
+| `MapOptionsProvider`                                    | `useMapOptions`, `useMapLocations`, `useMapLayers`, `useMapPopup`, `useMapPopupActions` | Map camera, style, layout, 3D, layers, popups. Inits from URL.                             | Map-backed pages                                |
+| `AiSearchProvider`                                      | `useAiSearch`                                                                           | AI image/feature search; syncs into `SearchProvider`.                                      | Search / map                                    |
+| `ListingProvider`                                       | `useListing`                                                                            | Single listing, guest restriction/blur, similar listings.                                  | `ListingPageTemplate`                           |
+| `ListingDetailsProvider`                                | `useListingDetails`                                                                     | Resolver-mapped detail sections by property class.                                         | `ListingPageTemplate`                           |
+| `LiveByDemographicsProvider`                            | `useLiveByDemographics`                                                                 | LiveBy demographics for the listing location.                                              | `ListingPageTemplate`                           |
+| `LocationProvider`                                      | `useLocationPage`, `useLocationMap`                                                     | Location metadata, tree, nearby, map focus.                                                | Locations & condos index                        |
+| `BuildingProvider`                                      | `useBuilding`                                                                           | Single building/condo (CMS).                                                               | Building/condo detail                           |
+| `EstimateProvider`                                      | `useEstimate`                                                                           | Multi-step estimate form (wraps RHF `FormProvider`), OTP.                                  | Estimate pages                                  |
+| `EstimateStepsProvider`                                 | `useEstimateSteps`                                                                      | Resolves the step components (user vs agent).                                              | Estimate pages                                  |
+| `SelectOptionsProvider`                                 | `useSelectOptions`                                                                      | Fetched select options for the estimate form.                                              | Estimate pages                                  |
+| `AgentClientsProvider` / `AgentEstimatesProvider`       | `useAgentClients` / `useAgentEstimates`                                                 | Agent portal: clients and their estimates.                                                 | Agent pages                                     |
+| `ListingEnrichmentProvider` / `PlansAndSurveysProvider` | `useListingEnrichment` / `usePlansAndSurveys`                                           | Tenant-specific listing enrichment (extra data layers from a tenant's third-party source). | Listing (tenant-specific)                       |
+
+## Consuming a provider
+
+Always read through the provider's hook (never `useContext` directly), and read from the
+narrowest hook that has what you need:
+
+```tsx
+import { useSearch, useSearchActions } from 'providers/SearchProvider'
+
+// Reader: re-renders when results/filters change
+const { listings, loading, filters } = useSearch()
+
+// Writer: stable identity — does NOT re-render on results changes
+const { setFilters } = useSearchActions()
+```
+
+<Callout type="info">
+  Several providers split into multiple contexts to control re-renders.
+  `SearchProvider` separates reads (`useSearch`) from stable writers
+  (`useSearchActions`); `MapOptionsProvider` exposes five contexts (options,
+  locations, layers, popup state, popup actions) so a marker popup update
+  doesn't re-render the whole map tree.
+</Callout>
+
+## Provider structure
+
+Multi-file providers follow this shape:
+
+```
+src/providers/SearchProvider/
+├── SearchProvider.tsx     provider component (+ split contexts)
+├── types.ts               context value types
+├── mock.ts                default/mock context values
+└── index.ts               exports (provider + hooks)
+```
+
+Simpler providers are a single file (e.g. `src/providers/UserProvider.tsx`).
+
+## Best practices
+
+1. **One domain per provider** — keep responsibilities narrow.
+2. **Consume via hooks** — never `useContext` directly; read the narrowest hook.
+3. **Split contexts for re-render control** — separate stable writers from changing reads.
+4. **Scope by default** — mount a provider in the section that needs it, not app-wide, unless
+   the state is genuinely global.
+5. **Prefer config/self-sufficiency over prop plumbing** — read `@configs/*` at the point of
+   use instead of threading values through props.

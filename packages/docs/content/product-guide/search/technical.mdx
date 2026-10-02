@@ -1,0 +1,239 @@
+import { Callout } from 'nextra/components'
+
+# Property Search — How it works
+
+> Technical anatomy of the map/search section: providers, components, config, and gotchas.
+> For the user-facing overview see [Property Search](/product-guide/search).
+
+## Routes & entry
+
+| Route              | Page                           | Notes                                                                                                                                                                                      |
+| ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/search`          | —                              | Redirects to `/search/map`.                                                                                                                                                                |
+| `/search/[layout]` | `app/search/[layout]/page.tsx` | `layout` = `map` or `grid`. Server component: parses filters/camera/point/polygon (or a `searchId` saved search), gates on `features.map`, mounts the providers, renders `MapPageContent`. |
+
+Root component: `src/components/pages/search/MapPageContent.tsx`.
+
+## Providers
+
+Mounted in the route (`app/search/[layout]/page.tsx`), outermost → innermost:
+
+```
+MapOptionsProvider        map camera / style / layout / 3D; splits into 5 contexts:
+│                         useMapOptions, useMapLocations, useMapLayers,
+│                         useMapPopup, useMapPopupActions
+└─ SearchProvider         filters, results, clusters, multi-units; split contexts:
+   │                      useSearch (read-heavy) vs useSearchActions (write-stable)
+   └─ AiSearchProvider    AI image/feature search; syncs its selections into SearchProvider
+      └─ PageTemplate (noFooter) → MapPageContent
+```
+
+These are **scoped** to the search section (not global). The global tree
+(`UserProvider`, `DialogProvider`, `SnackbarProvider`, feature-gated favorites/…) is
+described in [State Management](/technical-guide/state-management).
+
+<Callout type="info">
+  `SearchProvider` deliberately exposes two contexts so filter *writers*
+  (`useSearchActions`) don't re-render when *results* (`useSearch`) change. Read
+  from the narrowest hook you need.
+</Callout>
+
+## Component tree
+
+```
+MapPageContent                         owns the fetch effect + URL sync
+├─ MapFilters                          filter bar (top)
+│  ├─ AutosuggestionField              location type-ahead
+│  ├─ AiSearchButton                   image/feature AI search entry
+│  ├─ AdvancedFiltersButton            opens the advanced-filters dialog
+│  └─ SaveSearchButton                 persists the current filter set
+└─ MapRoot  (memoized)                 map + list orchestrator
+   ├─ OverlayLayersController          overlay (schools/…) GL layers
+   ├─ MapContainer  (@shared/Map)      Mapbox canvas; listing markers via useListingMarkers
+   ├─ MapControls                      zoom / compass / 3D / draw / layers / style / locate buttons
+   ├─ SunriseSliderContainer           { SunriseSlider, CalendarSlider } — shadows/time (tenant)
+   ├─ MapTitle · SaveSearchCanvas
+   ├─ SelectedLocationsBar             mobile: the selected-location chips at the bottom edge
+   ├─ ListingDrawer                    mobile: tapped-marker listing preview
+   ├─ GridDesktopContainer | GridMobileDrawer
+   │  ├─ GridFilters
+   │  ├─ GridContent                   the card grid
+   │  └─ ChatContent                   AI chat panel — `features.aiChat`
+   ├─ ListingBrowserDialog             wide-desktop: paged listing browser
+   ├─ SaveSearchDialog                 `features.saveSearch`
+   ├─ SupportAgent                     EVAS agent iframe — `features.aiAgent`
+   └─ OverlayMarkerPopup · ListingPopupHost
+```
+
+`MapRoot` also runs the map-side hooks that render nothing: `useParcelListings` (parcels
+mode), `usePoint` (the address pin, or the radius circle of a point with a radius), and
+`useOverlayPolygonGuard`.
+
+Files live under `src/components/pages/search/` (`MapPageContent.tsx`,
+`components/MapFilters/`, `components/MapRoot/`). The map canvas, markers, controls and
+popups are shared: `src/components/shared/Map/` — see
+[Shared Components](/technical-guide/shared-components#map-chrome-sharedmap).
+
+## Configuration
+
+| Config                 | Drives                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@configs/map`         | Initial camera (`mapboxDefaults`), controls (`position`, `mobilePosition`, `compass`, and the `colors` palette every `MapControlButton` paints from), `searchArea` boundary, overlays. An overlay with `external` (`resolveLocation` + `filterToken`) makes its markers selectable as external locations persisted via `externalLocationId`. |
+| `@configs/search`      | Paging, clustering, MLS board routing, `autosuggestPosition`, `extractLocationPolygons`.                                                                                                                                                                                                                                                     |
+| `@configs/filters`     | `defaultFilters`, the type-selector `listingTypes` list, which advanced-filter slots render, `priceInputs` (the price picker reads its range in two editable inputs instead of labels on the thumbs), and `soldPriceAndDate` (a sold range filtered by the sold price and "Newest to Oldest" ordered by sale date).                       |
+| `@configs/params`      | URL-param shorthand names for the shareable search state.                                                                                                                                                                                                                                                                                    |
+| `@configs/cards-grids` | `mapTopOffset` and grid sizing.                                                                                                                                                                                                                                                                                                              |
+| `@configs/ai-agent`    | `headlessIframeId` for the EVAS agent.                                                                                                                                                                                                                                                                                                       |
+| `@configs/features`    | Gates `map`, `aiChat`, `aiAgent`, `saveSearch`, `blurRestrictedProperty`.                                                                                                                                                                                                                                                                    |
+
+## Gotchas & hints
+
+- **Raw-field filters: a dialog tab, shown while a tenant lists any field.** The lists in
+  `configs/defaults/filters.ts` are the sample-data board's (110): 39 sale / 38 lease RESO
+  fields more than 2% of a type's active listings fill. Every other tenant inherits them
+  through `...defaults`, so its own `filters.ts` empties both (`rawFilters: { ...defaults.rawFilters, sale: [], lease: [] }`);
+  a new tenant has to do the same. The URL parser admits `raw.<Field>` params of the
+  listed fields only, so an empty list also keeps a pasted `raw.` link inert.
+- **Raw-field filters match exactly unless `rawFilters.contains` is on.** The advanced
+  dialog's Features tab (`@configs/filters` `rawFilters`: `sale` / `lease` field lists,
+  `previewMatches`) sends `raw.<Field>=<value>`. On board 110 values are RESO arrays, so an
+  exact value reaches every listing that holds it. Boards that file a multi-value field as
+  one comma-joined string (REBNY: `"InUnit,SeeRemarks"`) match a value only when it stands
+  alone — In unit reaches 354 of 4,500 holders, every PetsAllowed value 0. `contains: true`
+  makes `processParams` send `contains:<value>`; the URL and checkboxes keep the plain
+  value. It over-matches where one value contains another (`none` → BuildingNone). Evidence:
+  `docs/design/serhant/advanced-search-spec.md` §3.5.
+- **First fetch hinges on `mapLoaded`.** `position` is value-deduped in
+  `MapOptionsProvider`, so when `moveend` sets the final camera before `load` fires, the
+  `mapLoaded` false→true transition is the only thing that dispatches the initial fetch —
+  it must stay in the effect deps (`MapPageContent`).
+- **Two controls stacks.** `MapControlsStack` takes an optional `position` / `mobilePosition`
+  prop (default from `@configs/map` `controls`). The default `MapControls` renders two: the main
+  stack, and a `<MapControlsStack position="top-right" mobilePosition="top-right">` holding
+  only the `MapLocateButton` GPS "locate me" button.
+- **Map markers = top-level results + inlined small-cluster listings.** They are deduped
+  (`dedupeListings`) because the API can return both; `boardId` is backfilled in the Search
+  service so the inlined twin collapses onto the top-level key. Miss this and you get phantom
+  duplicate markers / a hung listing browser.
+- **Board routing is per-listing.** A listing whose board is in `@configs/search`
+  `distinctBoardIds` is fetched and linked with that board, spelled out by `getSeoUrl` as a
+  trailing `-{boardId}` suffix so a direct visit reads the record the link was built from;
+  everything else routes to `defaultBoardId` and links without a suffix. A tenant may list
+  `defaultBoardId` itself, which makes every board explicit in its URLs instead of leaving one
+  implicit (MoveSmartly lists all three: 2, 90, 91). A URL without a suffix always reads
+  `defaultBoardId`, which is what keeps links minted before a board joined the list working.
+- **Collapsing boards can trade away visibility, not just richness.** MoveSmartly's boards are
+  specialized: VOW (90) holds the sold archive and gates it behind registration
+  (`permissions.displayPublic: N`), IDX (91) publishes the active listings and carries the room
+  breakdown VOW omits. Collapsing an IDX record onto VOW handed a guest a gated copy of a
+  listing they had just been shown on the map — hence every board being addressed explicitly for
+  that tenant. Before collapsing a tenant's boards, check what each board's copy actually
+  contains.
+- **A listing link carries whatever board the search returned.** Cards build their href with
+  `getSeoUrl(listing)`, and the frontend sends no `boardId` filter, so the board in the URL is
+  the one Repliers picked for that record — it returns one copy per property in a geo search,
+  and which board that is follows the data (a MoveSmartly sample: active listings came back on
+  IDX 91, sold ones on VOW 90). Two consequences once every board is spelled out: a link minted
+  before the change carries no suffix, so it reads `defaultBoardId` and the PDP canonicalizes it
+  to that board's URL; and if the search returns a different board's copy than the suffix-less
+  URL loads, one property ends up with two canonical URLs — the old one pointing at
+  `defaultBoardId`, the fresh links and the sitemap at the board the search returned. Collapsing
+  them for good needs the detail request to prefer the copy a guest may actually see, which is a
+  backend decision, not a routing one.
+- **Markers are imperative DOM, not React.** `useListingMarkers` wires plain DOM click
+  handlers, so their callbacks read component state through **refs**
+  (`multiUnitsRef`, `mapListingsRef`), not live React state.
+- **Listing markers are DOM; overlays/polygons are GL.** The map canvas mixes a DOM marker
+  layer (listings) with GL layers (overlays, draw polygons) — see `@shared/Map`.
+- **URL sync has two modes.** Changing filters or camera resets the page to 1; changing
+  layout / overlay layers / 3D / style keeps the page and writes `window.history` directly
+  (not the Next router).
+- **`MapRoot` is memoized** so toggling an overlay layer (which re-renders `MapPageContent`
+  for URL sync) doesn't re-render the heavy map subtree; the layers menu updates via its own
+  `useMapLayers` subscription.
+- **Feature gates render inline:** `aiChat` → `ChatContent`, `aiAgent` → `SupportAgent`,
+  `saveSearch` → `SaveSearchDialog`, `blurRestrictedProperty` → address-label restriction on
+  style load.
+- **External overlay selections ride POST `queries`.** Selecting an external-source overlay
+  marker (e.g. a MoveSmartly school) stores `externalLocationId=<overlayId>-<rest>` in the
+  URL; on load the owning overlay's `external.resolveLocation` rebuilds the location and its
+  merged (Multi)Polygon. The listings request then switches to `queries`:
+  `[{ locationId, map: region }, { map: clippedExternalPolygons }]` — queries UNION while
+  params inside one query AND. Never emit a top-level `map` together with a query `map`
+  (Repliers rejects the conflict with a 400), and never let `externalLocationId` reach the
+  API — `getSearchArea` strips it (plus a defensive strip in `processParams`).
+- **Changing an overlay's filter options drops its selected external locations** (same rule
+  as hiding the layer): the id's trailing filter token no longer matches
+  `external.filterToken(options)` — enforced by `useExternalSelectionReset`.
+- **Two kinds of user-defined region.** `SearchProvider.polygon` is the draw tool's state:
+  exactly ONE editable ring, URL-persisted (`polygon=`). `SearchProvider.region` is the
+  multi-ring `map` of a loaded saved search: read-only (the one-ring draw editor can't
+  represent it) and NOT URL-persisted (merged location boundaries are far beyond URL size
+  limits — it survives filter changes but not a reload, like the saved-search title). They
+  are separate fields by design: widening `polygon` into a union would push array-depth
+  sniffing into the draw editor, the URL sync and every consumer, for a state with a
+  different lifecycle. Shared touchpoints stay shared: both clear via `clearPolygon`, both
+  feed `getSearchArea` (accepts either depth), both render on the `'user'` source.
+  Single-ring saved searches keep loading as the editable `polygon` for back-compat.
+- **Listing types map to `{ class, propertyType, style }`, not just a propertyType list.**
+  Each type is a query fragment in `@configs/filters` `listingTypeDeclaration`. A tenant
+  `deepmerge`s the default declaration with array-overwrite and states only the axes that
+  differ (`[]` removes an axis); the `listingType` transformer merges the fragments of the
+  selected keys. `services/Search/listingTypeDeclaration.ts` builds the runtime declaration:
+  the types the tenant renders in `listingTypes`, plus the derived `penthouse` / `loft` search
+  shortcuts (from `condo`) and `allListings`. The generic `townhome` key is
+  **class-agnostic** on purpose. A tenant that needs townhouses split by property class
+  declares dedicated keys — `residentialTownhome` (`class: residential`) and `condoTownhome`
+  (`class: condo`, with a condo-only `propertyType`) — and lists them in place of `townhome`
+  in its selector (MoveSmartly). `ListingType` comes from the
+  `availableListingTypes` superset (not the default
+  `listingTypes` array), so granular/virtual keys type-check without appearing in the default
+  selector. New keys also need a `LocationHeader.title` branch in i18n or the SEO title falls
+  back to "Real Estate". Location-page slugs resolve through `parseListingType`
+  (`app/locations/[[...slugs]]/_utils`), which is tenant-guarded: a `townhomes` slug (or
+  `condos`+`townhomes`) maps to the class-scoped type only when the tenant's `listingTypes`
+  expose it, otherwise it stays the class-agnostic `townhome`.
+- **The generic `other` key folds every leftover propertyType into one button.** A tenant
+  that wants a catch-all "Other" filter lists `other` in its `listingTypes` and declares it in
+  its `listingTypeDeclaration` as `{ propertyType: [...] }` (no `class`/`style`). No other
+  tenant needs an entry. Because `allListings` is the union of the rendered types, those
+  propertyTypes also surface under "All Listings". `other` is in `noEstimationTypes`
+  (`@configs/estimate`) — a mixed bucket isn't a single estimatable type. Example: URBN groups
+  `Commercial Industrial`, `Manufactured On Land`, `Manufactured Home`, `Farm & Ranch`,
+  `Timeshare`, `Boat Slip`, `Other` here.
+- **Hiding a type button drops its propertyTypes from "All Listings".** `allListings` is
+  derived — `class: [residential, condo]` plus the union of the `propertyType`s of the types
+  the tenant renders — so a type left out of `listingTypes` contributes nothing to it, even
+  when the tenant inherits its declaration from the defaults. Its listings stay reachable only
+  if another rendered type declares their propertyType. URBN drops the `business` /
+  `commercial` / `semiDetached` buttons this way: NWMLS commercial listings live in `other`,
+  and semi-detached styles (`Duplex` / `Triplex` / `Quadruplex`) already carry
+  `propertyType: Multi Family`, so the `multiFamily` button returns them. The marker icon still
+  classifies by scrub-safe `class`: `commercial()` falls back to
+  `class === 'CommercialProperty'` when the declared propertyTypes don't match. Legacy URL /
+  saved-search values for the removed buttons are remapped **for display only** via
+  `valueFallbacks` in the tenant's `ListingTypeSelect` fork. The value itself has no entry in
+  the runtime declaration (only rendered types do), so the query it produces carries **no**
+  type constraint. Because a tenant's `ListingType` is the `availableListingTypes` superset,
+  dropping a button never breaks shared code that still references the key.
+- **Multi-type selection can UNION via POST `queries` (`unionListingTypes`).** By default
+  the selected types are flattened into one top-level filter: every type's `class`,
+  `propertyType` and `style` are concatenated and sent as a single AND. That is correct only
+  when the types share an axis. When they don't — e.g. a tenant's `townhome` is a `style`
+  while `residential` is a `propertyType` — the flat AND becomes an intersection
+  (`residential AND style=Townhouse`), collapsing the result to near-zero instead of unioning
+  the two groups.
+  Setting `unionListingTypes: true` (in `@configs/filters`; requires `multiListingType: true`)
+  switches the adapter to emit **one `RawQuery` per selected type** and send them as POST
+  `queries` (OR). `applyListingTypeUnion` (`services/Search/adapter.ts`) builds them, strips
+  the moved `class`/`propertyType`/`style` off the top level (a param inside `queries` cannot
+  also sit at the top level — Repliers returns a 400), and cartesian-combines with any
+  pre-existing overlay `queries` (`(O1∨O2) ∧ (T1∨T2)`). Top-level scalars (price, beds,
+  status) and the viewport `map` still AND across the whole union. A single selected type
+  keeps the flat path. Default `false`.
+- **A sold range can filter by sold price and sort by sold date (`soldPriceAndDate`).** By default the
+  price filter bounds the list price (`minPrice`/`maxPrice`) and "Newest to Oldest"
+  (`createdOnDesc`) orders by list date, over a sold range too. With
+  `soldPriceAndDate: true` (in `@configs/filters`), a chosen `soldRange` makes
+  `processParams` send `minSoldPrice`/`maxSoldPrice` and the sold-date sort token
+  (`soldDateDesc`) instead. Default `false`.

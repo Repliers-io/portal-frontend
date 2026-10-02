@@ -1,0 +1,1 @@
+export { HistoryDetails } from './HistoryDetails'

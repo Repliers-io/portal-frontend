@@ -1,0 +1,283 @@
+[   10846ms] [WARNING] Image with src "https://cdn.repliers.io/nwmls/IMG-NWM2560360_0.jpg?webp&class=medium&t=1785180311" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/shared/forward-logs-shared.js:27
+[   16780ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263472514&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[   77064ms] [ERROR] ./src/components/shared/Map/hooks/useLocationSelection.ts
+Error:   × Expression expected
+    ╭─[C:\Users\dark\Documents\portal\portal-monorepo\packages\portal-frontend\src\components\shared\Map\hooks\useLocationSelection.ts:76:1]
+ 73 │   // entry point goes through this (or `toggleLocation`/`clearSelection`, which
+ 74 │   // build on it) so the selection ↔ filter coupling lives in exactly one place.
+ 75 │   const selectLocations = useCallback(
+ 76 │     ;(next: ApiLocation[] | null): void => {
+    ·     ─
+ 77 │       const list = next ?? []
+ 78 │       if (!list.length) {
+ 79 │         clearSelection()
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/shared/Map/hooks/useLocationSelection.ts
+./src/components/shared/Map/hooks/index.ts
+./src/components/shared/Map/index.ts
+./src/components/shared/CmsWidgets/widgets/MapGridWidget/MapGridWidget.tsx @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[   80201ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263472514&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[   82744ms] [ERROR] ./src/components/shared/Map/hooks/useLocationSelection.ts
+Error:   × Expression expected
+    ╭─[C:\Users\dark\Documents\portal\portal-monorepo\packages\portal-frontend\src\components\shared\Map\hooks\useLocationSelection.ts:76:1]
+ 73 │   // entry point goes through this (or `toggleLocation`/`clearSelection`, which
+ 74 │   // build on it) so the selection ↔ filter coupling lives in exactly one place.
+ 75 │   const selectLocations = useCallback(
+ 76 │     ;(next: ApiLocation[] | null): void => {
+    ·     ─
+ 77 │       const list = next ?? []
+ 78 │       if (!list.length) {
+ 79 │         clearSelection()
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/shared/Map/hooks/useLocationSelection.ts
+./src/components/shared/Map/hooks/index.ts
+./src/components/shared/Map/index.ts
+./src/components/shared/CmsWidgets/widgets/MapGridWidget/MapGridWidget.tsx @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[   84080ms] [ERROR] ./src/components/shared/Map/hooks/useLocationSelection.ts
+Error:   × Expression expected
+    ╭─[C:\Users\dark\Documents\portal\portal-monorepo\packages\portal-frontend\src\components\shared\Map\hooks\useLocationSelection.ts:76:1]
+ 73 │   // entry point goes through this (or `toggleLocation`/`clearSelection`, which
+ 74 │   // build on it) so the selection ↔ filter coupling lives in exactly one place.
+ 75 │   const selectLocations = useCallback(
+ 76 │     ;(next: ApiLocation[] | null): void => {
+    ·     ─
+ 77 │       const list = next ?? []
+ 78 │       if (!list.length) {
+ 79 │         clearSelection()
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/shared/Map/hooks/useLocationSelection.ts
+./src/components/shared/Map/hooks/index.ts
+./src/components/shared/Map/index.ts
+./src/components/shared/CmsWidgets/widgets/MapGridWidget/MapGridWidget.tsx @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[   90443ms] [ERROR] ./src/components/shared/Map/hooks/useLocationSelection.ts
+Error:   × Expression expected
+    ╭─[C:\Users\dark\Documents\portal\portal-monorepo\packages\portal-frontend\src\components\shared\Map\hooks\useLocationSelection.ts:76:1]
+ 73 │   // entry point goes through this (or `toggleLocation`/`clearSelection`, which
+ 74 │   // build on it) so the selection ↔ filter coupling lives in exactly one place.
+ 75 │   const selectLocations = useCallback(
+ 76 │     ;(next: ApiLocation[] | null): void => {
+    ·     ─
+ 77 │       const list = next ?? []
+ 78 │       if (!list.length) {
+ 79 │         clearSelection()
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/shared/Map/hooks/useLocationSelection.ts
+./src/components/shared/Map/hooks/index.ts
+./src/components/shared/Map/index.ts
+./src/components/shared/CmsWidgets/widgets/MapGridWidget/MapGridWidget.tsx @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[  101877ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263472514&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[  107148ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263472514&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[  132793ms] [WARNING] Image with src "https://cdn.repliers.io/nwmls/IMG-NWM2560360_0.jpg?webp&class=medium&t=1785180311" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/shared/forward-logs-shared.js:27
+[  135782ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263596780&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[  139312ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263596780&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[  359608ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263596780&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0
+[  364001ms] [ERROR] React has detected a change in the order of Hooks called by %s. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://react.dev/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+%s   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ MapRootComponent 1. useContext                 useContext
+2. useContext                 useContext
+3. useDebugValue              useDebugValue
+4. useState                   useState
+5. useEffect                  useEffect
+6. useContext                 useContext
+7. useCallback                useCallback
+8. useMemo                    useMemo
+9. useMemo                    useMemo
+10. useSyncExternalStore      useSyncExternalStore
+11. useDebugValue             useDebugValue
+12. useContext                useContext
+13. useCallback               useCallback
+14. useMemo                   useMemo
+15. useMemo                   useMemo
+16. useSyncExternalStore      useSyncExternalStore
+17. useDebugValue             useDebugValue
+18. useContext                useContext
+19. useCallback               useCallback
+20. useMemo                   useMemo
+21. useMemo                   useMemo
+22. useSyncExternalStore      useSyncExternalStore
+23. useDebugValue             useDebugValue
+24. useContext                useContext
+25. useCallback               useCallback
+26. useMemo                   useMemo
+27. useMemo                   useMemo
+28. useSyncExternalStore      useSyncExternalStore
+29. useDebugValue             useDebugValue
+30. useMemo                   useMemo
+31. useState                  useState
+32. useState                  useState
+33. useState                  useState
+34. useRef                    useRef
+35. useEffect                 useEffect
+36. useContext                useContext
+37. useContext                useContext
+38. useMemo                   useMemo
+39. useState                  useState
+40. useState                  useState
+41. useState                  useState
+42. useContext                useContext
+43. useContext                useContext
+44. useContext                useContext
+45. useEffect                 useEffect
+46. useContext                useContext
+47. useEffect                 useEffect
+48. useEffect                 useEffect
+49. useRef                    useRef
+50. useRef                    useRef
+51. useRef                    useRef
+52. useRef                    useRef
+53. useState                  useState
+54. useState                  useState
+55. useCallback               useCallback
+56. useContext                useContext
+57. useCallback               useCallback
+58. useCallback               useCallback
+59. useEffect                 useEffect
+60. useCallback               useCallback
+61. useCallback               useCallback
+62. useCallback               useCallback
+63. useContext                useContext
+64. useRef                    useRef
+65. useRef                    useRef
+66. useRef                    useRef
+67. useEffect                 useEffect
+68. useCallback               useCallback
+69. useCallback               useCallback
+70. useCallback               useCallback
+71. useCallback               useCallback
+72. useCallback               useCallback
+73. useContext                useContext
+74. useContext                useContext
+75. useContext                useContext
+76. useContext                useContext
+77. useRef                    useRef
+78. useRef                    useRef
+79. useRef                    useRef
+80. useRef                    useRef
+81. useRef                    useRef
+82. useState                  useState
+83. useRef                    useRef
+84. useEffect                 useEffect
+85. useEffect                 useEffect
+86. useEffect                 useEffect
+87. useContext                useContext
+88. useContext                useContext
+89. useRef                    useRef
+90. useState                  useState
+91. useEffect                 useEffect
+92. useEffect                 useEffect
+93. useContext                useContext
+94. useContext                useContext
+95. useRef                    useState
+ @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[  364029ms] [ERROR] %o
+
+%s Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8237:15)
+    at updateReducer (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8232:14)
+    at Object.useState (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28849:18)
+    at exports.useState (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react/cjs/react.development.js:1311:34)
+    at usePointRadius (webpack-internal:///(app-pages-browser)/./src/components/shared/Map/hooks/usePointRadius.ts:40:84)
+    at MapRootComponent (webpack-internal:///(app-pages-browser)/./src/components/pages/search/components/MapRoot/MapRoot.tsx:271:71)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28242:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:7926:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10443:19)
+    at updateSimpleMemoComponent (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10107:14)
+    at beginWork (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12531:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:987:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18989:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18817:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18798:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:17903:35)
+    at performSyncWorkOnRoot (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20487:7)
+    at flushSyncWorkAcrossRoots_impl (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20329:21)
+    at flushSyncWork$1 (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18244:12)
+    at Object.scheduleRefresh (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:114:9)
+    at eval (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:265:17)
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:254:26)
+    at applyUpdate (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:139:31)
+    at statusHandler (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:156:13)
+    at setStatus (http://localhost:3000/_next/static/chunks/webpack.js?v=1785263596780&dpl=local-1785247329558:498:55)
+    at http://localhost:3000/_next/static/chunks/webpack.js?v=1785263596780&dpl=local-1785247329558:667:21 The above error occurred in the <MapRootComponent> component. It was handled by the <ErrorBoundaryHandler> error boundary. @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/client/react-client-callbacks/error-boundary-callbacks.js:64
+[  364046ms] [ERROR] [ErrorPageTemplate] Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8237:15)
+    at updateReducer (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8232:14)
+    at Object.useState (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28849:18)
+    at exports.useState (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react/cjs/react.development.js:1311:34)
+    at usePointRadius (webpack-internal:///(app-pages-browser)/./src/components/shared/Map/hooks/usePointRadius.ts:40:84)
+    at MapRootComponent (webpack-internal:///(app-pages-browser)/./src/components/pages/search/components/MapRoot/MapRoot.tsx:271:71)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28242:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:7926:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10443:19)
+    at updateSimpleMemoComponent (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10107:14)
+    at beginWork (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12531:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:987:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18989:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18817:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18798:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:17903:35)
+    at performSyncWorkOnRoot (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20487:7)
+    at flushSyncWorkAcrossRoots_impl (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20329:21)
+    at flushSyncWork$1 (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18244:12)
+    at Object.scheduleRefresh (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:114:9)
+    at eval (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:265:17)
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:254:26)
+    at applyUpdate (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:139:31)
+    at statusHandler (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:156:13)
+    at setStatus (http://localhost:3000/_next/static/chunks/webpack.js?v=1785263596780&dpl=local-1785247329558:498:55)
+    at http://localhost:3000/_next/static/chunks/webpack.js?v=1785263596780&dpl=local-1785247329558:667:21 @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[  364048ms] [ERROR] [ErrorPageTemplate] Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8237:15)
+    at updateReducer (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8232:14)
+    at Object.useState (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28849:18)
+    at exports.useState (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react/cjs/react.development.js:1311:34)
+    at usePointRadius (webpack-internal:///(app-pages-browser)/./src/components/shared/Map/hooks/usePointRadius.ts:40:84)
+    at MapRootComponent (webpack-internal:///(app-pages-browser)/./src/components/pages/search/components/MapRoot/MapRoot.tsx:271:71)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28242:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:7926:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10443:19)
+    at updateSimpleMemoComponent (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10107:14)
+    at beginWork (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12531:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:987:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18989:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18817:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18798:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:17903:35)
+    at performSyncWorkOnRoot (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20487:7)
+    at flushSyncWorkAcrossRoots_impl (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20329:21)
+    at flushSyncWork$1 (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18244:12)
+    at Object.scheduleRefresh (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:114:9)
+    at eval (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:265:17)
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/react-refresh/cjs/react-refresh-runtime.development.js:254:26)
+    at applyUpdate (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:139:31)
+    at statusHandler (webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/internal/helpers.js:156:13)
+    at setStatus (http://localhost:3000/_next/static/chunks/webpack.js?v=1785263596780&dpl=local-1785247329558:498:55)
+    at http://localhost:3000/_next/static/chunks/webpack.js?v=1785263596780&dpl=local-1785247329558:667:21 @ webpack-internal:///(app-pages-browser)/../../node_modules/.pnpm/next@16.2.10_@babel+core@7._48811e8f209a70f8a69bffddde7504c7/node_modules/next/dist/next-devtools/userspace/app/errors/intercept-console-error.js:57
+[  367538ms] [WARNING] The resource http://localhost:3000/_next/static/css/app/not-found.css?v=1785263596780&dpl=local-1785247329558 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/search/map?47.606200,-122.332100&z=12&point=[47.6062,-122.3321,3]:0

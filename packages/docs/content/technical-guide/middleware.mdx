@@ -1,0 +1,109 @@
+# Middleware & Routing Pipeline
+
+Portal runs a single Next.js proxy — `src/proxy.ts` (the Next 16 rename of
+`middleware.ts`) — on every page and API request. It handles only **true per-request runtime logic**: HTTPS
+enforcement and a route guard that sends unknown paths to `/404` (or to a
+legacy host, see below). All URL
+rewrites and redirects are generated at build time and served by
+`next.config.js` — the proxy never mutates URLs, it only reads the
+generated rules to decide which paths are "known".
+
+See [Architecture](/technical-guide/architecture) for the overall structure.
+
+## Key files
+
+| File                           | Role                                                                        |
+| ------------------------------ | --------------------------------------------------------------------------- |
+| `src/proxy.ts`                 | The proxy — HTTPS enforcement + route guard + `matcher` config               |
+| `scripts/generate-rewrites.ts` | Pre-build script that produces the generated rule files                     |
+| `rewrites.generated.json`      | Generated rewrites (package root, imported as `../rewrites.generated.json`) |
+| `redirects.generated.json`     | Generated redirects (package root)                                          |
+| `next.config.js`               | Consumes the generated files via `rewrites()` / `redirects()`               |
+
+## What it does
+
+Each request runs through these steps in order:
+
+1. **HTTPS enforcement** — in `production`, if `x-forwarded-proto === 'http'`,
+   respond with a `301` to the `https://` URL. The check is `=== 'http'`
+   (not `!== 'https'`) on purpose: internal Next.js mock requests (e.g. the
+   image optimizer's `fetchInternalImage`) carry no `x-forwarded-proto` header,
+   so they are never redirected and never receive a redirect body instead of
+   image bytes. Skipped entirely when `FORCE_HTTP=true`.
+2. **Route guard** — checks the path against a `knownRoutes` allowlist built
+   once at module load from three sources:
+   - `staticRoutes` — internal/asset prefixes (`/_next/`, `/api/`, `/auth`,
+     `/images/`, `/static/`, `/favicon`, `/404`, `/unsubscribe`)
+   - all values from `@configs/routes` (excluding `/`)
+   - the static prefix of every generated rewrite and redirect `source`
+     (dynamic segments like `/:param` and `/:path*` are stripped so
+     `startsWith` covers nested paths such as `/ma/boston`). A source that
+     starts with a dynamic segment (`/:year(\d{4})/…`) or carries `has` is
+     skipped: it has no usable prefix, and mapping it to `/` would match every
+     path and silently disable the guard.
+
+   If the request path is not `/`, contains no `.` (unknown static extensions
+   pass through), and matches nothing in `knownRoutes`, it is redirected to
+   `/404` — or, when `LEGACY_FALLBACK_HOST` is set, to
+   `<host><path><query>` with a `308`. That lets a tenant whose former site
+   (e.g. a CMS moved to another subdomain) still serves URLs this domain used
+   to host forward them without listing each one; the legacy site answers
+   `200` or its own `404`. Paths the matcher excludes (file extensions, dotted
+   slugs) never reach the guard and need static redirect rules in
+   `configs/<tenant>/rewrites.ts`.
+
+3. **Fall-through** — everything else returns `NextResponse.next()`. On builds
+   whose tenant config sets `noIndex: true` (the demo/sample tenants), the
+   response also carries an `X-Robots-Tag: noindex, nofollow` header so those
+   builds stay out of search engines at the HTTP layer. (A GrowthBook UUID
+   cookie block exists but is **disabled** — it set a cookie that was never read
+   back, so it had no effect.)
+
+## Generated rewrites & redirects
+
+The rewrite/redirect rules are **generated, not hand-edited**. Run
+`pnpm generate:rewrites` (`tsx scripts/generate-rewrites.ts`, also part of
+`prebuild`) to regenerate them. The script merges several per-tenant sources in
+priority order: `rootPage` feature-flag rewrite, `stateCode` URL alias
+(`/<code>/* → /locations/*`), instance static rewrites (`configs/<tenant>/rewrites.ts`),
+legacy WordPress rewrites, building redirects (auto-generated + manual), and
+location redirects (`configs/<tenant>/redirects-locations.ts`, generated from the
+tenant's locations tree by `pnpm generate:location-redirects <tenant>` — legacy
+`/<neighbourhood>-<city>/<anything>` URLs onto location pages). Full detail in
+`portal-frontend/docs/rewrites-redirects-pipeline.md`.
+
+The output — `rewrites.generated.json` / `redirects.generated.json` — is the
+single source of truth consumed by both `next.config.js`
+(`rewrites()` returns them under `beforeFiles` so feature-flag rewrites win over
+filesystem pages; `redirects()` returns them directly) and the proxy's
+route guard. Do not edit the generated files by hand.
+
+## Configuration / env
+
+| Variable                   | Effect                                                      |
+| -------------------------- | ----------------------------------------------------------- |
+| `FORCE_HTTP=true`          | Disables the HTTP → HTTPS redirect (local/http deployments) |
+| `DISABLE_ROUTE_GUARD=true` | Disables the unknown-path → `/404` guard                    |
+| `LEGACY_FALLBACK_HOST`     | Origin (no trailing slash) that unknown paths are `308`-redirected to instead of `/404`; needs the guard on |
+| `NODE_ENV`                 | HTTPS enforcement only runs when `=== 'production'`         |
+
+## Gotchas & hints
+
+- **Matcher scope** — `config.matcher` excludes `_next/static`, `_next/image`,
+  `favicon.ico`, `sitemap.xml`, `robots.txt`, and any path with a file
+  extension (`.*\.\w+$`). Static files never reach the proxy, so image
+  optimizer mock requests can't receive a redirect body.
+- **Percent-encoding** — both the request path and each known route are
+  `decodeURIComponent`-decoded before comparison (wrapped in `try/catch`), so
+  emoji/non-ASCII slugs match regardless of upper/lower-case escape sequences
+  (`%F0…` vs `%f0…`).
+- **Mock-request guard** — the `=== 'http'` HTTPS check plus the extension-based
+  matcher exclusion together ensure Next.js internal requests are never
+  redirected.
+- **Rules changed?** Rebuild or re-run `pnpm generate:rewrites` — the route
+  guard reads the generated JSON, so stale files can 404 valid paths.
+- **noindex builds** — the `X-Robots-Tag: noindex, nofollow` header is driven by
+  the tenant `content.noIndex` flag (base default `true`) and pairs with the
+  `<meta name="robots">` tag from the root layout. Crawling is left allowed so
+  the directive is actually read — see
+  [tenant configuration](/getting-started/configuration#content).

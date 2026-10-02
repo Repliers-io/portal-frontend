@@ -1,0 +1,707 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - link "Real Estate" [ref=e8] [cursor=pointer]:
+            - /url: /
+          - link "Insights" [ref=e9] [cursor=pointer]:
+            - /url: https://blog.movesmartly.com
+        - link "MOVESMARTLY" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img "MOVESMARTLY" [ref=e11]
+        - generic [ref=e12]:
+          - link "Buying" [ref=e13] [cursor=pointer]:
+            - /url: /buy
+          - link "Selling" [ref=e14] [cursor=pointer]:
+            - /url: /sell
+          - link "Listings" [ref=e15] [cursor=pointer]:
+            - /url: /search/map
+          - link "About" [ref=e16] [cursor=pointer]:
+            - /url: /about
+          - button "Sign in" [ref=e96] [cursor=pointer]:
+            - generic [ref=e98]: Sign in
+    - main [ref=e18]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic:
+              - img
+            - combobox "City, neighbourhood, address…" [ref=e103]
+          - generic [ref=e104]:
+            - combobox [ref=e105] [cursor=pointer]: For Sale
+            - textbox: sale
+            - img
+          - generic [ref=e106]:
+            - combobox [ref=e107] [cursor=pointer]:
+              - generic [ref=e110]: All Listings
+            - textbox: allListings
+            - img
+          - button "Price" [ref=e111] [cursor=pointer]:
+            - generic [ref=e112]:
+              - generic [ref=e114]: Price
+              - img [ref=e115]
+          - generic [ref=e117]:
+            - combobox [ref=e118] [cursor=pointer]: Active
+            - textbox
+            - img
+          - generic [ref=e119]:
+            - combobox [ref=e120] [cursor=pointer]: Sold
+            - textbox
+            - img
+        - generic [ref=e34]:
+          - generic [ref=e121]:
+            - button "Advanced" [ref=e122] [cursor=pointer]:
+              - img [ref=e124]
+              - text: Advanced
+            - generic: "0"
+          - generic "This feature is available for registered users only." [ref=e127]:
+            - button "Save Search" [disabled]:
+              - generic:
+                - img
+              - text: Save Search
+          - button "List view" [ref=e128] [cursor=pointer]
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic:
+              - region "Map" [ref=e129]
+              - img "Map marker" [ref=e130]:
+                - button "$1.3M" [ref=e131] [cursor=pointer]:
+                  - generic [ref=e132]: $1.3M
+              - img "Map marker" [ref=e133]:
+                - button "$1.05M" [ref=e134] [cursor=pointer]:
+                  - generic [ref=e135]: $1.05M
+              - img "Map marker" [ref=e136]:
+                - button "$1.15M" [ref=e137] [cursor=pointer]:
+                  - generic [ref=e138]: $1.15M
+              - img "Map marker" [ref=e139]:
+                - button "$799K" [ref=e140] [cursor=pointer]:
+                  - generic [ref=e141]: $799K
+              - img "Map marker" [ref=e142]:
+                - button "$449K" [ref=e143] [cursor=pointer]:
+                  - generic [ref=e144]: $449K
+              - img "Map marker" [ref=e145]:
+                - button "$1.24M" [ref=e146] [cursor=pointer]:
+                  - generic [ref=e147]: $1.24M
+              - img "Map marker" [ref=e148]:
+                - button "$1.3M" [ref=e149] [cursor=pointer]:
+                  - generic [ref=e150]: $1.3M
+              - img "Map marker" [ref=e151]:
+                - button "$1M" [ref=e152] [cursor=pointer]:
+                  - generic [ref=e153]: $1M
+              - img "Map marker" [ref=e154]:
+                - button "$809K" [ref=e155] [cursor=pointer]:
+                  - generic [ref=e156]: $809K
+              - img "Map marker" [ref=e157]:
+                - button "$920K" [ref=e158] [cursor=pointer]:
+                  - generic [ref=e159]: $920K
+              - img "Map marker" [ref=e160]:
+                - button "$1.45M" [ref=e161] [cursor=pointer]:
+                  - generic [ref=e162]: $1.45M
+              - img "Map marker" [ref=e163]:
+                - button "$1.28M" [ref=e164] [cursor=pointer]:
+                  - generic [ref=e165]: $1.28M
+              - img "Map marker" [ref=e166]:
+                - button "$1.4M" [ref=e167] [cursor=pointer]:
+                  - generic [ref=e168]: $1.4M
+              - img "Map marker" [ref=e169]:
+                - button "$2.35M" [ref=e170] [cursor=pointer]:
+                  - generic [ref=e171]: $2.35M
+              - img "Map marker" [ref=e172]:
+                - button "$1.25M" [ref=e173] [cursor=pointer]:
+                  - generic [ref=e174]: $1.25M
+              - img "Map marker" [ref=e175]:
+                - button "$1.83M" [ref=e176] [cursor=pointer]:
+                  - generic [ref=e177]: $1.83M
+              - img "Map marker" [ref=e178]:
+                - button "$2.75M" [ref=e179] [cursor=pointer]:
+                  - generic [ref=e180]: $2.75M
+              - img "Map marker" [ref=e181]:
+                - button "$1.5M" [ref=e182] [cursor=pointer]:
+                  - generic [ref=e183]: $1.5M
+              - img "Map marker" [ref=e184]:
+                - button "$800K" [ref=e185] [cursor=pointer]:
+                  - generic [ref=e186]: $800K
+              - img "Map marker" [ref=e187]:
+                - button "$2.6M" [ref=e188] [cursor=pointer]:
+                  - generic [ref=e189]: $2.6M
+              - img "Map marker" [ref=e190]:
+                - button "House" [ref=e191] [cursor=pointer]:
+                  - generic [ref=e192]: House
+              - img "Map marker" [ref=e193]:
+                - button "$2M" [ref=e194] [cursor=pointer]:
+                  - generic [ref=e195]: $2M
+              - img "Map marker" [ref=e196]:
+                - button "$650K" [ref=e197] [cursor=pointer]:
+                  - generic [ref=e198]: $650K
+              - img "Map marker" [ref=e199]:
+                - button "$1.3M" [ref=e200] [cursor=pointer]:
+                  - generic [ref=e201]: $1.3M
+              - img "Map marker" [ref=e202]:
+                - button "$1.15M" [ref=e203] [cursor=pointer]:
+                  - generic [ref=e204]: $1.15M
+              - img "Map marker" [ref=e205]:
+                - button "$890K" [ref=e206] [cursor=pointer]:
+                  - generic [ref=e207]: $890K
+              - img "Map marker" [ref=e208]:
+                - button "$1.9M" [ref=e209] [cursor=pointer]:
+                  - generic [ref=e210]: $1.9M
+              - img "Map marker" [ref=e211]:
+                - button "$1.35M" [ref=e212] [cursor=pointer]:
+                  - generic [ref=e213]: $1.35M
+              - img "Map marker" [ref=e214]:
+                - button "$800K" [ref=e215] [cursor=pointer]:
+                  - generic [ref=e216]: $800K
+            - link "Mapbox homepage" [ref=e218] [cursor=pointer]:
+              - /url: https://www.mapbox.com/
+          - generic:
+            - generic "Reset rotation":
+              - button "Reset rotation"
+            - button "Switch to 3D view" [ref=e219] [cursor=pointer]:
+              - img [ref=e220]
+            - generic "Draw a custom search area on the map — available to registered users." [ref=e222]:
+              - button "Draw a custom search area on the map — available to registered users." [disabled]:
+                - img
+            - generic "Show neighborhoods layer" [ref=e43]:
+              - button "Show neighborhoods layer" [ref=e223] [cursor=pointer]:
+                - img [ref=e225]
+            - button "Show schools and filter by type" [ref=e227] [cursor=pointer]:
+              - img [ref=e229]
+            - button [ref=e231] [cursor=pointer]:
+              - img [ref=e232]
+            - generic [ref=e44]:
+              - button "Zoom in" [ref=e234] [cursor=pointer]:
+                - img [ref=e235]
+              - button "Zoom out" [ref=e237] [cursor=pointer]:
+                - img [ref=e238]
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - slider: "36.2"
+                    - img
+              - generic:
+                - generic:
+                  - generic:
+                    - slider: "190"
+                    - generic: "9"
+                    - generic: JUL
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=6]
+                - button:
+                  - img
+        - generic [ref=e45]:
+          - generic [ref=e47]:
+            - paragraph [ref=e240]: 29 results
+            - generic [ref=e53]:
+              - combobox [ref=e54] [cursor=pointer]: Newest to Oldest
+              - textbox: createdOnDesc
+              - img
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e241]:
+                - link "$1,299,000 2 days on market 33 Frizzell Avenue, North Riverdale, Toronto, ON, M4K 1H8 3 2 1,100 ft²" [ref=e242] [cursor=pointer]:
+                  - /url: /listing/33-frizzell-avenue-toronto-m4k-1h8-E13537812-90
+                  - generic:
+                    - generic:
+                      - heading "$1,299,000" [level=6]
+                      - generic: 2 days on market
+                    - paragraph: 33 Frizzell Avenue, North Riverdale, Toronto, ON, M4K 1H8
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e248] [cursor=pointer]:
+                  - img [ref=e249]
+              - generic [ref=e251]:
+                - link "$1,049,900 2 days on market 89 Dearbourne Avenue, North Riverdale, Toronto, ON, M4K 1M6 3 3 1,100 ft²" [ref=e252] [cursor=pointer]:
+                  - /url: /listing/89-dearbourne-avenue-toronto-m4k-1m6-E13536636-90
+                  - generic:
+                    - generic:
+                      - heading "$1,049,900" [level=6]
+                      - generic: 2 days on market
+                    - paragraph: 89 Dearbourne Avenue, North Riverdale, Toronto, ON, M4K 1M6
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e258] [cursor=pointer]:
+                  - img [ref=e259]
+              - generic [ref=e261]:
+                - link "$1,149,000 3 days on market 42 Arundel Avenue, Playter Estates-danforth, Toronto, ON, M4K 3A2 2+1 2 1,100 ft²" [ref=e262] [cursor=pointer]:
+                  - /url: /listing/42-arundel-avenue-toronto-m4k-3a2-E13534630-90
+                  - generic:
+                    - generic:
+                      - heading "$1,149,000" [level=6]
+                      - generic: 3 days on market
+                    - paragraph: 42 Arundel Avenue, Playter Estates-danforth, Toronto, ON, M4K 3A2
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 2+1
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e268] [cursor=pointer]:
+                  - img [ref=e269]
+              - generic [ref=e271]:
+                - 'link "$799,000 4 days on market #804 - 980 Broadview Avenue, Broadview North, Toronto, ON, M4K 3Y1 2 2 1,000 ft²" [ref=e272] [cursor=pointer]':
+                  - /url: /listing/804-980-broadview-avenue-toronto-m4k-3y1-E13528680-90
+                  - generic:
+                    - generic:
+                      - heading "$799,000" [level=6]
+                      - generic: 4 days on market
+                    - paragraph: "#804 - 980 Broadview Avenue, Broadview North, Toronto, ON, M4K 3Y1"
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,000 ft²
+                - button "Add to favorites" [ref=e278] [cursor=pointer]:
+                  - img [ref=e279]
+              - generic [ref=e281]:
+                - 'link "$449,000 7 days on market #1804 - 1048 Broadview Avenue, Broadview North, Toronto, ON, M4K 2B8 1 1 500 ft²" [ref=e282] [cursor=pointer]':
+                  - /url: /listing/1804-1048-broadview-avenue-toronto-m4k-2b8-E13517800-90
+                  - generic:
+                    - generic:
+                      - heading "$449,000" [level=6]
+                      - generic: 7 days on market
+                    - paragraph: "#1804 - 1048 Broadview Avenue, Broadview North, Toronto, ON, M4K 2B8"
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "1"
+                        - separator
+                        - img
+                        - text: "1"
+                        - separator
+                        - img
+                        - generic: 500 ft²
+                - button "Add to favorites" [ref=e288] [cursor=pointer]:
+                  - img [ref=e289]
+              - generic [ref=e291]:
+                - link "$1,235,000 7 days on market 12 East York Avenue, Broadview North, Toronto, ON, M4K 3Z9 3 3 1,100 ft²" [ref=e292] [cursor=pointer]:
+                  - /url: /listing/12-east-york-avenue-toronto-m4k-3z9-E13517084-90
+                  - generic:
+                    - generic:
+                      - heading "$1,235,000" [level=6]
+                      - generic: 7 days on market
+                    - paragraph: 12 East York Avenue, Broadview North, Toronto, ON, M4K 3Z9
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e298] [cursor=pointer]:
+                  - img [ref=e299]
+              - generic [ref=e301]:
+                - link "$1,299,990 8 days on market 121 Sammon Avenue, Danforth Village-east York, Toronto, ON, M4J 1Y9 4+1 3 1,500 ft²" [ref=e302] [cursor=pointer]:
+                  - /url: /listing/121-sammon-avenue-toronto-m4j-1y9-E13513528-90
+                  - generic:
+                    - generic:
+                      - heading "$1,299,990" [level=6]
+                      - generic: 8 days on market
+                    - paragraph: 121 Sammon Avenue, Danforth Village-east York, Toronto, ON, M4J 1Y9
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 4+1
+                        - separator
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - generic: 1,500 ft²
+                - button "Add to favorites" [ref=e308] [cursor=pointer]:
+                  - img [ref=e309]
+              - generic [ref=e311]:
+                - link "$999,800 14 days on market 56 Mortimer Avenue, Broadview North, Toronto, ON, M4K 2A1 3+1 3 1,500 ft²" [ref=e312] [cursor=pointer]:
+                  - /url: /listing/56-mortimer-avenue-toronto-m4k-2a1-E13495152-90
+                  - generic:
+                    - generic:
+                      - heading "$999,800" [level=6]
+                      - generic: 14 days on market
+                    - paragraph: 56 Mortimer Avenue, Broadview North, Toronto, ON, M4K 2A1
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 3+1
+                        - separator
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - generic: 1,500 ft²
+                - button "Add to favorites" [ref=e318] [cursor=pointer]:
+                  - img [ref=e319]
+              - generic [ref=e321]:
+                - link "$809,000 15 days on market 928 Broadview Avenue, Playter Estates-danforth, Toronto, ON, M4K 2R1 3 3 700 ft²" [ref=e322] [cursor=pointer]:
+                  - /url: /listing/928-broadview-avenue-toronto-m4k-2r1-E13488934-90
+                  - generic:
+                    - generic:
+                      - heading "$809,000" [level=6]
+                      - generic: 15 days on market
+                    - paragraph: 928 Broadview Avenue, Playter Estates-danforth, Toronto, ON, M4K 2R1
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - generic: 700 ft²
+                - button "Add to favorites" [ref=e328] [cursor=pointer]:
+                  - img [ref=e329]
+              - generic [ref=e331]:
+                - link "$919,900 16 days on market 570 Jones Avenue, Blake-jones, Toronto, ON, M4J 3H1 3 2 1,100 ft²" [ref=e332] [cursor=pointer]:
+                  - /url: /listing/570-jones-avenue-toronto-m4j-3h1-E13483162-90
+                  - generic:
+                    - generic:
+                      - heading "$919,900" [level=6]
+                      - generic: 16 days on market
+                    - paragraph: 570 Jones Avenue, Blake-jones, Toronto, ON, M4J 3H1
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e338] [cursor=pointer]:
+                  - img [ref=e339]
+              - generic [ref=e341]:
+                - 'link "$1,449,000 17 days on market #11 - 18 Doncrest Road, Playter Estates-danforth, Toronto, ON, M4K 1R8 2 3 1,600 ft²" [ref=e342] [cursor=pointer]':
+                  - /url: /listing/11-18-doncrest-road-toronto-m4k-1r8-E13480842-90
+                  - generic:
+                    - generic:
+                      - heading "$1,449,000" [level=6]
+                      - generic: 17 days on market
+                    - paragraph: "#11 - 18 Doncrest Road, Playter Estates-danforth, Toronto, ON, M4K 1R8"
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - generic: 1,600 ft²
+                - button "Add to favorites" [ref=e348] [cursor=pointer]:
+                  - img [ref=e349]
+              - generic [ref=e351]:
+                - link "$1,280,000 21 days on market 7 Arundel Avenue, Playter Estates-danforth, Toronto, ON, M4K 3A1 3 2 1,500 ft²" [ref=e352] [cursor=pointer]:
+                  - /url: /listing/7-arundel-avenue-toronto-m4k-3a1-E13467736-90
+                  - generic:
+                    - generic:
+                      - heading "$1,280,000" [level=6]
+                      - generic: 21 days on market
+                    - paragraph: 7 Arundel Avenue, Playter Estates-danforth, Toronto, ON, M4K 3A1
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,500 ft²
+                - button "Add to favorites" [ref=e358] [cursor=pointer]:
+                  - img [ref=e359]
+              - generic [ref=e361]:
+                - link "$1,399,000 24 days on market 3 Sparkhall Avenue, North Riverdale, Toronto, ON, M4K 1G4 4 2 1,100 ft²" [ref=e362] [cursor=pointer]:
+                  - /url: /listing/3-sparkhall-avenue-toronto-m4k-1g4-E13450466-90
+                  - generic:
+                    - generic:
+                      - heading "$1,399,000" [level=6]
+                      - generic: 24 days on market
+                    - paragraph: 3 Sparkhall Avenue, North Riverdale, Toronto, ON, M4K 1G4
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "4"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e368] [cursor=pointer]:
+                  - img [ref=e369]
+              - generic [ref=e371]:
+                - link "$2,349,000 29 days on market 254 Bain Avenue, North Riverdale, Toronto, ON, M4K 1G3 4+1 4 1,500 ft²" [ref=e372] [cursor=pointer]:
+                  - /url: /listing/254-bain-avenue-toronto-m4k-1g3-E13430126-90
+                  - generic:
+                    - generic:
+                      - heading "$2,349,000" [level=6]
+                      - generic: 29 days on market
+                    - paragraph: 254 Bain Avenue, North Riverdale, Toronto, ON, M4K 1G3
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 4+1
+                        - separator
+                        - img
+                        - text: "4"
+                        - separator
+                        - img
+                        - generic: 1,500 ft²
+                - button "Add to favorites" [ref=e378] [cursor=pointer]:
+                  - img [ref=e379]
+              - generic [ref=e381]:
+                - link "$1,250,000 30 days on market 635 Pape Avenue, Blake-jones, Toronto, ON, M4K 3S2 3+1 2 1,500 ft²" [ref=e382] [cursor=pointer]:
+                  - /url: /listing/635-pape-avenue-toronto-m4k-3s2-E13427350-90
+                  - generic:
+                    - generic:
+                      - heading "$1,250,000" [level=6]
+                      - generic: 30 days on market
+                    - paragraph: 635 Pape Avenue, Blake-jones, Toronto, ON, M4K 3S2
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 3+1
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,500 ft²
+                - button "Add to favorites" [ref=e388] [cursor=pointer]:
+                  - img [ref=e389]
+              - generic [ref=e391]:
+                - link "$1,825,000 30 days on market 460 Wellesley Street E, Cabbagetown-south St. James Town, Toronto, ON, M4X 1H9 3 2 2,000 ft²" [ref=e392] [cursor=pointer]:
+                  - /url: /listing/460-wellesley-street-e-toronto-m4x-1h9-C13427030-90
+                  - generic:
+                    - generic:
+                      - heading "$1,825,000" [level=6]
+                      - generic: 30 days on market
+                    - paragraph: 460 Wellesley Street E, Cabbagetown-south St. James Town, Toronto, ON, M4X 1H9
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 2,000 ft²
+                - button "Add to favorites" [ref=e398] [cursor=pointer]:
+                  - img [ref=e399]
+              - generic [ref=e401]:
+                - link "$2,749,000 32 days on market 15 Cruikshank Avenue, Playter Estates-danforth, Toronto, ON, M4K 1S6 4+1 7 2,000 ft²" [ref=e402] [cursor=pointer]:
+                  - /url: /listing/15-cruikshank-avenue-toronto-m4k-1s6-E13417410-90
+                  - generic:
+                    - generic:
+                      - heading "$2,749,000" [level=6]
+                      - generic: 32 days on market
+                    - paragraph: 15 Cruikshank Avenue, Playter Estates-danforth, Toronto, ON, M4K 1S6
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 4+1
+                        - separator
+                        - img
+                        - text: "7"
+                        - separator
+                        - img
+                        - generic: 2,000 ft²
+                - button "Add to favorites" [ref=e408] [cursor=pointer]:
+                  - img [ref=e409]
+              - generic [ref=e411]:
+                - link "$1,499,000 32 days on market 110-112 Dewhurst Boulevard, Danforth, Toronto, ON, M4J 3J3 4+1 8 2,500 ft²" [ref=e412] [cursor=pointer]:
+                  - /url: /listing/110-112-dewhurst-boulevard-toronto-m4j-3j3-E13413136-90
+                  - generic:
+                    - generic:
+                      - heading "$1,499,000" [level=6]
+                      - generic: 32 days on market
+                    - paragraph: 110-112 Dewhurst Boulevard, Danforth, Toronto, ON, M4J 3J3
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 4+1
+                        - separator
+                        - img
+                        - text: "8"
+                        - separator
+                        - img
+                        - generic: 2,500 ft²
+                - button "Add to favorites" [ref=e418] [cursor=pointer]:
+                  - img [ref=e419]
+              - generic [ref=e421]:
+                - 'link "$799,900 35 days on market #1 - 35 Somers Avenue, Danforth Village-east York, Toronto, ON, M4J 1W2 3 2 1,200 ft²" [ref=e422] [cursor=pointer]':
+                  - /url: /listing/1-35-somers-avenue-toronto-m4j-1w2-E13281704-90
+                  - generic:
+                    - generic:
+                      - heading "$799,900" [level=6]
+                      - generic: 35 days on market
+                    - paragraph: "#1 - 35 Somers Avenue, Danforth Village-east York, Toronto, ON, M4J 1W2"
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,200 ft²
+                - button "Add to favorites" [ref=e428] [cursor=pointer]:
+                  - img [ref=e429]
+              - generic [ref=e431]:
+                - link "$2,595,000 35 days on market 466 Wellesley Street E, Cabbagetown-south St. James Town, Toronto, ON, M4X 1H9 2+1 4 2,000 ft²" [ref=e432] [cursor=pointer]:
+                  - /url: /listing/466-wellesley-street-e-toronto-m4x-1h9-C13261600-90
+                  - generic:
+                    - generic:
+                      - heading "$2,595,000" [level=6]
+                      - generic: 35 days on market
+                    - paragraph: 466 Wellesley Street E, Cabbagetown-south St. James Town, Toronto, ON, M4X 1H9
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 2+1
+                        - separator
+                        - img
+                        - text: "4"
+                        - separator
+                        - img
+                        - generic: 2,000 ft²
+                - button "Add to favorites" [ref=e438] [cursor=pointer]:
+                  - img [ref=e439]
+              - generic [ref=e441]:
+                - link "$,$$$,$$$ 🔥 Listed today *** Logan Avenue, North Riverdale, Toronto, ON, M4K 3C4 beds bath square ft" [ref=e442] [cursor=pointer]:
+                  - /url: /listing/logan-avenue-toronto-m4k-3c4-E13240334-90
+                  - generic:
+                    - generic:
+                      - heading "$,$$$,$$$" [level=6]:
+                        - generic:
+                          - generic: $,$$$,$$$
+                      - generic: 🔥 Listed today
+                    - paragraph:
+                      - generic:
+                        - generic: "***"
+                        - text: Logan Avenue, North Riverdale, Toronto, ON, M4K 3C4
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: beds
+                        - separator
+                        - generic:
+                          - generic: bath
+                        - separator
+                        - generic:
+                          - generic: square ft
+                - button "Add to favorites" [ref=e448] [cursor=pointer]:
+                  - img [ref=e449]
+              - generic [ref=e451]:
+                - link "$1,995,000 42 days on market 601 Logan Avenue, North Riverdale, Toronto, ON, M4K 3B9 4+2 6 1,500 ft²" [ref=e452] [cursor=pointer]:
+                  - /url: /listing/601-logan-avenue-toronto-m4k-3b9-E13215328-90
+                  - generic:
+                    - generic:
+                      - heading "$1,995,000" [level=6]
+                      - generic: 42 days on market
+                    - paragraph: 601 Logan Avenue, North Riverdale, Toronto, ON, M4K 3B9
+                    - generic:
+                      - generic:
+                        - img
+                        - text: 4+2
+                        - separator
+                        - img
+                        - text: "6"
+                        - separator
+                        - img
+                        - generic: 1,500 ft²
+                - button "Add to favorites" [ref=e458] [cursor=pointer]:
+                  - img [ref=e459]
+              - generic [ref=e461]:
+                - link "$649,900 42 days on market 106 Donlands Avenue, Danforth, Toronto, ON, M4J 3P1 3 2 700 ft²" [ref=e462] [cursor=pointer]:
+                  - /url: /listing/106-donlands-avenue-toronto-m4j-3p1-E13211802-90
+                  - generic:
+                    - generic:
+                      - heading "$649,900" [level=6]
+                      - generic: 42 days on market
+                    - paragraph: 106 Donlands Avenue, Danforth, Toronto, ON, M4J 3P1
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 700 ft²
+                - button "Add to favorites" [ref=e468] [cursor=pointer]:
+                  - img [ref=e469]
+              - generic [ref=e471]:
+                - link "$1,299,000 58 days on market 43 Eaton Avenue, Danforth, Toronto, ON, M4J 2Z4 3 2 1,100 ft²" [ref=e472] [cursor=pointer]:
+                  - /url: /listing/43-eaton-avenue-toronto-m4j-2z4-E13122170-90
+                  - generic:
+                    - generic:
+                      - heading "$1,299,000" [level=6]
+                      - generic: 58 days on market
+                    - paragraph: 43 Eaton Avenue, Danforth, Toronto, ON, M4J 2Z4
+                    - generic:
+                      - generic:
+                        - img
+                        - text: "3"
+                        - separator
+                        - img
+                        - text: "2"
+                        - separator
+                        - img
+                        - generic: 1,100 ft²
+                - button "Add to favorites" [ref=e478] [cursor=pointer]:
+                  - img [ref=e479]
+            - navigation "pagination navigation" [ref=e482]:
+              - list [ref=e483]:
+                - listitem [ref=e484]:
+                  - button "Go to previous page" [disabled]:
+                    - img
+                - listitem [ref=e485]:
+                  - button "page 1" [ref=e486] [cursor=pointer]: "1"
+                - listitem [ref=e487]:
+                  - button "Go to page 2" [ref=e488] [cursor=pointer]: "2"
+                - listitem [ref=e489]:
+                  - button "Go to next page" [ref=e490] [cursor=pointer]:
+                    - img [ref=e491]
+  - button "Open Next.js Dev Tools" [ref=e91] [cursor=pointer]:
+    - img [ref=e92]
+  - alert [ref=e493]

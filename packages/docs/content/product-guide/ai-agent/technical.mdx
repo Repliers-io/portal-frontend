@@ -1,0 +1,73 @@
+import { Callout } from 'nextra/components'
+
+# AI Agent Integration — How it works
+
+> The `window.postMessage` contract between the portal and an embedded AI. Overview:
+> [AI Agent Integration](/product-guide/ai-agent).
+
+## Where it lives
+
+The bridge is the `SupportAgent` component
+(`components/pages/search/components/SupportAgent/`), mounted in the search experience when
+the `aiAgent` flag is on. It reads live search state via `useSearch` and talks to the agent
+iframe over `postMessage`. Every message carries a generated `sessionId`.
+
+## The message protocol
+
+**Portal → Agent** (the portal pushes context):
+
+| Message                          | Payload                           | When                                        |
+| -------------------------------- | --------------------------------- | ------------------------------------------- |
+| `InitSession`                    | `userAgent`, `userName`           | After the agent signals `AgentReady`.       |
+| `Listings`                       | `count`, `listings`, `statistics` | On results change, or on `RequestListings`. |
+| `ListingDetails`                 | `listing`                         | When a listing is opened/cached.            |
+| `Filters`                        | `filters`                         | Reply to `ExtractFilters` (NLP result).     |
+| `WindowVisible` / `WindowHidden` | —                                 | Chat panel open/close.                      |
+| `CloseListing`                   | —                                 | When the listing dialog closes.             |
+
+**Agent → Portal** (the agent drives the portal):
+
+| Message           | Payload                | Effect                                                      |
+| ----------------- | ---------------------- | ----------------------------------------------------------- |
+| `AgentReady`      | —                      | Portal sends `InitSession` + current `Listings`.            |
+| `RequestListings` | —                      | Portal replies with `Listings`.                             |
+| `ExtractFilters`  | `query`                | Portal runs NLP (`APIChat.fetchReply`) → replies `Filters`. |
+| `ApplyFilters`    | `filters`              | Portal applies them (`setFilters`).                         |
+| `ResetFilters`    | —                      | Portal clears filters.                                      |
+| `OpenListing`     | `mlsNumber`, `boardId` | Portal opens that listing.                                  |
+| `CloseListing`    | —                      | Portal clears the cached listing.                           |
+| `ResetAgent`      | —                      | Portal resets the NLP token.                                |
+
+<Callout type="info">
+  Note the natural-language path: the agent sends `ExtractFilters{query}`, the
+  portal turns it into MLS filters via the backend NLP endpoint, returns
+  `Filters`, and the agent (or the user) can then `ApplyFilters`. The AI never
+  touches the MLS API — it goes through the portal.
+</Callout>
+
+## Modes
+
+- **Embedded** — `SupportAgent` renders a chat button + panel with the agent iframe
+  (`config.iframeUrl` from `NEXT_PUBLIC_AI_AGENT_IFRAME_URL`, with `sessionId` appended).
+- **Headless** — when `headlessIframeId` is set, `SupportAgent` renders **nothing**; it locates
+  an external iframe already in the DOM (by id, via a `MutationObserver`) and posts to _that_.
+  This is how a host system plugs its own AI in without portal UI.
+
+## Configuration
+
+| Config / env / flag                    | Role                                                               |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `@configs/features` `aiAgent`          | Enables the bridge.                                                |
+| `NEXT_PUBLIC_AI_AGENT_IFRAME_URL`      | The embedded agent's iframe URL.                                   |
+| `@configs/ai-agent` `headlessIframeId` | DOM id of an external iframe for headless mode (empty = embedded). |
+
+## Gotchas & hints
+
+- **The protocol is the integration surface.** Any assistant that speaks these messages can be
+  connected — the AI is swappable; the portal side is fixed.
+- **Session-scoped.** The portal stamps `sessionId` on every outbound message and several
+  inbound handlers ignore messages without it.
+- **Headless renders no UI** — if you enable `headlessIframeId` but no matching iframe appears,
+  nothing happens (the observer just keeps waiting).
+- **NLP runs server-side** through `APIChat.fetchReply`; the returned token is reused across
+  queries and reset by `ResetAgent`.

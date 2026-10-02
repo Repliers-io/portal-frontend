@@ -1,0 +1,290 @@
+# Development Guide
+
+Everything you need to set up and run Portal locally.
+
+> For a guided first run (clone → env → launch → verify) start with
+> [Getting Started → First Launch](/getting-started/first-launch). This page is the
+> developer reference for commands, structure, and common tasks.
+
+## Prerequisites
+
+| Requirement | Version |
+| ----------- | ------- |
+| Node.js     | v22+    |
+| pnpm        | v10+    |
+| Git         | Latest  |
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone <repo-url>
+cd smartmls-frontend
+```
+
+### 2. Install Dependencies
+
+```bash
+pnpm install
+```
+
+### 3. Set Up Environment
+
+Each tenant ships a committed `.env.<tenant>`; the default build uses `.env`. To override
+locally, create `.env.local` in `packages/portal-frontend/`:
+
+```bash
+# Proxy backend — the frontend never calls the Repliers API directly.
+# Point at a running proxy (default in the committed env files is http://localhost:8080).
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Maps
+NEXT_PUBLIC_MAPBOX_KEY=pk.xxx
+NEXT_PUBLIC_GMAPS_KEY=xxx
+
+# Tenant (must match a configs/<tenant> folder)
+NEXT_PUBLIC_APP_CONFIGURATION=<tenant>
+```
+
+### 4. Run Development Server
+
+```bash
+# Default configuration
+pnpm frontend:dev
+
+# Specific tenant
+pnpm frontend:dev:<tenant>
+```
+
+Open http://localhost:3000
+
+## Commands
+
+### Development
+
+| Command                      | Description             |
+| ---------------------------- | ----------------------- |
+| `pnpm frontend:dev`          | Start dev server        |
+| `pnpm frontend:dev:<tenant>` | Dev with tenant config  |
+| `pnpm frontend:build`        | Production build        |
+| `pnpm frontend:start`        | Start production server |
+
+### Linting & Formatting
+
+| Command                      | Description         |
+| ---------------------------- | ------------------- |
+| `pnpm frontend:eslint`       | Check ESLint        |
+| `pnpm frontend:eslint:fix`   | Fix ESLint issues   |
+| `pnpm frontend:prettier`     | Check Prettier      |
+| `pnpm frontend:prettier:fix` | Fix Prettier issues |
+| `pnpm frontend:type-check`   | TypeScript check    |
+
+### Testing
+
+| Command                          | Description           |
+| -------------------------------- | --------------------- |
+| `pnpm frontend:test`             | Run all tests         |
+| `pnpm frontend:test:ci`          | CI mode (JSON output) |
+| `pnpm frontend:test:last-commit` | Tests for last commit |
+
+### Single Test File
+
+```bash
+cd packages/portal-frontend
+pnpm exec jest path/to/file.test.ts
+```
+
+## Environment Variables
+
+### Required
+
+| Variable                        | Description                                                            |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`           | Proxy backend URL (forwards to Repliers; never call Repliers directly) |
+| `NEXT_PUBLIC_MAPBOX_KEY`        | Mapbox API key                                                         |
+| `NEXT_PUBLIC_GMAPS_KEY`         | Google Maps API key                                                    |
+| `NEXT_PUBLIC_APP_CONFIGURATION` | Tenant name                                                            |
+
+### Optional
+
+| Variable                    | Description                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_GTAG_KEY`      | Google Analytics / gtag id                                                            |
+| `NEXT_PUBLIC_GROWTHBOOK_*`  | Build-time feature-flag sync (`INIT`, `API_HOST`, `CLIENT_KEY`) — not read at runtime |
+| `NEXT_PUBLIC_APP_DOMAIN`    | App domain URL                                                                        |
+| `DISABLE_SSG`, `FORCE_HTTP` | Local dev toggles                                                                     |
+
+### Tenant-Specific Env Files
+
+Each tenant has its own env file:
+
+```
+packages/portal-frontend/
+├── .env                    ← Default build (tenant: defaults)
+├── .env.<tenant>           ← One committed file per tenant
+└── ...
+```
+
+Not every tenant's env file is committed — some are provisioned separately, so their
+`dev:*` scripts need the file added first.
+
+## Project Structure Quick Reference
+
+| What You Need          | Where to Find It            |
+| ---------------------- | --------------------------- |
+| Routes (pages)         | `src/app/`                  |
+| Page components        | `src/components/pages/`     |
+| Shared components      | `src/components/shared/`    |
+| Layout (Header/Footer) | `src/components/templates/` |
+| Tenant configs         | `src/configs/[tenant]/`     |
+| API services           | `src/services/API/`         |
+| Providers (state)      | `src/providers/`            |
+| Hooks                  | `src/hooks/`                |
+| Utils                  | `src/utils/`                |
+| Feature flags          | `src/features/`             |
+| Translations           | `src/i18n/`                 |
+
+## Common Tasks
+
+### Add a New Page
+
+1. Create route in `src/app/`:
+
+```tsx
+// src/app/new-page/page.tsx
+import { NewPageContent } from '@pages/new-page'
+
+export default function NewPage() {
+  return <NewPageContent />
+}
+```
+
+2. Create page content in `src/components/pages/`:
+
+```tsx
+// src/components/pages/new-page/NewPageContent.tsx
+export const NewPageContent = () => {
+  return <div>New Page</div>
+}
+```
+
+### Add a Tenant Override
+
+1. Create tenant folder:
+
+```bash
+mkdir -p src/components/pages/home/_newtenant
+```
+
+2. Create override component:
+
+```tsx
+// src/components/pages/home/_newtenant/HomePageContent.tsx
+export const HomePageContent = () => {
+  return <div>Custom Home</div>
+}
+```
+
+3. Export from index:
+
+```typescript
+// src/components/pages/home/_newtenant/index.ts
+export { HomePageContent } from './HomePageContent'
+```
+
+### Add a New Config
+
+1. Create config file:
+
+```typescript
+// src/configs/defaults/newconfig.ts
+export default {
+  setting1: 'value1',
+  setting2: 'value2'
+}
+```
+
+2. Import via alias:
+
+```typescript
+import newconfig from '@configs/newconfig'
+```
+
+### Add a New Provider
+
+1. Create provider folder:
+
+```
+src/providers/NewProvider/
+├── NewProvider.tsx
+├── NewContext.ts
+├── useNew.ts
+├── types.ts
+└── index.ts
+```
+
+2. Add to app providers in `src/app/_providers.tsx`
+
+## Debugging
+
+### TypeScript Errors
+
+```bash
+pnpm frontend:type-check
+```
+
+### Build Issues
+
+```bash
+# Clean and rebuild
+pnpm frontend:clean
+pnpm frontend:build
+```
+
+### Check Generated tsconfig
+
+The `tsconfig.json` is generated at build time. Check it for path resolution issues:
+
+```bash
+cat packages/portal-frontend/tsconfig.json
+```
+
+## IDE Setup
+
+### VS Code Extensions
+
+- ESLint
+- Prettier
+- TypeScript
+- ES7+ React/JS snippets
+
+### Recommended Settings
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
+}
+```
+
+## Git Workflow
+
+1. Create feature branch from `master`
+2. Make changes
+3. Run linting and tests
+4. Create PR
+5. Get review
+6. Merge to `master`
+
+```bash
+git checkout -b feature/my-feature
+# ... make changes ...
+pnpm frontend:eslint:fix
+pnpm frontend:type-check
+pnpm frontend:test
+git commit -m "feat: add my feature"
+git push origin feature/my-feature
+```

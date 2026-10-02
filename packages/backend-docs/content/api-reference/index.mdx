@@ -1,0 +1,42 @@
+# API Conventions
+
+These pages describe **what each endpoint is for and how it behaves** — the semantic
+layer. The exact request/response contracts (parameters, schemas, examples) are
+maintained as `@openapi` JSDoc annotations next to the routes and served as a
+**Swagger UI at `/swagger`** when `APP_USESWAGGER=true`. Use both together: Swagger
+for the contract, these pages for the behavior.
+
+## Base rules
+
+- Everything is mounted under **`/api`**.
+- **Auth modes** per endpoint (see [Authentication](/architecture/authentication)):
+  - *strict* — valid JWT required, 401 otherwise;
+  - *guest-allowed* — anonymous works (responses are
+    [scrubbed](/architecture/scrubbing)); an invalid token still fails with 401;
+  - *role-gated* — strict plus an ACL role check.
+- **Validation** — every body/query is Joi-validated; failures return
+  `400` with the schema message.
+- **Error body** — all errors share one shape (from the global handler):
+
+  ```json
+  { "message": "<status> - <details> - <path>", "userMessage": "<details>", "info": {} }
+  ```
+
+- **`Retry-After`** is set only when the backend itself knows the wait — today the OTP
+  resend cooldown (`403`). Upstream (Repliers) headers are not forwarded; an upstream
+  error's body arrives in `info`.
+- **Caching** — cached endpoints return a `Cache-Control: private, max-age=<n>`
+  header reflecting the server cache's remaining TTL.
+
+## Router map
+
+| Prefix | Page | Auth default |
+|---|---|---|
+| `/listings` | [Listings](/api-reference/listings) | guest-allowed |
+| `/autosuggest`, `/locations`, `/buildings` | [Search & Locations](/api-reference/search-and-locations) | guest-allowed |
+| `/user`, `/favorites`, `/searches` | [User & Favorites](/api-reference/user-and-favorites) | strict (few exceptions) |
+| `/estimate` | [Estimates](/api-reference/estimate) | mixed |
+| `/auth` | [Auth](/api-reference/auth) | public by nature |
+| `/contact`, `/stats`, `/vtour` | [Contact, Stats & Tours](/api-reference/contact-and-stats) | mixed |
+| `/agent`, `/admin` | [Agent & Admin](/api-reference/agent-and-admin) | role-gated |
+| `/webhooks` | [Webhooks](/api-reference/webhooks) | webhook signature |

@@ -1,0 +1,20 @@
+# YAML files
+**/*.yaml
+
+# Next.js
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.d.ts
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Logs
+*.log

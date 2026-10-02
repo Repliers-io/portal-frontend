@@ -1,0 +1,68 @@
+import { Callout } from 'nextra/components'
+
+# Data Mappers & Resolvers
+
+This layer normalizes a raw `ApiListing` — whose detail fields arrive as strings/nulls and differ by property class — into UI-ready, grouped detail sections for the listing page. It lives in `src/utils/dataMapper/` and is consumed through `ListingDetailsProvider`.
+
+## Key files
+
+| File                                                              | Role                                                                                                |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `src/utils/dataMapper/index.ts`                                   | Barrel — re-exports `condoResolver`, `residentialResolver`, `homeFactsResolver`, types, utils.      |
+| `resolvers/condoResolver.ts` · `resolvers/residentialResolver.ts` | Top-level resolvers — assemble the full section set for one property class.                         |
+| `resolvers/condo/` · `resolvers/residential/`                     | Per-section resolvers (`homeResolver`, `featuresResolver`, `exteriorResolver`, `roomsResolver`, …). |
+| `utils.ts`                                                        | `createResolver`, `resolvePath`, `filterEmptyGroups`, `isEmptyValue`, sanitizers.                   |
+| `mappers.ts`                                                      | ~40 named `mapper*` functions over `ApiListing` (computed/derived field values).                    |
+| `estimateMappers.ts` · `resolvers/homeFactsResolver.ts`           | Estimate-page counterpart (operates on `EstimatePayload`, not `ApiListing`).                        |
+| `types.ts`                                                        | `ResolverItem`, `DetailsItemType`, `DetailsGroupType`, `DetailsSectionType`.                        |
+
+## How it works
+
+The flow is **raw listing → resolver picked by property class → section groups**:
+
+```
+ApiListing ──▶ ListingDetailsProvider ──▶ config[listing.class] ?? config.default
+                                             │
+                          CondoProperty → condoResolver
+                          ResidentialProperty / default → residentialResolver
+                                             │
+                          { homeDetails, features, appliances,
+                            neighborhood, exterior, condominium, rooms }
+```
+
+Each section resolver reads its group definitions from a config (`@configs/pdp-sections`, or `@configs/pdp-condo-sections` for condo) and runs `createResolver` per item, then `filterEmptyGroups`. A config item is `{ label, path?, fn? }`:
+
+- `path` — dot-path read via `resolvePath` (e.g. `details.propertyType`, `raw.TitleForm`).
+- `fn` — a `mapper*` from `mappers.ts` that derives a value (e.g. `mapperTaxesYear` joins `taxes.annualAmount` + `assessmentYear`).
+
+`filterEmptyGroups` drops empty items/groups (via `isEmptyValue`, which treats `0`, `'0'`, `'0.00'`, `''` as empty). `label`s are i18n keys (e.g. `PDP.fields.category`), resolved in the consuming component.
+
+## Resolvers
+
+Both top-level resolvers return the **same section shape** (`Record<DetailsSection, DetailsGroupType[]>`); they differ in the config source and in `condominium`:
+
+| Section                               | Residential             | Condo                                              |
+| ------------------------------------- | ----------------------- | -------------------------------------------------- |
+| `homeDetails`, `features`, `exterior` | `@configs/pdp-sections` | `@configs/pdp-condo-sections`                      |
+| `appliances`, `neighborhood`, `rooms` | residential resolvers   | shared residential resolvers                       |
+| `condominium`                         | `[]` (empty)            | `condominiumResolver` (fees, amenities, exposure…) |
+
+`roomsResolver` (`resolvers/residential/roomsResolver.ts`) is the special case — it does not read a config group list. It buckets `listing.rooms` by `level`, dedupes same-named rooms (`Bedroom (2)`…), orders and relabels floors (`Main` → `Main Floor`, `Bsmt` → `Basement`), and formats `width × length` via `formatImperialDistance`, substituting `scrubbed.data` for `'null'` dimensions.
+
+`homeFactsResolver` + `estimateMappers.ts` mirror this pattern for the **estimate results** page: fields come from `@configs/estimate/homeFacts` and mappers operate on `EstimatePayload`.
+
+## Gotchas & hints
+
+<Callout type="warning">
+  Wire fields are **string/null-typed**. `ApiListingDetails.numBedrooms`, `sqft`, and
+  `ApiCondominium.fees.maintenance` are strings; mappers coerce (`+numBedrooms`,
+  `parseFloat`) and guard `NaN`. Many values live under untyped `listing.raw?.*`
+  (`raw: { [key: string]: string }`) — e.g. `raw.TitleForm`, `raw.AppliancesIncluded`.
+</Callout>
+
+- **Class branching is the whole point.** `config[className]?.(listing) || config.default(listing)` — unknown/missing class falls back to `residentialResolver`. Only `CondoProperty` and `ResidentialProperty` have explicit entries.
+- **Config, not code, defines fields.** Adding/removing a detail row is a `@configs/pdp-sections` edit — resolvers are generic (`createResolver` + `filterEmptyGroups`); each wraps its body in try/catch and returns `[]` on error.
+- **`condominium` is always present** in the shape but empty (`[]`) for residential — consumers can safely map over it.
+- **Consumed via `ListingDetailsProvider`** (`useListingDetails`), mounted by `ListingPageTemplate`; PDP section components (`HomeDetails`, `RoomsDetails`, …) destructure the matching key. See [Listing Detail — technical](/product-guide/listing-detail/technical).
+
+See also [Data Models](/technical-guide/data-models) for the raw `ApiListing` / `ApiListingDetails` shapes.

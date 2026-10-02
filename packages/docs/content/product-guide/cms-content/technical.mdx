@@ -1,0 +1,75 @@
+import { Callout } from 'nextra/components'
+
+# Blog & CMS — How it works
+
+> Technical anatomy of the CMS layer that serves the blog and static pages.
+> For the overview see [Blog & CMS](/product-guide/cms-content).
+
+## Routes & entry
+
+| Route                                     | Page root                                                              | Notes                    |
+| ----------------------------------------- | ---------------------------------------------------------------------- | ------------------------ |
+| `/blog`, `/blog/page/[page]`              | `@pages/blog/BlogIndexPageContent`                                     | Post listing, paginated. |
+| `/blog/[slug]`                            | `@pages/blog/BlogPostPageContent`                                      | Single post.             |
+| `/blog/category/[...]`, `/blog/tag/[tag]` | `@pages/blog/Blog{Category,Tag}PageContent`                            | Filtered listings.       |
+| `/authors`, `/author/[slug]`              | `@pages/blog/Author*PageContent`                                       | Author index / bio.      |
+| `/pages`, `/pages/[...path]`              | `@pages/static-pages/StaticPagesIndexContent`                          | Static page directory.   |
+| `/page/[...slug]`                         | `@pages/static-pages/StaticPageContent` (`@shared/CmsContentRenderer`) | Single CMS page.         |
+| `/widgets/[widgetName]`                   | `@shared/CmsContentRenderer` → `WidgetRenderer`                        | Embeddable CMS block.    |
+| `/building/*`, `/condo/*`                 | `@pages/building/BuildingPageContent`                                  | CMS "buildings" content. |
+
+## Providers
+
+Blog and static pages are **server-rendered from the CMS** — there are no scoped providers.
+The building/condo detail pages mount `BuildingProvider` (`useBuilding`) with the CMS
+building object. See [State Management](/technical-guide/state-management).
+
+## The CMS service layer
+
+```
+Route (server component)
+└─ CmsService                     src/services/CMS/CmsService.ts
+   ├─ CmsResolver                 picks local vs remote per route (uses @configs/cms)
+   ├─ clients/
+   │  ├─ WordPressClient          posts, pages, categories, tags, authors, menus, media
+   │  ├─ GhostClient              Content API
+   │  └─ MarkdownClient           served Markdown
+   └─ transformers/               normalize WordPress / Ghost payloads to Portal types
+```
+
+The active client is chosen by env (`CMS_PAGES_CLIENT` / `CMS_BLOG_CLIENT`), so the same
+route code works regardless of which CMS the tenant runs. `CmsContentRenderer` renders the
+resolved (sanitized) CMS HTML.
+
+## Configuration
+
+| Config / env                          | Drives                                                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `@configs/cms`                        | `cmsRoutingConfig`: the per-route `localOnly` / `remoteOnly` / `remoteFirst` map, plus `foldersIndexMode` and `hideEmptyPages`. |
+| `@configs/blog`                       | Blog module options.                                                                                                            |
+| `CMS_PAGES_CLIENT`, `CMS_BLOG_CLIENT` | Which client serves pages vs blog (`wordpress` / `ghost` / `markdown`).                                                         |
+| `WORDPRESS_API_*`, `GHOST_API_*`      | Endpoints/credentials for the chosen client.                                                                                    |
+
+## Gotchas & hints
+
+- **Resolution priority (in `@configs/cms`):** exact match → longest wildcard → the default
+  `'*'`. So `terms-of-use` (`localOnly`) beats `blog/*` (`remoteOnly`) beats `'*'`
+  (`remoteFirst`).
+- **Legal pages are `localOnly`** and version-controlled; the blog is `remoteOnly`; anything
+  else is `remoteFirst` (CMS with local fallback).
+- **Pluggable per content type:** pages and blog can use _different_ clients — a tenant can
+  run WordPress pages + Ghost blog, etc.
+- **WordPress "buildings" naming is inverted:** the WP CPT **"buildings"** = groups /
+  containers, and the **"categories"** taxonomy = individual buildings. Keep this in mind when
+  reading `WordPressClient` code and the `/buildings` vs `/building` routes.
+- **CMS HTML is sanitized** before render (`services/CMS/utils/sanitize.ts`) — don't bypass it.
+- **Listing widgets accept an explicit MLS list.** Carousel / Grid / Map(+Grid) widgets take
+  `listings.mlsNumber` as a single value or a repeated param, in both syntaxes:
+  CMS tag `[GridWidget listings.mlsNumber=W1 listings.mlsNumber=W2]` and iframe URL
+  `/widgets/GridWidget?listings.mlsNumber=W1&listings.mlsNumber=W2`. The embed page and the
+  CMS tag parser share one un-flatten step (`unflattenParams`, `utils/path.ts`). When
+  `mlsNumber` is present, `SearchService` drops the default map rectangle and the status/type
+  constraints and pins `status` to both available + unavailable (the API defaults to
+  active-only otherwise), so the requested listings show **regardless of status/geo** — an
+  exact-MLS lookup. The grid still paginates normally; the list is validated slug-safe and
+  capped at 50 items.

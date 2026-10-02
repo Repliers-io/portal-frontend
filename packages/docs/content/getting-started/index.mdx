@@ -1,0 +1,75 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Getting Started
+
+Portal is a **white-label real estate portal engine**: one codebase that powers many
+branded real-estate websites (**tenants**). Each tenant ships its own colors, content,
+map, and feature set through config overrides, while sharing the same core app. The
+default/demo build is the **`defaults`** tenant, deployed live at
+[portal.repliers.com](https://portal.repliers.com/) — new work starts from it.
+
+This section takes you from a fresh clone to a running server, then explains what you can
+configure and which capabilities are available where.
+
+<Callout type="info">
+  New to the codebase? There are **two tracks** below — read them in order or
+  jump to the one you need.
+</Callout>
+
+## Two tracks
+
+| Track                         | For                                                                                | Read                                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **A — Developer setup**       | Getting the app running and knowing which config to change                         | [First Launch](/getting-started/first-launch) → [Configuration](/getting-started/configuration)                                     |
+| **B — Capabilities & limits** | Understanding what the portal can do and why some features are off in some regions | [Capabilities & Flags](/getting-started/capabilities-and-flags) → [Regional & MLS Limits](/getting-started/regional-and-mls-limits) |
+
+## Prerequisites
+
+| Requirement | Version                                                             |
+| ----------- | ------------------------------------------------------------------- |
+| Node.js     | 22+ (the `portal-frontend` package pins `engines.node` to **24.x**) |
+| pnpm        | 10+                                                                 |
+| Git         | Latest                                                              |
+
+## Fastest path to a running app
+
+<Steps>
+
+### Clone and install
+
+```bash
+git clone https://bitbucket.org/repliers-client-work/smartmls-frontend.git
+cd smartmls-frontend
+pnpm install
+```
+
+### Run the default sample-data build
+
+```bash
+pnpm frontend:dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+</Steps>
+
+<Callout type="warning">
+  The UI boots on its own, but **listings and search need a proxy backend**. The
+  frontend never calls the Repliers MLS API directly — it talks to the proxy at
+  `NEXT_PUBLIC_API_URL` (default `http://localhost:8080`). See [First Launch →
+  The proxy backend](/getting-started/first-launch#the-proxy-backend) for how to
+  point it at a running backend.
+</Callout>
+
+## Learning path
+
+If real estate itself is new to you, walk this path before diving into code:
+
+1. **Domain** — the [Glossary](/glossary) covers MLS, listings, VOW/IDX, and status codes.
+2. **Product** — the [Product Guide](/product-guide) explains search, estimates, and the
+   [multi-tenant model](/product-guide/multi-tenant).
+3. **Architecture** — the [Technical Guide](/technical-guide) and
+   [Multi-tenant System](/technical-guide/multi-tenant) explain the override mechanism in
+   depth.
+4. **Build a tenant** — the [Adding a New Tenant](/tutorials/adding-tenant) tutorial is the
+   end-to-end walkthrough once you know the config surface.

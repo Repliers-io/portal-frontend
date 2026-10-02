@@ -1,0 +1,17 @@
+# Operations Overview
+
+How the backend is built, shipped, and multiplied across instances:
+
+- [Deployment](/operations/deployment) — Heroku process model, the release-phase
+  migration, environment specifics.
+- [CI/CD](/operations/ci-cd) — the Bitbucket Pipelines test → deploy → tag flow and
+  its Heroku release verification.
+- [Instances](/operations/instances) — the three-part per-instance mechanism and the
+  onboarding checklist.
+- [Testing](/operations/testing) — mocha/supertest/nock, the test database, CI
+  reporting.
+- [OSS Export](/operations/oss-export) — what ships to the public repository and the
+  rules that keeps enforceable.
+
+The recurring theme: **one codebase, no forks**. Instances differ only in settings
+presets, env vars, and pipeline wiring — never in code paths.

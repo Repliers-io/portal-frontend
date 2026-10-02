@@ -1,0 +1,240 @@
+import { Callout } from 'nextra/components'
+
+# User Features
+
+Portal provides authenticated users with personalized features to save properties, searches, and receive alerts.
+
+<Callout type="info">
+  Technical anatomy (providers, routes, config) is in [How it
+  works](/product-guide/user-features/technical).
+</Callout>
+
+## Feature Overview
+
+| Feature         | URL                | Description                                            |
+| --------------- | ------------------ | ------------------------------------------------------ |
+| Favorites       | `/favorites`       | Saved properties                                       |
+| Image Favorites | `/image-favorites` | Saved listing photos                                   |
+| Saved Searches  | `/saved-searches`  | Saved filter combinations                              |
+| Recently Viewed | `/recently-viewed` | Browsing history                                       |
+| Profile         | `/profile`         | Account settings                                       |
+| Alerts          | (email)            | Notifications for new matches (part of saved searches) |
+
+## Authentication
+
+These features require a signed-in user. The portal uses **passwordless** authentication —
+there are no passwords to set or store. Sign-in options:
+
+| Method               | Description                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| Email or phone + OTP | A one-time code is sent to the user's email or phone to verify sign-up / sign-in — no password |
+| Google OAuth         | Sign in with Google                                                                            |
+
+<Callout type="info">
+  The email/phone OTP flow is gated by the **`messaging`** feature flag. A
+  tenant without `messaging` shows **only** Google sign-in; with it, the OTP
+  form and Google appear together (separated by an "or" divider).
+</Callout>
+
+### OTP flow
+
+The auth dialog has two flows — **login** and **sign-up** — each a two-step `input → verify`:
+
+```
+   Enter email / phone          Enter the code
+   ┌──────────────┐   code sent  ┌──────────────┐   verified   ┌──────────────┐
+   │    input     │ ───────────▶ │    verify    │ ───────────▶ │  signed in   │
+   └──────────────┘              └──────────────┘              └──────────────┘
+```
+
+1. The user enters an **email or phone number** (`APIAuth.login`) and the portal sends a
+   **one-time code**.
+2. They enter the code (`loginWithOtp`) and are signed in — the original member action
+   (e.g. saving the favorite that opened the dialog) then completes.
+
+- **Auto-switch, no upfront choice.** Submitting an **unknown** email/phone during login flips
+  to **sign-up** (which also collects first/last name); an **existing** user during sign-up flips
+  back to the login code prompt.
+- **Resend** is rate-limited by a **60-second** cooldown.
+- The last-used email/phone is remembered (localStorage) and pre-fills the next visit.
+- **Google** (`GoogleSignInButton`) is offered as a one-tap alternative to the code flow.
+
+For the token/JWT flow, the provider union (`google | facebook | otp`), roles, and refresh, see
+[Authentication & Authorization](/technical-guide/authentication).
+
+## Favorites
+
+Save properties for later viewing and comparison.
+
+![The Favorites page — saved listings as a grid of cards (photo, price, filled heart) under the account tabs: Favorites, Saved Searches, Image Favorites, Recently Viewed](/img/user-favorites.webp)
+
+### How It Works
+
+1. User clicks heart icon on property card or detail page
+2. If not logged in, auth modal appears
+3. Property is saved to user's favorites
+4. User can view all favorites at `/favorites`
+
+### Favorite Actions
+
+| Action   | Description                 |
+| -------- | --------------------------- |
+| Add      | Click heart to save         |
+| Remove   | Click heart again to unsave |
+| View All | Go to `/favorites` page     |
+| Sort     | By date added, price, etc.  |
+| Compare  | Side-by-side comparison     |
+
+### Data Stored
+
+| Field       | Description           |
+| ----------- | --------------------- |
+| `listingId` | MLS listing ID        |
+| `userId`    | User ID               |
+| `createdAt` | When saved            |
+| `notes`     | User notes (optional) |
+
+## Saved Searches
+
+Save search filter combinations to reuse and receive alerts.
+
+![The Saved Searches page — each saved search as a card with a mini-map of its drawn area, the filter summary (types, price range) and its alert frequency (e.g. Instant)](/img/user-saved-searches.webp)
+
+### How It Works
+
+1. User applies filters on search page
+2. Clicks "Save Search" button
+3. Names the search (e.g., "Seattle Condos Under 500K")
+4. Optionally enables email alerts
+5. Search is saved to `/saved-searches`
+
+### Saved Search Data
+
+| Field            | Description                |
+| ---------------- | -------------------------- |
+| `name`           | User-defined name          |
+| `filters`        | All search parameters      |
+| `alertEnabled`   | Email notifications on/off |
+| `alertFrequency` | Daily, weekly, instant     |
+| `createdAt`      | When created               |
+| `lastAlertAt`    | Last notification sent     |
+
+### Alert Options
+
+| Frequency | Description                    |
+| --------- | ------------------------------ |
+| Instant   | Email when new listing matches |
+| Daily     | Daily digest of new matches    |
+| Weekly    | Weekly summary                 |
+| Off       | No notifications               |
+
+## Image Favorites
+
+Save individual listing **photos** (not whole listings) — useful for collecting interior
+ideas, finishes, and layouts across different properties.
+
+![The Image Favorites page — a grid of individually saved listing photos (interiors and exteriors) from different properties, under the account tabs](/img/user-image-favorites.webp)
+
+- Click the favorite control on a photo in the gallery.
+- All saved photos are shown at `/image-favorites`.
+- Gated by the `imageFavorites` feature flag (separate from `favorites`).
+
+## Recently Viewed
+
+Automatic browsing history for authenticated users.
+
+### How It Works
+
+- Each property detail page view is logged
+- History shows last 50 viewed properties
+- Displayed at `/recently-viewed`
+- Cleared on user request
+
+### Data Stored
+
+| Field       | Description             |
+| ----------- | ----------------------- |
+| `listingId` | Property viewed         |
+| `viewedAt`  | Timestamp               |
+| `duration`  | Time on page (optional) |
+
+## Profile
+
+User account settings and preferences.
+
+![The profile / account settings page — name, email and contact phone fields plus Email and SMS notification toggles](/img/user-profile.webp)
+
+### Profile Sections
+
+| Section       | Contents           |
+| ------------- | ------------------ |
+| Personal Info | Name, email, phone |
+| Password      | Change password    |
+| Notifications | Email preferences  |
+| Privacy       | Data settings      |
+
+### Notification Settings
+
+| Setting             | Description              |
+| ------------------- | ------------------------ |
+| Saved Search Alerts | New matching listings    |
+| Price Drop Alerts   | Changes on favorites     |
+| Market Updates      | Monthly market reports   |
+| Newsletter          | Marketing communications |
+
+## User Journey: Buyer
+
+```
+┌──────────────┐
+│   Browse     │
+│  Listings    │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐     ┌──────────────┐
+│   Find       │────▶│   Save to    │
+│  Favorite    │     │  Favorites   │
+└──────────────┘     └──────┬───────┘
+                            │
+       ┌────────────────────┤
+       │                    │
+       ▼                    ▼
+┌──────────────┐     ┌──────────────┐
+│   Save       │     │   Compare    │
+│   Search     │     │  Properties  │
+└──────┬───────┘     └──────────────┘
+       │
+       ▼
+┌──────────────┐
+│   Receive    │
+│   Alerts     │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│   Contact    │
+│    Agent     │
+└──────────────┘
+```
+
+## Feature Flags
+
+| Flag             | Feature                                        |
+| ---------------- | ---------------------------------------------- |
+| `favorites`      | Enable favorites                               |
+| `imageFavorites` | Enable saved listing photos                    |
+| `saveSearch`     | Enable saved searches (and their email alerts) |
+| `recentlyViewed` | Track view history                             |
+| `profile`        | Enable the profile page                        |
+
+Each of these also mounts its provider only when enabled — see
+[State Management → global providers](/technical-guide/state-management).
+
+## Privacy Considerations
+
+| Data            | Retention             | User Control |
+| --------------- | --------------------- | ------------ |
+| Favorites       | Until deleted         | Full control |
+| Saved Searches  | Until deleted         | Full control |
+| Recently Viewed | 90 days               | Can clear    |
+| Profile         | Until account deleted | Full control |

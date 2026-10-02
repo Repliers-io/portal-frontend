@@ -1,0 +1,1 @@
+export { HorizontalScrollFade } from './HorizontalScrollFade'

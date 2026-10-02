@@ -1,0 +1,71 @@
+import { Callout } from 'nextra/components'
+
+# Agent Portal
+
+> Agent-facing views for managing clients and their home estimates — distinct from
+> the public [Home Estimate — How it works](/product-guide/estimate/technical) flow that
+> end users see.
+
+Agents (and admins) get their own screens: a list of their clients, a per-client estimates
+workspace, and — for admins — a screen to manage the agent roster itself.
+
+## Routes & entry
+
+All routes live under `src/app/(Estimates)/` and are wrapped in `ClientSidePageTemplate`
+with `loginRedirect` + a `roles` allowlist (client-side role gate).
+
+| Route                                            | File                                                         | Roles            |
+| ------------------------------------------------ | ------------------------------------------------------------ | ---------------- |
+| `/agent`                                         | `agent/page.tsx` → `AgentClientsContent`                     | `agent`, `admin` |
+| `/agent/client/[clientId]`                       | `agent/client/[clientId]/page.tsx` → `AgentEstimatesContent` | `agent`, `admin` |
+| `/agent/client/[clientId]/estimate/[[...slugs]]` | re-exports the public `estimate/[[...slugs]]/page`           | `agent`, `admin` |
+| `/admin/agents`                                  | `admin/agents/page.tsx` → `AgentsPageContent`                | `admin`          |
+
+The per-client estimate route re-exports the standard estimate page, so agents author
+estimates through the **same estimate flow** as public users — just under the `/agent/…` path.
+An optional `?s=<signature>` search param is threaded through for signed access.
+
+## Providers
+
+Each screen mounts its own scoped provider (in `src/providers/`):
+
+| Provider                 | Hook                                   | Backing service (`services/API/APIAgent`)                              |
+| ------------------------ | -------------------------------------- | ---------------------------------------------------------------------- |
+| `AgentClientsProvider`   | `useAgentClients`                      | `fetchClients` → `GET /agent/client`                                   |
+| `AgentEstimatesProvider` | `useAgentEstimates`                    | `fetchClient`, `updateEstimate`, `removeEstimate`, `sendEstimateEmail` |
+| `AgentsProvider` (admin) | `useAgents` (data via `useAgentsData`) | `fetchAgents`, `createAgent`, `updateAgent` under `/admin/agents`      |
+
+- `AgentClientsProvider` fetches the client list; it passes `showEstimates: false` when a
+  `clientId` is present (the detail view fetches estimates separately).
+- `AgentEstimatesProvider` loads a single client — the client endpoint returns its estimates
+  inline, so no separate estimate fetch — and exposes update/remove/send-email actions plus
+  `getEstimateUrl` (from `useEstimateUrl`).
+- `AgentsProvider` manages the agent roster. Its data are FollowUpBoss users (`FubUser` /
+  `FubUsersResponse`) linked to a Repliers agent record; all mutations no-op unless `adminRole`.
+
+## How it works
+
+- **`agentRole` branches the estimate flow.** `EstimateRouter` (`@pages/estimate`) reads
+  `useUser().agentRole`; for the form route it renders `AgentLandingPageContent` for agents and
+  `ClientLandingPageContent` otherwise (`route === 'result'` shows `ResultPageContent` for both).
+  `EstimateProvider`/`EstimateStepsProvider` also use `agentRole` to skip the `confirmation` and
+  `contact` steps — agents author estimates without OTP/login.
+- **Client list.** `/agent` renders "My Clients" via `AgentClientsGrid`, driven by
+  `useAgentClients`.
+- **Per-client estimates.** `/agent/client/[clientId]` renders `AgentEstimatesLayout` (a client
+  `Profile`, an `EstimatesList` of `EstimateCard`s, and `EstimatesTopBar`) plus an
+  `EstimateRemoveDialog`, all fed by `useAgentEstimates`.
+- **Admin — agents management.** `/admin/agents` renders `AgentsGrid` (search + create/update
+  rows) via `useAgents`, syncing the CRM agent roster.
+
+## Gotchas & hints
+
+- **Where `agentRole` comes from — `UserProvider`.** It is derived, not stored:
+  `agentRole = profile.role === 'agent' || profile.role === 'admin'`. Admins therefore pass every
+  agent gate; only `adminRole` (`role === 'admin'`) reaches `/admin/agents`. See
+  [Authentication](/technical-guide/authentication).
+- **Role gating is client-side.** The `roles` allowlist lives in `ClientSidePageTemplate` with
+  `loginRedirect`; it is a UI gate, not a substitute for backend authorization.
+- **Estimate flow reuse.** The agent estimate route re-exports the public estimate page rather
+  than duplicating it — behaviour differences are driven entirely by `agentRole` inside the shared
+  providers, so keep changes to the estimate flow role-aware.

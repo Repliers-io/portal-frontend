@@ -1,0 +1,1 @@
+export { SeoDescription } from './SeoDescription'

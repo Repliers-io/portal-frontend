@@ -1,0 +1,50 @@
+# Portal Backend
+
+The portal backend (`portal-backend`) is the API server behind the white-label real
+estate portal. It is a **proxy in front of the Repliers MLS API** — the frontend never
+calls Repliers directly — plus the portal's own persistence and integrations.
+
+What it does:
+
+- **Proxies and shapes MLS data** — listings search, counts, similar listings,
+  locations, autosuggest. Requests to Repliers are throttled, retried, and normalized;
+  responses are scrubbed of sensitive fields for non-authenticated users according to
+  board regulations.
+- **Owns portal data** — users, favorites, saved searches, estimates, virtual tours,
+  uploaded assets — in PostgreSQL.
+- **Handles authentication** — JWT sessions, OTP / email-token login, OAuth providers,
+  agent authentication.
+- **Reports engagement** — contact forms, listing views, and estimate events flow to
+  the CRM integration (Follow Up Boss) and the Repliers events API.
+- **Sends messages** — OTP codes, inquiry notifications, and estimate emails via the
+  Repliers Messages API or a static SMTP account.
+
+## Process model
+
+One codebase, two processes (both defined in the `Procfile`):
+
+| Process | Entry point | Role |
+|---|---|---|
+| `web` | `src/index.ts` | Koa HTTP server, all `/api` routes |
+| `worker` | `src/worker.ts` | NATS JetStream consumer for background sync (optional, gated by `NATS_ENABLED`) |
+
+Backing services: **PostgreSQL** (knex), **Redis** (Keyv cache), **NATS** (streams).
+Every backing service is optional in development — persistence can be disabled and NATS
+falls back to a dummy implementation.
+
+## Stack at a glance
+
+Koa 3 + `@koa/router` · TypeScript (ESM, Node 24) · tsyringe DI · Joi validation ·
+knex + PostgreSQL · Keyv/Redis caching · pino logging · NATS JetStream · mocha tests.
+
+## How this site is organized
+
+- [Getting Started](/getting-started) — run the backend locally, configure it,
+  understand the two-layer configuration model.
+- [Architecture](/architecture) — layers, request lifecycle, the Repliers proxy,
+  scrubbing, caching, persistence, auth, events.
+- [API Reference](/api-reference) — the `/api` surface by domain, conventions, and
+  where the exact contracts live (Swagger).
+- [Integrations](/integrations) — Repliers, Follow Up Boss, geocoding, email.
+- [Operations](/operations) — deployment, CI/CD, per-instance configuration, testing,
+  the OSS export.

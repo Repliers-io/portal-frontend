@@ -1,0 +1,134 @@
+import { Callout } from 'nextra/components'
+
+# Capabilities & Flags
+
+**Track B.** What the portal can do, how each capability is switched on, and how tenants
+differ. Feature flags answer one question — _does this tenant get capability X at all?_ —
+while everything about _how_ a capability behaves lives in a domain config (see the
+[features-vs-config rule](/technical-guide/multi-tenant#feature-flags-vs-domain-config)).
+
+## Feature reference
+
+Read via `import features from '@configs/features'`. Defaults shown are the `defaults`
+build; tenants override per capability.
+
+| Flag                     | Capability                                                | Default |
+| ------------------------ | --------------------------------------------------------- | ------- |
+| `map`                    | Interactive map search (Mapbox).                          | `true`  |
+| `estimate`               | Home valuation / AVM flow.                                | `true`  |
+| `dashboard`              | Market dashboard pages.                                   | `true`  |
+| `blog`                   | Blog / editorial pages (CMS-backed).                      | `true`  |
+| `locations`              | Locations / neighborhoods directory (pre-generated JSON). | `false` |
+| `buildings`              | Buildings / condos directory (WordPress ACF).             | `false` |
+| `openHouse`              | Open-house listings and filters.                          | `false` |
+| `favorites`              | Save favorite listings (requires auth).                   | `true`  |
+| `saveSearch`             | Save search filters (requires auth).                      | `true`  |
+| `imageFavorites`         | Save favorite listing photos.                             | `true`  |
+| `recentlyViewed`         | Recently-viewed listings history.                         | `true`  |
+| `profile`                | User profile management.                                  | `true`  |
+| `messaging`              | Agent contact / messaging.                                | `true`  |
+| `cookieConsent`          | Cookie-consent banner.                                    | `true`  |
+| `liveBy`                 | LiveBy demographics / neighborhood overlays.              | `true`  |
+| `aiAgent`                | AI agent chat integration (embedded EVAS iframe).         | `false` |
+| `aiChat`                 | Conversational AI chat entry point in search.             | `true`  |
+| `aiSearch`               | Natural-language query → MLS filters.                     | `true`  |
+| `aiImageSearch`          | Search listings by image / similarity.                    | `true`  |
+| `aiQuality`              | AI photo-quality scoring.                                 | `true`  |
+| `aiSpaces`               | AI room / space detection in photos.                      | `true`  |
+| `blurRestrictedProperty` | Blur restricted listings for guests (MLS privacy).        | `false` |
+
+<Callout type="info">
+  Turning a flag off hides the capability but still ships its code. For a
+  slimmed tenant build, see [Feature
+  Removal](/technical-guide/feature-flag-removal) — what each disabled flag lets
+  you physically delete, and what stays because it is shared.
+</Callout>
+
+## How flags are set
+
+The **source of truth is GrowthBook** (rules keyed per `app` = tenant). The runtime never
+imports GrowthBook — it reads the static, committed `configs/<tenant>/features.ts`. The two
+are bridged at build time.
+
+The portal supports **two modes**, and you pick one per environment:
+
+1. **GrowthBook-synced.** Set the flag in GrowthBook, then run
+   `pnpm --filter portal-frontend generate:features` (active tenant) or
+   `generate:features:all` (every tenant). The script (`scripts/fetch-features.ts`) fetches
+   the resolved values and **rewrites** `features.ts`. It also runs automatically on
+   `prebuild`. Commit the regenerated file.
+2. **Static / offline.** With `NEXT_PUBLIC_GROWTHBOOK_INIT=offline` or no client key, the
+   sync is skipped and the committed `features.ts` is authoritative — edit it directly.
+
+<Callout type="warning">
+  A GrowthBook sync **overwrites** hand edits to `features.ts` (the file header
+  says "Generated — do not edit by hand"). If you edit statically, keep sync off
+  for that build, or move the change into GrowthBook. Per-flag descriptions are
+  emitted by the generator, so IDE hover works in both modes.
+</Callout>
+
+<Callout type="info">
+  Want to drop GrowthBook entirely and keep flags fully static? The runtime
+  already reads only `features.ts` — see [Removing
+  GrowthBook](/technical-guide/removing-growthbook).
+</Callout>
+
+### Not every GrowthBook key becomes a flag
+
+The generator drops keys that are **dead** (no runtime reader) or that have been
+**relocated into a domain config** — because they tune _how_ a capability behaves, not
+_whether_ it exists. Examples:
+
+| GrowthBook key                              | Now lives in                 |
+| ------------------------------------------- | ---------------------------- |
+| `pdpSidebar`, `pdpShare`, `pdpSlideshow`, … | `listings.components.*`      |
+| `searchPosition`                            | `search.autosuggestPosition` |
+| `rootPage`                                  | `routes.rootPage`            |
+| `aiAgentHeadlessIframeId`                   | `ai-agent.headlessIframeId`  |
+
+## What each capability depends on
+
+A flag being `true` is necessary but not always sufficient — some capabilities also need
+env vars, keys, a CMS, or generated data.
+
+| Capability                                                         | Also requires                                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `map`                                                              | `NEXT_PUBLIC_MAPBOX_KEY`.                                                            |
+| `blog`                                                             | CMS wiring: `CMS_BLOG_CLIENT` + `WORDPRESS_API_*` or `GHOST_API_*`.                  |
+| `buildings`                                                        | WordPress ACF content + fetch scripts.                                               |
+| `locations`                                                        | Pre-generated `public/<tenant>/locations.json` (`pnpm generate:locations <tenant>`). |
+| `aiAgent`                                                          | `NEXT_PUBLIC_AI_AGENT_IFRAME_URL` (and the `ai-agent-client` build).                 |
+| `aiSearch` / `aiChat` / `aiImageSearch` / `aiQuality` / `aiSpaces` | AI endpoints reachable through the proxy backend.                                    |
+| `liveBy`                                                           | LiveBy overlays (the `defaults` app uses `LiveBy` as its location `source`).         |
+| `favorites` / `saveSearch` / `imageFavorites`                      | Authenticated user (proxy backend auth).                                             |
+
+## How tenants differ
+
+The always-on essentials (`map`, `estimate`, `messaging`, `profile`, most AI analysis) are
+`true` almost everywhere. The flags below are what actually distinguish tenants:
+
+| Tenant     | aiAgent | aiChat | blog | locations | buildings | openHouse | liveBy | blurRestricted |
+| ---------- | ------- | ------ | ---- | --------- | --------- | --------- | ------ | -------------- |
+| `defaults` | ✕       | ✓      | ✓    | ✕         | ✕         | ✕         | ✓      | ✕              |
+| `repliers` | ✕       | ✕      | ✕    | ✕         | ✕         | ✕         | ✕      | ✕              |
+| Tenant A   | ✓       | ✓      | ✓    | ✓         | ✕         | ✕         | ✕      | ✕              |
+| Tenant B   | ✓       | ✓      | ✓    | ✓         | ✕         | ✕         | ✕      | ✕              |
+| Tenant C   | ✕       | ✕      | ✓    | ✓         | ✓         | ✓         | ✕      | ✕              |
+| Tenant D   | ✕       | ✓      | ✓    | ✓         | ✕         | ✓         | ✕      | ✕              |
+| Tenant E   | ✕       | ✕      | ✕    | ✓         | ✕         | ✓         | ✕      | ✓              |
+| Tenant F   | ✕       | ✕      | ✕    | ✕         | ✕         | ✕         | ✕      | ✓              |
+
+<Callout type="info">
+  This table is a snapshot for orientation — the authoritative values are the committed
+  `configs/<tenant>/features.ts` files. A few archetypes stand out: **flagship** tenants
+  (everything, including the AI agent), **catalog-heavy** tenants (locations + buildings +
+  open houses), **enrichment** tenants, and **AVM-first / privacy-restricted** tenants
+  (minimal surface, `blurRestrictedProperty` on).
+</Callout>
+
+## Why some capabilities are off in some regions
+
+Several differences above are not preference but **MLS/regional policy** — notably
+`blurRestrictedProperty` (Canadian privacy rules) and the reduced AI surface for
+Canada-based tenants. That is the subject of the next page:
+[Regional & MLS Limits](/getting-started/regional-and-mls-limits).

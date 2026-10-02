@@ -1,0 +1,49 @@
+# Caching
+
+## Keyv stores
+
+All caching goes through [Keyv](https://keyv.org/). `CacheFactory`
+(`src/lib/decorators/cached.ts`) creates one store per **namespace** and reuses it for
+the process lifetime. With `REDIS_KEYV_ENABLE=true` stores are backed by Redis
+(`REDIS_URL` / `REDISCLOUD_URL`); otherwise they are in-memory — correct for a single
+dev process, insufficient across dynos.
+
+Two special-purpose stores live in `src/providers/`: `keyv.otp.ts` (one-time
+passwords) and `keyv.blocklist.ts` (see [Authentication](/architecture/authentication)).
+
+## The `@cached` decorator
+
+```ts
+// src/services/listings.ts
+@cached("listings:count", config.cache.listingscount.ttl_ms)
+async count(params) { ... }
+```
+
+Mechanics (`src/lib/decorators/cached.ts`):
+
+- The cache key is **`JSON.stringify(args)`** — every argument, in order.
+- The value is wrapped as `Cached<T> = { result, expires }`, where `expires` is the
+  *remaining* TTL in seconds.
+- Routes send it through `sendCached(ctx, data)`, which unwraps `result` and sets
+  `Cache-Control: private, max-age=<expires>` — so HTTP caching mirrors the server
+  cache's real remaining lifetime.
+
+TTLs are env-tunable per domain (`CACHE_*_TTL`, milliseconds) — counts, featured
+listings, buildings, locations, rankings, stats widgets.
+
+### Typing quirk
+
+A `@cached` method's declared return type is `Promise<T | Cached<T>>` even though it
+always returns `Cached<T>` at runtime — TypeScript cannot see through decorated
+return types. `sendCached` handles both shapes, so call sites stay clean.
+
+### When *not* to cache — the `app_state` trap
+
+The key being `JSON.stringify(args)` has a sharp consequence: **never cache a method
+whose arguments include `app_state`** (the per-user state). Including it scopes every
+cache entry to one user — useless. Stripping it would be worse: a guest-scrubbed
+response could be served to an authenticated user (or the reverse) from the same key.
+
+This is why `listings.history()` carries no `@cached` while `single()` and `count()`
+do — the same data differs per caller only by scrubbing, and the scrubbing happens
+inside the cached call. When adding a cache, check what the arguments contain first.

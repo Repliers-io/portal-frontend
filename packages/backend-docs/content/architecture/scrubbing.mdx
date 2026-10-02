@@ -1,0 +1,104 @@
+# Scrubbing & Restrictions
+
+Board regulations require hiding sensitive listing data (sold prices, full addresses,
+history) from **non-authenticated visitors**. The backend enforces this centrally so
+no consumer can forget it.
+
+## The scrubbing pipeline
+
+The scrubber lives in `src/services/scrubber/listings.ts` (`ListingsScrubber`), with
+primitives in `scrubber/base.ts`:
+
+- `dropFields` — removes configured fields entirely (`history`, `agents`, `raw`, …).
+- `valueScrubber` — masks what remains: strings become `!scrubbed!`, numbers become
+  `0`, ISO dates become a magic 1900 date.
+- Safe lists (`safeFields`, `safeAddressFields`) name what must survive untouched —
+  enough for cards and maps to render: `address` (partially), `class`, `map`,
+  `propertyType`, `status`, `boardId`, …
+
+### Applied declaratively
+
+Services never call the scrubber directly — methods are wrapped with the
+**`@scrubbed(key)` decorator** (bottom of `scrubber/listings.ts`):
+
+```ts
+@scrubbed("listings") async search(...)   // scrubs result.listings[]
+@scrubbed("similar")  async similar(...)  // scrubs result.similar[]
+@scrubbed()           async single(...)   // scrubs the whole result
+```
+
+### Who gets scrubbed
+
+- Guest vs user is decided by `app_state.user` — routes pass
+  `app_state: { user: ctx.state["user"] }`; guests arrive with `user: undefined`.
+- A guest listing is scrubbed when `permissions.displayPublic === "N"`.
+- With `scrubbing.duplicates_enabled`, an **active** listing whose `duplicates` array
+  does *not* contain `scrubbing.ref_board_id` is treated as `displayPublic = "N"` too.
+- **Board gate:** `scrub()` returns the listing **unscrubbed** when its `boardId` is
+  not in `scrubbing.board_ids`. A listing without a `boardId` is therefore never
+  scrubbed — every nested path must guarantee boardId presence (see below).
+
+## Map clusters — the nested-listing trap
+
+The Repliers map aggregate (`aggregates.map.clusters[]`) inlines full listing objects
+into small clusters. Those nested listings bypass `@scrubbed("listings")`, which only
+reaches the top-level array. Two mechanisms close the gap:
+
+- `ListingsScrubber.scrubClusters(aggregates)` walks
+  `clusters[].listings` and scrubs each one. It is invoked from the `@scrubbed`
+  decorator itself, right after the top-level pass — so **any** `@scrubbed` method
+  gets cluster coverage for free.
+- `ensureRequiredFields` appends the identity fields
+  (`status, permissions, address, duplicates, boardId`) to both `fields` and
+  `clusterFields` (via `withRequiredFields` in `src/lib/utils.ts`), so cluster
+  listings always carry what the scrubber needs even when the client requested a
+  narrow `clusterFields`.
+
+## Listing history
+
+`GET /listings/history` records are scrubbed individually (each has its own `boardId`
+and `permissions`), with two extra guards applied in `services/listings.ts` before the
+scrubber runs:
+
+- records without a `boardId` are **dropped** (they would pass the board gate
+  unscrubbed);
+- records without `permissions` get them synthesized from `lastStatus`
+  (`permissionsFromLastStatus`) — otherwise a closed record would have no
+  `displayPublic: "N"` for the scrubber to act on, and its sold price would leak.
+
+## Restricted listings
+
+Some feeds contain listings that may **never** appear on the site. Repliers keeps no
+blocklist, so the backend enforces one:
+
+```ts
+settings: {
+   restrictedListings: ["X0000000"], // [] = off
+}
+```
+
+Configured per instance (or via `SETTINGS_RESTRICTED_LISTINGS`), as clean MLS numbers
+without a board prefix. Enforcement points (helpers `excludeRestrictedListings` and
+`dropRestricted` in `src/services/listings/listingHelpers.ts`):
+
+| Exit | How |
+|---|---|
+| search (list, map, count, autosuggest, NLP, estimate comparables) | `not:mlsNumber` on the request — counts and pagination stay exact |
+| single listing | `validateAvailability` throws the configured `hide_unavailable_listings_http_code` |
+| similar, history | dropped from the response |
+| favorites, featured | dropped from the response; `delete` still checks ownership against the unfiltered list |
+
+### Placing `not:` on a search
+
+Two verified Repliers API rules decide where the exclusion goes:
+
+- a parameter present both top-level **and** inside `queries[]` → `400 Parameter
+  conflict`;
+- `queries[]` is a **union** — an exclusion missing from one branch lets the listing
+  back in through that branch.
+
+So: if any branch filters by `mlsNumber`, every branch gets the exclusion; otherwise
+a single top-level entry covers the whole union. A positive number and its `not:`
+twin can share one array — the exclusion wins. And the exclusions must be added
+**after** the [MLS-prefix codec](/architecture/repliers-proxy#mls-number-prefix-codec)
+runs.

@@ -1,0 +1,49 @@
+# Market Dashboard — How it works
+
+> Technical anatomy of the market dashboard. Overview: [Market Dashboard](/product-guide/dashboard).
+
+## Routes & entry
+
+| Route                           | Page root                                                 |
+| ------------------------------- | --------------------------------------------------------- |
+| `/dashboard`                    | `@pages/dashboard/DashboardPageContent`                   |
+| `/dashboard/[city]`             | `@pages/dashboard/DashboardCityPageContent`               |
+| `/dashboard/[city]/residential` | `@pages/dashboard/DashboardCityPageContent` (residential) |
+| `/dashboard/[city]/condos`      | `@pages/dashboard/DashboardCityPageContent` (condo)       |
+
+## Providers
+
+The dashboard index route mounts only `SearchProvider` (for the market queries); the per-city
+report routes (`/dashboard/[city]/*`) mount no scoped providers. See
+[State Management](/technical-guide/state-management).
+
+## Component tree
+
+```
+DashboardPageContent                 landing (config-driven)
+├─ HeaderBanner  "Market Insights"
+└─ CityAccordion  ×N                  one per @configs/location defaultCities
+
+DashboardCityPageContent             per-city report
+└─ market statistics / charts        (residential vs condo variants)
+```
+
+## Configuration
+
+| Config                | Drives                                                 |
+| --------------------- | ------------------------------------------------------ |
+| `@configs/location`   | `defaultCities` — which cities the landing view lists; `areaCities` — cities whose stats are queried by `area`. |
+| `@configs/statistics` | Stats/demographics display options; `cityCardClasses` — the classes behind a city card's sold-price chart. |
+| `@configs/features`   | `dashboard` gate.                                      |
+
+## Gotchas & hints
+
+- **The landing view is fully config-driven:** `DashboardPageContent` maps
+  `@configs/location` `defaultCities` to `CityAccordion`s — no cities in config means an
+  empty dashboard.
+- **A dashboard city can be a listing area.** REBNY lists every unit in "New York City" and
+  files the borough as its county in `address.area`, so SERHANT's borough cards and reports
+  query `area=Kings` for Brooklyn: `cityGeoFilters` (`utils/filters.ts`) reads
+  `@configs/location` `areaCities` — the stats API takes `area`, not `locationId`.
+- **City reports split by class:** the `[city]` route reuses `DashboardCityPageContent` for
+  the combined, residential, and condo variants.

@@ -1,0 +1,162 @@
+# Location Pages — How it works
+
+> Technical anatomy of the locations catalog. Overview: [Location Pages](/product-guide/locations).
+
+## Routes & entry
+
+| Route                     | Page root                               |
+| ------------------------- | --------------------------------------- |
+| `/locations`              | `@pages/locations/LocationsPageContent` |
+| `/locations/[[...slugs]]` | `@pages/locations/LocationsPageContent` |
+
+## Providers
+
+`LocationsPageContent` mounts **`LocationProvider`** (`useLocationPage`, `useLocationMap`) with
+the location, its child locations (areas/cities/hoods), nearby locations, and listing count.
+See [State Management](/technical-guide/state-management).
+
+## Component tree
+
+```
+LocationsPageContent
+└─ LocationProvider
+   └─ LocationsPageLayout
+      ├─ header   → LocationHeader
+      ├─ filters  → LocationFilters
+      ├─ footer   → LocationFooter
+      └─ content
+         ├─ CardSurface → ListingCard ×N   (SkeletonCard while loading)
+         ├─ EmptyCatalogListings           (when no listings)
+         ├─ LocationPagination
+         ├─ LocationBreadcrumbs
+         └─ FiltersList
+```
+
+Listings are server-rendered when available, otherwise fetched client-side via
+`SearchService.fetchListings`. By default the client fetch filters by the URL's
+address parts (`state`/`area`/`city`/`neighborhood`); tenants with
+`searchListingsByLocationId: true` filter by the tree-resolved `locationId` instead
+(see below).
+
+## Configuration
+
+| Config              | Drives                                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `@configs/location` | `source` (per tenant), `stateFilter` (per-board `state=` query format), `useStateCodeRoute` (URL shape), `showAreas` (area level on/off), `cityPositionAreas` (areas addressed without the `-area` marker), `searchListingsByLocationId` (listing geo-filter), `cityTypes` / `neighborhoodTypes` (location types the generator fetches as each level), `hoodsByArea` (neighbourhoods hang under their area's city by `address.area`), `areaCities` (listing `address.area` → tree city), `activeCounts` (what the generator counts per location), `maxNearbies` / `nearbyRadius`, and the SEO/pagination thresholds. |
+| `@configs/search`   | `pageSize` for the listing grid.                                                                                           |
+| `@configs/map`      | `animateLocationTransition` — animate the header map camera between locations (`false` snaps instantly).                  |
+| `@configs/features` | `locations` gate.                                                                                                          |
+
+## Gotchas & hints
+
+- **Never build the tree at runtime.** The location tree comes from a pre-generated
+  `public/<tenant>/locations.json`. Regenerate with `pnpm generate:locations <tenant>` after
+  data or config changes — don't compute it in a request.
+- **`source` is per tenant, and the only source setting.** `@configs/location` `source`
+  (`MLS`, `LiveBy`, `UserDefined`) is sent on every `/locations` request — the app's and the
+  generator's — and on autosuggest, and echoed back on each location. A `locationId` lookup
+  goes without it: ids are namespaced by source and resolve across all of them. Every
+  non-default tenant must set it.
+- **LiveBy New York takes two flags.** LiveBy files the five boroughs as `city-alternate`
+  and postal cities as `city`, and marks most neighbourhoods `address.city` "New York" in
+  every borough. SERHANT keeps `cityTypes: ['city-alternate']` and sets `hoodsByArea`, so the
+  tree is borough → neighbourhood; `areaCities` maps the county REBNY writes in a listing's
+  `address.area` (`Kings`) back to its borough for the listing breadcrumbs and the dashboard.
+- **A neighbourhood outside the tree still gets its listings.** With no tree node to take a
+  `locationId` from, `LocationsPageContent` queries by address strings; a city in
+  `areaCities` goes out as its `area`, so `/ny/manhattan/midtown` lists the 224 listings
+  REBNY labels "Midtown" (LiveBy has only Midtown East/West/South). No polygon on its map.
+- **The cache is also a server-side allowlist.** `locations.json` is generated with
+  `hideTrash`, so it contains every location that had listings and none with a zero count.
+  `loadCountsMap` (`LocationsTree/static.ts`) exposes it as a memoized
+  `locationId → activeCount` map, and `/api/overlay-locations` uses it to drop the empty
+  neighborhoods that dirty MLS data returns for map overlays — see
+  [Map Overlays](/technical-guide/map-overlays). The map is read server-side only: counts
+  never ship to the client. Anything absent from the cache is invisible there until the next
+  `pnpm generate:locations <tenant>`.
+- **The generator drops every location it counts 0.** By default it counts the listings
+  listed in the last 90 days, active or sold. On a board new to Repliers whose active stock
+  is older (REBNY), neighbourhoods holding only such listings came out 0 and vanished —
+  `activeCounts` counts every active listing instead.
+- **A tenant polygon clips the tree.** The tree itself is fetched by a 4000 km radius around
+  the tenant centre, so the only geographic bound is `@configs/map` `searchArea.boundary` —
+  the same polygon `constrainToSearchBoundary` clips listing search to. When it is set, the
+  generator drops every node outside it (logged as `boundary clip: dropped N`), which keeps
+  the catalog and the searchable area on the same geography; tenants without a polygon keep
+  everything the board returns.
+- **Tree nodes carry a centre point, never polygons.** `map.latitude`/`map.longitude` are
+  cached per node, so nearby locations are computed locally — a pass over the tree with
+  `calculateDistance`, bounded by `nearbyRadius`, no request. Neighbours cross city lines and
+  each carries the city that owns it, which is what builds its link. Polygons stay out of the
+  file: a page fetches the current location's boundary and one batch of child boundaries for
+  hover highlighting.
+- **`useStateCodeRoute` changes the URL shape:** `true` → `/tx/austin`, `false` →
+  `/locations/austin`. Middleware and URL builders both read it.
+- **An area can be addressed like a city.** A board may file a place as an area whose
+  children are cities — TRREB does that with Toronto over North York, Scarborough,
+  Etobicoke, Old York and East York, and no city carries the name. Two mechanisms cover
+  it, and they compose:
+  - `resolveLocation` answers a lone `/on/toronto` from the area whenever the city
+    position names one and no city does. Needs no config; it is skipped on tenants with
+    `showAreas: false`, where the area level does not exist at all, and on a URL that
+    also names a neighbourhood.
+  - `cityPositionAreas` (`@configs/location`) lists the areas whose URL drops the
+    `-area` marker entirely, which is the one thing the parser cannot derive — it has
+    no tree. That is what lets a city and a neighbourhood follow: `/on/toronto/north-york`,
+    `/on/toronto/north-york/bathurst-manor`. List only a name **no city shares**, or that
+    city's page becomes unreachable.
+
+  Both URLs render either way; the **short form is canonical** (`getAreaUrl`), so
+  `/on/toronto-area` points at `/on/toronto`, and the sitemap publishes the short one.
+- **`state` vs `stateCode` vs `stateFilter` — three separate fields, never interchange them.**
+  `state` is the full name for display/SEO (`"Ontario"`), `stateCode` the 2-letter URL prefix
+  (`"on"` → `/on/toronto`), and `stateFilter` the value sent as the Repliers `state=` query
+  filter. They exist separately because **Repliers stores the state per board in different
+  formats**: some boards return the full name (board 2 TRREB → `"Ontario"`, 18 → `"Alberta"`,
+  71 → `"Connecticut"`), others the 2-letter code (boards 68 → `"MA"`, 90/91 → `"ON"`,
+  149 → `"WA"`). Sending the wrong format returns **zero listings** and zeroes the location
+  overlay. `stateFilter` is verified per tenant by querying that tenant's board and reading a
+  listing's `address.state`, and is used **only** in the four query spots (`LocationsPageContent`,
+  `_utils/parsers`, `LocationsTree/fetchers` ×2) — never for display or URLs.
+- **SEO thresholds filter the tree:** `areaThreshold`, `minSeoCityCount`, `minSeoHoodCount`,
+  and the `maxSeo*` caps decide which locations render and how many are listed — low-count
+  areas are dropped.
+- **`searchListingsByLocationId` (per tenant) picks the listing geo-filter.** Off by default
+  (query by `state`/`area`/`city`/`neighborhood` strings, which the API expands into the full
+  `propertyType` list). On (e.g. `movesmartly-com`) the client fetch sends the tree-resolved
+  `location.locationId` — a precise filter. The id is found by matching the URL's SEO names
+  against the cached tree in `fetchLocationsData`, so no extra request is made. The default map
+  rectangle from `getBaseFilters` (whole tenant region) ANDs harmlessly with the id.
+- **`animateLocationTransition` (per tenant) only toggles the header-map animation, not the
+  camera logic.** Default `true` keeps the `flyTo`/`fitBounds` tween in `LocationMap.applyPosition`;
+  `false` passes `animate: false` so the map snaps to the exact same destination instantly (no
+  tenant disables it today). It threads through the shared `fitBounds` util's `animate` option. All
+  three camera branches move at a fast `speed: 2.4` (2× the Mapbox default) — `fitBounds` flies
+  internally, so the `speed` applies to boundary transitions too, not just `flyTo`.
+- **The location's polygon renders filled; hovering a child replaces it.** `LocationMap` draws one
+  GL polygon (`draw-polygon`): the page's location filled in the standard boundary style, swapped
+  for the hovered child's polygon while a link is hovered and restored on blur (provider `boundary`
+  state). Drawing lives in its own effect, decoupled from `applyPosition` (camera only).
+- **Never re-apply the same style with `setStyle` on mount.** The map is constructed with its
+  style already; calling `setStyle(sameStyle)` in the `[style]` effect diff-reloads and **wipes all
+  custom GL sources/layers** (fires `styledata`, not `style.load`, so nothing re-adds them). A
+  `styleApplied` ref skips the first run so the location outline survives mount.
+- **A genuine style switch also wipes GL layers — restore in a `style.load` listener, not an
+  effect.** An effect keyed on `style` races the async `setStyle`: it adds into the OLD style
+  (still loaded while the new one fetches), and the swap erases it. `LocationMap` re-draws via a
+  persistent `map.on('style.load', …)` + `addBoundaryPolygon`. Same pattern as `use3DBuildings`.
+- **URL slugs are classified location-vs-filters by vocabulary — token boundaries matter.**
+  `filter()` in `_utils/parsers.ts` decides whether `/on/<segment>` is a city or a filters
+  segment. Bare vocabulary words match only whole tokens (`'land'` ≠ `landsdale`), mid-segment
+  matching is limited to structural tokens (`for`, `under`, `bedrooms`…, or `business-park`
+  hoods break), and ambiguous `new-*` filters are a closed exact list in `exactFilters`
+  (`new`, `new-listings`, `new-construction`) because `newmarket` / `new-toronto` /
+  `new-tecumseth` are real city slugs. Regression cases live in `parsers.test.ts`.
+- **Location links navigate as plain anchors.** `LocationLink`, `GroupTemplate` and the shared
+  `Breadcrumbs` render `component="a"` (overriding the global next/link `LinkBehavior`), so
+  city/hood/breadcrumb clicks are full server navigations, not client transitions.
+- **A name can resolve to several tree nodes.** `findCityByName` picks the node with the
+  highest `activeCount` — deterministic, not tree order. Two kinds of collision exist:
+  _duplicate branches_ (same `locationId` twice — a generation artifact, e.g. TRREB "Toronto")
+  and _genuine cross-area collisions_ (different ids, e.g. TRREB "Ashton" Ottawa vs Lanark,
+  URBN "Ashford" Pierce vs Lewis). Neighborhood-level collisions don't occur in current trees.

@@ -1,0 +1,73 @@
+# Database & Services
+
+The backend runs without any backing service by default: persistence is disabled in
+the default settings preset (`app.disable_persistence = true` in
+`src/settings/defaults.ts`), NATS is replaced with a dummy implementation, and the
+Keyv cache falls back to in-memory storage. Enable each service only when the feature
+you work on needs it.
+
+## Start everything with Docker Compose
+
+`docker-compose.yml` defines the three backing services:
+
+| Service | Image | Ports |
+|---|---|---|
+| `postgres` | `postgres:16-alpine` | `${DB_PORT:-5432}:5432` |
+| `redis` | `redis:8-alpine` | `6379` |
+| `nats` | `nats:2-alpine` (JetStream via `-js`) | `4222`, `6222`, `8222` |
+
+```bash
+docker-compose up -d
+# or scoped to one instance's env file (custom project name + DB_PORT):
+docker-compose --env-file .env.<instance> up -d
+```
+
+## Enable persistence
+
+1. Set `app.disable_persistence = false` in the settings preset you run with.
+2. Add DB settings to `.env`:
+
+   ```ini
+   DB_HOST=localhost
+   DB_USER=postgres
+   DB_PASSWORD=postgrespw
+   DB_NAME=repliers_portal
+   DB_PORT=5432
+   ```
+
+3. Run migrations:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+Features that need persistence: user roles/ACL, uploaded assets, virtual tours,
+social-account links, people sync, webhooks. With persistence disabled these degrade
+to safe no-ops.
+
+## Migrations
+
+Migrations live in `src/migrations/` and run through knex
+(`src/knexfile.ts` simply re-exports `config.db`, so migrations use the same
+env-driven connection as the app):
+
+```bash
+npm run knex migrate:make <name>   # create
+npm run db:migrate                 # apply latest (dev)
+npm run db:migrate:test            # apply to the test database (port 5555)
+```
+
+In production the `release` phase of the Heroku Procfile runs `db:migrate:prod`,
+which skips silently when `APP_DISABLE_PERSISTENCE=true` — see
+[Deployment](/operations/deployment).
+
+## Test database
+
+Tests load `test.env` (`npm run test` sets `DOT_ENV_CONFIG=test.env`). The local
+convention keeps the test Postgres on port **5555** so it never collides with the dev
+database — `test:local` and `db:migrate:test` both pin `DB_PORT=5555`:
+
+```bash
+npm run db:migrate:test
+npm run test:local
+```

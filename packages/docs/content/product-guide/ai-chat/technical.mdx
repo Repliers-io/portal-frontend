@@ -1,0 +1,65 @@
+import { Callout } from 'nextra/components'
+
+# AI Chat — How it works
+
+> Technical anatomy of the built-in conversational search. Overview:
+> [AI Chat](/product-guide/ai-chat).
+
+## Routes & entry
+
+| Route / layout                         | Component                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `/search/chat` (the `chat` map layout) | `ChatContent` — `src/components/pages/search/components/MapRoot/components/ChatContent/` |
+
+The chat panel renders inside the search experience (it's shown when the map `layout` is
+`chat`), so it sits on top of the same `SearchProvider` / `MapOptionsProvider` as the rest of
+search.
+
+## How it works
+
+```
+user message
+   │  APIChat.fetchReply({ value, token })          server-side NLP (proxy → Repliers)
+   ▼
+{ request, nlpId }
+   │  request.summary        → the AI's text reply
+   │  request.params/body    → parsed MLS filters
+   │  request.locations/aggregates → geo + cluster context
+   ▼
+"Apply Filters"  →  useApplyFilters
+   │  setFilters(params + body)     (SearchProvider)
+   │  setLocations / setPoint, fitBounds(map)
+   ▼
+results carousel in the chat + updated map/grid
+```
+
+- **`APIChat.fetchReply`** does the parsing; `nlpId` is the conversation token so follow-up
+  messages refine the previous query.
+- **History + token persist** to `localStorage` (`@configs/storage` `nlpHistoryKey` /
+  `nlpTokenKey`), so the conversation survives reloads.
+- **`useApplyFilters`** applies the parsed filters to `SearchProvider`, frames the map on the
+  matched locations/point/clusters, and (if the reply carries image-search items) syncs
+  `AiSearchProvider`.
+
+## Providers
+
+Consumes the search-section providers — `useSearch` (SearchProvider), `useMapOptions` /
+`useMapLocations` (MapOptionsProvider), and `useAiSearch` (AiSearchProvider). No scoped
+provider of its own. See [Property Search — How it works](/product-guide/search/technical).
+
+## Configuration
+
+| Config / flag                | Role                                               |
+| ---------------------------- | -------------------------------------------------- |
+| `@configs/features` `aiChat` | Enables the chat panel.                            |
+| `APIChat` (`services/API`)   | The `fetchReply` NLP call (via the proxy backend). |
+| `@configs/storage`           | `nlpHistoryKey` / `nlpTokenKey` for persistence.   |
+
+## Gotchas & hints
+
+- **NLP is server-side.** Parsing happens through the proxy backend (Repliers), not in the
+  browser — the client only sends the text and renders the structured reply.
+- **Same endpoint, different owner.** The [AI Agent](/product-guide/ai-agent) integration's
+  `ExtractFilters` uses the _same_ `APIChat.fetchReply`, but AI Chat is the portal's **own**
+  UI that applies filters directly, whereas the agent exposes that capability to an _external_
+  UI over `postMessage`.

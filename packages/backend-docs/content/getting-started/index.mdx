@@ -1,0 +1,70 @@
+# Setup
+
+## Prerequisites
+
+- Node.js 24 (see `engines` in `package.json`; npm 11+)
+- Git
+- Docker — only for the optional database features ([Database & Services](/getting-started/database))
+
+Two API keys are required:
+
+- **Repliers API key** — a free account at [login.repliers.com](https://login.repliers.com/)
+  gives a sample-data key; paid keys unlock real board access.
+- **Mapbox token** — [mapbox.com](https://www.mapbox.com/), used for address
+  autosuggest and geocoding.
+
+## Install
+
+```bash
+git clone git@github.com:Repliers-io/portal-backend.git
+cd portal-backend
+npm install
+```
+
+The backend uses **npm** (not pnpm) — it is a standalone repository, not part of the
+frontend monorepo workspace.
+
+## Generate JWT keys
+
+Sessions are signed with an RSA key pair that lives in `keys/` (never committed):
+
+```bash
+npm run jwt:generate
+```
+
+This runs `openssl genrsa` and writes `keys/private.pem` + `keys/public.pem`.
+
+## Configure
+
+```bash
+cp env.example .env
+```
+
+Set at minimum `REPLIERS_API_KEY` and `MAPBOX_ACCESS_TOKEN`. Every other variable has a
+working default — see the [environment variable reference](/getting-started/environment-variables).
+
+An alternative env file can be selected per run with `DOT_ENV_CONFIG=<file>` — this is
+how per-instance dev scripts work (`dev:<instance>` scripts set
+`DOT_ENV_CONFIG=.env.<instance>`).
+
+## Run
+
+```bash
+npm run dev
+```
+
+`dev` runs **two processes** via `concurrently`: the HTTP server (`src/index.ts`) and
+the NATS worker (`src/worker.ts`). Both restart on source or `.env` changes via
+nodemon. The server listens on port **8080** by default.
+
+TypeScript executes directly through `@poppinss/ts-exec` — it is required because the
+DI container (tsyringe) needs `emitDecoratorMetadata`, which `tsx` does not support.
+
+Useful variants:
+
+```bash
+npm run debug          # DEBUG=repliers:* + node --inspect
+npm run test           # mocha test suite (needs the test database)
+npm run build          # tsc → dist/
+npm start              # run the compiled dist/index.js
+```

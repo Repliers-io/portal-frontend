@@ -1,0 +1,81 @@
+import { Callout } from 'nextra/components'
+
+# Property Search
+
+The interactive map + listings browser is the core of the portal: users find properties by
+panning the map, drawing an area, typing a location, or applying filters, and results update
+live in the map and the side/grid list.
+
+![The search experience — the filter bar, the map with clustered price markers, and the results grid](/img/search-overview.webp)
+
+<Callout type="info">
+  Building or debugging this section? See [How it
+  works](/product-guide/search/technical) for the provider tree, component tree,
+  config links, and gotchas.
+</Callout>
+
+## Layouts
+
+The search route renders one map-backed experience with two layouts (the active layout is
+part of the URL):
+
+| Layout   | URL            | What it is                                                                   |
+| -------- | -------------- | ---------------------------------------------------------------------------- |
+| **Map**  | `/search/map`  | Full map with property markers, clustering, draw-area, and a listing drawer. |
+| **Grid** | `/search/grid` | Card grid alongside the map for faster scanning.                             |
+
+![The grid layout — a full card grid of results with photos, prices, and status badges](/img/search-grid.webp)
+
+An **AI chat** panel and an **AI agent** can appear alongside the grid when the tenant
+enables `aiChat` / `aiAgent`.
+
+## Finding properties
+
+- **Type a location** — the autosuggest field resolves cities, areas, and neighborhoods.
+- **Draw an area** — draw a polygon on the map, point by point or freehand, to search a custom boundary.
+- **Pan & zoom** — the map refetches listings for the visible area as it settles.
+- **Markers & clusters** — markers show individual listings; clusters expand as you zoom.
+  Tapping a marker opens a listing drawer (mobile) or the listing browser (wide desktop).
+
+![Clicking a map marker opens the listing browser in place — photo gallery, price and estimated value, key facts, detail tabs, and a request-info form — without leaving the search map](/img/marker-click.webp)
+
+## Filters
+
+Filters come from the tenant's filter config, so the exact set varies per tenant. The common
+groups:
+
+| Group        | Examples                                                         |
+| ------------ | ---------------------------------------------------------------- |
+| Status       | Active, Sold, All, Rent                                          |
+| Type         | Residential, Condo, Townhome, …                                  |
+| Price        | Min / Max                                                        |
+| Beds & Baths | Minimums                                                         |
+| Advanced     | Square footage, year built, days on market, open house, and more |
+
+When status is **Sold**, sold-specific filters (sold-within, sold price range) apply.
+
+![The advanced-filters panel — beds, baths, garage, parking, a price histogram, and date ranges](/img/search-advanced-filters.webp)
+
+## Shareable state
+
+The full search state — filters, map camera, layout, active overlays, 3D mode, and map
+style — is encoded in the URL, so any view can be copied and shared. Parameter names are
+tenant-configurable shorthands; see [How it works](/product-guide/search/technical#configuration).
+
+## Related
+
+- **[Save Search](/product-guide/user-features)** — persist a filter set for alerts.
+- **Favorites** — save individual listings.
+- **[Listing detail](/product-guide/search/technical)** — the full property page opened from a
+  marker or card.
+
+## Configuration
+
+Search behavior is driven by tenant config, not hard-coded — see the exact files in
+[How it works → Configuration](/product-guide/search/technical#configuration):
+
+| Config             | Drives                                                       |
+| ------------------ | ------------------------------------------------------------ |
+| `@configs/map`     | Initial camera, controls, search area, overlays.             |
+| `@configs/search`  | Paging, clustering, MLS board routing, autosuggest position. |
+| `@configs/filters` | Default filter state and which filter slots appear.          |

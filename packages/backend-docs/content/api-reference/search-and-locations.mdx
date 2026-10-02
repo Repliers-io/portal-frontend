@@ -1,0 +1,51 @@
+# Search & Locations
+
+All guest-allowed (passthrough JWT).
+
+## Autosuggest — `/autosuggest`
+
+`src/routes/autosuggest.ts`, `src/services/autosuggest.ts`.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /autosuggest` | Combined suggestions for the search box: listings (by address/MLS/zip) via Repliers + addresses via the geocoding provider |
+| `GET /autosuggest/address` | Address-only suggestions (Mapbox or Google, per `REPLIERS_AUTOSUGGEST_PROVIDER`) |
+| `GET /autosuggest/locations` | **Deprecated.** Location suggestions |
+
+Behavioral notes:
+
+- Listing suggestions are filtered by the `REPLIERS_AUTOSUGGEST_*` settings
+  (`status`, `lastStatus`, `type`, `searchFields`, `displayPublic`) and biased by the
+  proximity settings (`PROXIMITY_SEARCH_*`). On a RESO instance
+  `REPLIERS_AUTOSUGGEST_LISTING_STANDARD_STATUS` replaces the `status` / `lastStatus`
+  pair — Repliers rejects the two vocabularies in one request.
+- On boards with an [MLS-number prefix](/architecture/repliers-proxy#mls-number-prefix-codec),
+  a digit-only query triggers a supplementary MLS-leg request (widened
+  `search`, `searchFields: "mlsNumber"`), merged after the primary results; a failed
+  MLS leg degrades to primary-only results.
+
+## Locations — `/locations`
+
+`src/routes/locations.ts`.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /locations` | Location details (cached; `locations:get`) |
+| `GET /locations/autocomplete` | Type-ahead location search |
+
+Behavioral notes:
+
+- `source` selects the location dataset: `MLS`, `UserDefined`, `LiveBy`, or
+  `PublicRecord`. `PublicRecord` returns property parcels: `type=property`, a
+  `map.boundary` that may be a MultiPolygon (`map.geometryType`), and the assessor
+  fields in `publicRecord`, passed through untouched.
+- `resultsPerPage` goes up to 1000 (default 100).
+
+## Buildings — `/buildings`
+
+`src/routes/buildings.ts`; results cached (`buildings:search` / `buildings:single`).
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /buildings` / `POST /buildings` | Buildings list from the Repliers API |
+| `GET /buildings/:addressKey` | Single building by address key |

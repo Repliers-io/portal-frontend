@@ -1,0 +1,39 @@
+# Deployment
+
+Deployed to **Heroku** — one app per instance, all built from the same codebase.
+
+## Procfile
+
+```
+web: node dist/index.js
+worker: node dist/worker.js
+release: npm run db:migrate:prod
+```
+
+- `web` — the Koa HTTP server.
+- `worker` — the NATS consumer; scale it to 0 for instances without NATS
+  (`NATS_ENABLED=false` makes it exit-with-warning anyway).
+- `release` — runs on **every deploy before the new code goes live**: knex
+  migrations against the compiled `dist/knexfile.js`. The script exits early when
+  `APP_DISABLE_PERSISTENCE=true`, so database-less instances deploy without a
+  Postgres add-on.
+
+## Build
+
+`npm run build` = `tsc` into `dist/`. The runtime is plain Node (no ts-node in
+production).
+
+## Environment specifics
+
+- `DB_USE_SSL=true` is required for Heroku Postgres.
+- `REDISCLOUD_URL` (the Redis add-on's variable) overrides `REDIS_URL`
+  automatically.
+- GCP logging credentials arrive as env content (`GOOGLE_CREDENTIALS`); a `.profile`
+  script writes them to the file that `GOOGLE_APPLICATION_CREDENTIALS` points to at
+  dyno boot.
+- JWT keys are provided via config (`JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` paths) —
+  the `keys/` directory is never in git.
+
+Per-instance configuration (which env vars, which preset) is covered in
+[Instances](/operations/instances); how a deploy is triggered is covered in
+[CI/CD](/operations/ci-cd).

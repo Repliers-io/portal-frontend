@@ -1,0 +1,20 @@
+# Estimates
+
+`src/routes/estimate.ts` — the AVM (automated valuation model) surface, proxying
+Repliers estimates (`services/repliers/estimate.ts`, `services/estimate.ts`).
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /estimate` | guest-allowed | Estimate a property's value from its attributes; reports an estimate event (second handler) |
+| `GET /estimate` | guest-allowed | Fetch an existing estimate by id; optionally reports a view event (`BOSS_REPORT_CLIENT_VIEW_ESTIMATE`) |
+| `GET /estimate/my` | strict | All estimates of the current user |
+| `PATCH /estimate/:estimateId` | strict + ownership | Update an estimate (`assertOwnership` guards the record) |
+| `DELETE /estimate/:estimateId` | strict + ownership | Delete an estimate |
+| `GET /estimate/property_details` | guest-allowed | Property details from historical listings (latest historical values win). With `SETTINGS_EXTENDED_PROPERTY_DETAILS`, falls back to approximated details (average tax / neighborhood) when no historical listing exists |
+
+Email delivery of estimates (immediate and monthly) is controlled by
+`REPLIERS_ESTIMATES_SEND_EMAIL_NOW` / `_MONTHLY` — see
+[Email](/integrations/email).
+
+Estimate links in CRM events use the `eventsCollection.estimateUrl` template — see
+[Follow Up Boss](/integrations/follow-up-boss).

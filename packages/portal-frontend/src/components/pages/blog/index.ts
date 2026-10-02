@@ -1,0 +1,6 @@
+export { AuthorPageContent } from './AuthorPageContent'
+export { AuthorsIndexPageContent } from './AuthorsIndexPageContent'
+export { BlogCategoryPageContent } from './BlogCategoryPageContent'
+export { BlogIndexPageContent } from './BlogIndexPageContent'
+export { BlogPostPageContent } from './BlogPostPageContent'
+export { BlogTagPageContent } from './BlogTagPageContent'

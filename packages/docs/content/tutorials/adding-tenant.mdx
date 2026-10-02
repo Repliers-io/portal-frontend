@@ -1,0 +1,358 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Adding a New Tenant
+
+Create a new branded site (tenant) end to end. Every code block here matches the real
+config shapes in `configs/defaults/*` — hover any field in your IDE to see its JSDoc.
+
+## Prerequisites
+
+- The app runs locally — see [Getting Started → First Launch](/getting-started/first-launch).
+- You understand the override system — see [Configuration](/getting-started/configuration)
+  and the [Multi-tenant System](/technical-guide/multi-tenant).
+- Brand assets (logo, colors, fonts) and the tenant's MLS board id(s) + API access.
+
+## What a tenant is made of
+
+```
+packages/portal-frontend/
+├── .env.<tenant>                 # env vars (tenant id, proxy URL, keys)
+├── src/configs/<tenant>/         # config overrides (only files that differ)
+├── public/<tenant>/              # logos, favicons, splashscreens
+├── src/content/<tenant>/         # optional: legal/static pages
+├── src/i18n/<tenant>/            # optional: UI string overrides
+└── src/components/**/_<tenant>/  # optional: component overrides
+```
+
+A tenant config imports the default via `@defaults/*` and re-exports a merged object
+(spread for flat configs, `deepmerge` for nested ones). Only create the files that differ.
+
+<Steps>
+
+### Environment file
+
+Create `.env.<tenant>` in `packages/portal-frontend/`:
+
+```bash
+# Tenant id — must match the configs/<tenant> folder name
+NEXT_PUBLIC_APP_CONFIGURATION=newtenant
+
+NEXT_PUBLIC_APP_DOMAIN=http://localhost:3000
+
+# Proxy backend — the frontend never calls Repliers directly
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Maps
+NEXT_PUBLIC_MAPBOX_KEY=pk.xxx
+NEXT_PUBLIC_GMAPS_KEY=xxx
+
+# Optional: analytics
+NEXT_PUBLIC_GTAG_KEY=G-XXXXXXXXXX
+
+# Optional: build-time feature-flag sync (not read at runtime)
+NEXT_PUBLIC_GROWTHBOOK_INIT=offline
+# NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://cdn.growthbook.io
+# NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-xxxxx
+
+# Optional: CMS for blog/pages
+# CMS_PAGES_CLIENT=wordpress
+# CMS_BLOG_CLIENT=wordpress
+# WORDPRESS_API_URL=https://example.com/
+```
+
+<Callout type="info">
+  With `NEXT_PUBLIC_GROWTHBOOK_INIT=offline` (or no client key), feature flags
+  come straight from the committed `features.ts` and you edit them by hand. To
+  drive flags from GrowthBook instead, set the key and run `generate:features`.
+  See [Capabilities &
+  Flags](/getting-started/capabilities-and-flags#how-flags-are-set).
+</Callout>
+
+### Register run scripts
+
+In `packages/portal-frontend/package.json`:
+
+```json
+{
+  "scripts": {
+    "dev:newtenant": "env-cmd -f .env.newtenant pnpm run dev",
+    "build:newtenant": "env-cmd -f .env.newtenant pnpm run build",
+    "start:newtenant": "env-cmd -f .env.newtenant pnpm run start"
+  }
+}
+```
+
+In the root `package.json`:
+
+```json
+{
+  "scripts": {
+    "frontend:dev:newtenant": "pnpm --filter portal-frontend run dev:newtenant",
+    "frontend:build:newtenant": "pnpm --filter portal-frontend run build:newtenant",
+    "frontend:start:newtenant": "pnpm --filter portal-frontend run start:newtenant"
+  }
+}
+```
+
+### Brand colors
+
+`colors.ts` exports flat **named** constants. Redeclare the ones you change and re-export
+any you keep from defaults:
+
+```ts
+// src/configs/newtenant/colors.ts
+import { darken, lighten } from '@mui/material'
+
+export const white = '#FFFFFF'
+export const light = '#757575'
+export const medium = '#494949'
+export const dark = '#29282D'
+export const black = dark
+
+export const background = '#F5F5F0'
+
+export const primary = '#C5A059'
+export const secondary = '#0B1E3B'
+
+export const hint = light
+export const disabled = '#D5C489'
+export const divider = '#E3E4E6'
+
+export const hoverBg = '#F0F0F0'
+export const activeBg = '#E5E5E5'
+
+export const info = '#2196F3'
+export const error = '#F44336'
+export const success = '#4CAF50'
+export const warning = '#FFC107'
+
+export const markerColors = {
+  default: { color: secondary },
+  sold: { color: darken(secondary, 0.2) },
+  rent: { color: secondary }
+}
+
+export const chartColors = [secondary, lighten(primary, 0.5), success]
+export const inventoryColors = [error, warning, success]
+
+// re-export anything you don't change
+export { demographicsPalette } from '@defaults/colors'
+```
+
+### Theme palette
+
+Map the brand colors onto MUI with `deepmerge` (nested slots survive):
+
+```ts
+// src/configs/newtenant/theme/palette.ts
+import deepmerge from 'deepmerge'
+
+import { alpha } from '@mui/material'
+
+import { disabled, light, white } from '@configs/colors'
+import defaultsPalette from '@defaults/theme/palette'
+
+const palette = deepmerge(defaultsPalette, {
+  common: { whiteTr70: alpha(white, 0.7), disabled },
+  text: { secondary: light },
+  secondary: { light: '#1B489B' }
+})
+
+export default palette
+```
+
+Add `theme/typography.ts` and `theme/components.ts` the same way only if fonts or component
+styling differ.
+
+### Site content & branding
+
+`content.ts` is nested — merge a `Partial` of the default type:
+
+```ts
+// src/configs/newtenant/content.ts
+import { type Content, mergeContent } from '@defaults/content'
+
+const instanceContent: Partial<Content> = {
+  // A new tenant is a live production site, so opt into search indexing.
+  // The base default is `noIndex: true` (keeps demo/sample builds out of
+  // search); omitting this line would leave the new tenant de-indexed.
+  noIndex: false,
+  siteLogo: { url: '/newtenant/logo.svg', width: 180, height: 48 },
+  siteMobileLogo: {
+    url: '/newtenant/logo-monogram.svg',
+    width: 92,
+    height: 48
+  },
+  siteName: 'New Tenant Realty',
+  siteMetadata: {
+    title: {
+      template: '%s | New Tenant Realty',
+      default: 'Homes for Sale | New Tenant Realty'
+    },
+    description: 'Search homes for sale and rent with New Tenant Realty.'
+  }
+}
+
+export default mergeContent(instanceContent)
+```
+
+### Location & geography
+
+`location.ts` is a flat spread. **`source` is required** for every non-default tenant
+(usually `'MLS'`), alongside the home region:
+
+```ts
+// src/configs/newtenant/location.ts
+import defaultLocationConfig from '@defaults/location'
+
+const location = {
+  ...defaultLocationConfig,
+  source: 'MLS',
+  stateCode: 'ON',
+  state: 'Ontario',
+  city: 'Toronto',
+  defaultFilters: { area: ['toronto', 'peel', 'york'] },
+  defaultCities: []
+}
+
+export default location
+```
+
+### Search & MLS boards
+
+Set the board listing details are read from. A single-board tenant sets only
+`defaultBoardId`; a multi-board tenant also lists the boards that must keep their own id
+(separate MLS-number namespace, or a copy that differs in content or visibility) in
+`distinctBoardIds`:
+
+```ts
+// src/configs/newtenant/search.ts
+import defaultSearchConfig, { type SearchConfig } from '@defaults/search'
+
+const config: SearchConfig = {
+  ...defaultSearchConfig,
+  defaultBoardId: 90,
+  distinctBoardIds: [2, 90, 91],
+  autosuggestPosition: 'disabled'
+}
+
+export default config
+```
+
+See [Regional & MLS Limits](/getting-started/regional-and-mls-limits#multi-board-idx-vs-vow).
+
+### Map framing
+
+Deep-spread `map.ts` to reframe the region and bound searches:
+
+```ts
+// src/configs/newtenant/map.ts
+import defaultMapConfig, { type ControlsPosition } from '@defaults/map'
+
+const config = {
+  ...defaultMapConfig,
+  mapboxDefaults: {
+    ...defaultMapConfig.mapboxDefaults,
+    zoom: 8,
+    minZoom: 7,
+    maxZoom: 18,
+    logoPosition: 'bottom-right' as ControlsPosition
+  },
+  controls: {
+    ...defaultMapConfig.controls,
+    position: 'bottom-left' as ControlsPosition
+  },
+  searchArea: {
+    ...defaultMapConfig.searchArea,
+    defaultPolygon: [
+      { lat: 43.85, lng: -79.64 },
+      { lat: 43.85, lng: -79.12 },
+      { lat: 43.58, lng: -79.12 },
+      { lat: 43.58, lng: -79.64 }
+    ],
+    initialView: null
+  },
+  proximitySearch: {
+    ...defaultMapConfig.proximitySearch,
+    center: { lat: 43.6532, lng: -79.3832 },
+    country: 'CA'
+  }
+}
+
+export default config
+```
+
+### Feature flags
+
+`features.ts` is **generated** — don't hand-author it for a GrowthBook-synced build. Set
+the tenant's capabilities in GrowthBook (keyed by app = tenant) and run
+`pnpm --filter portal-frontend generate:features`, or, for an offline/static build, copy a
+sibling's `features.ts` and edit it. See
+[Capabilities & Flags](/getting-started/capabilities-and-flags).
+
+### Static assets
+
+Add brand assets to `public/newtenant/`:
+
+| File                                               | Notes                      |
+| -------------------------------------------------- | -------------------------- |
+| `logo.svg`, `logo-monogram.svg`, `logo-footer.svg` | Header/mobile/footer logos |
+| `favicon.ico` / `favicon.png`                      | Browser tab icon           |
+| `splashscreen.webp` (or `.mp4`)                    | Splash / login background  |
+| `og-image.jpg`                                     | Social sharing (1200×630)  |
+
+### Run and verify
+
+```bash
+pnpm frontend:dev:newtenant
+```
+
+Open [http://localhost:3000](http://localhost:3000) and confirm the logo, colors, map
+framing, and search results (search needs the proxy backend — see First Launch).
+
+</Steps>
+
+## Optional overrides
+
+- **Typography / components** — `theme/typography.ts`, `theme/components.ts`.
+- **Navigation** — `menu.ts` (reorder/insert `$`-prefixed items or custom links).
+- **Filters** — `filters.ts` (`advancedFilterSlots`, `defaultFilters`).
+- **Routes** — `routes.ts` to rename paths or set `rootPage`.
+- **Translations** — `src/i18n/<tenant>/…` to override UI strings.
+- **Legal/static pages** — `src/content/<tenant>/<slug>/` (`Markdown.mdx`, `index.ts`,
+  `meta.json`).
+- **Components** — `src/components/**/_<tenant>/` folders replace a component for this
+  tenant only.
+
+## Checklist
+
+| File                                         | Required?                     |
+| -------------------------------------------- | ----------------------------- |
+| `.env.<tenant>`                              | ✅                            |
+| `configs/<tenant>/colors.ts`                 | ✅                            |
+| `configs/<tenant>/theme/palette.ts`          | ✅                            |
+| `configs/<tenant>/content.ts`                | ✅                            |
+| `configs/<tenant>/location.ts`               | ✅ (set `source`, region)     |
+| `configs/<tenant>/search.ts`                 | ✅ (board ids)                |
+| `configs/<tenant>/map.ts`                    | ✅ (region framing)           |
+| `public/<tenant>/` assets                    | ✅                            |
+| `package.json` scripts (both)                | ✅                            |
+| `theme/typography.ts`, `theme/components.ts` | Optional                      |
+| `menu.ts`, `filters.ts`, `routes.ts`         | Optional                      |
+| `features.ts`                                | Via GrowthBook or static edit |
+
+## Troubleshooting
+
+| Symptom               | Fix                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| Overrides not applied | `tsconfig.json` regenerates at prebuild — restart the dev server; `pnpm frontend:clean` clears `.next`. |
+| Colors unchanged      | Confirm `NEXT_PUBLIC_APP_CONFIGURATION` matches the folder name.                                        |
+| No search results     | Check `NEXT_PUBLIC_API_URL` (proxy up?) and the tenant's board ids.                                     |
+| Logo 404              | File missing under `public/<tenant>/`, or wrong path in `content.ts`.                                   |
+| Type errors           | `pnpm frontend:type-check`; import defaults via `@defaults/*`.                                          |
+
+## Next
+
+- [Multi-tenant System](/technical-guide/multi-tenant) — the override mechanism in depth
+- [Capabilities & Flags](/getting-started/capabilities-and-flags) — enable the right features
+- [Regional & MLS Limits](/getting-started/regional-and-mls-limits) — board & privacy rules

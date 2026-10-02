@@ -1,0 +1,48 @@
+import { Callout } from 'nextra/components'
+
+# AI Agent Integration
+
+An **integration capability**, not a built-in feature: the portal can embed an external
+AI/assistant and **exchange live data with it over a message protocol**. The point is
+plug-ability — connect (almost) any external system, and it receives the portal's context
+(search results, listing details, user session) and can drive the portal back (apply
+filters, open a listing).
+
+<Callout type="info">
+  This is a **third-party** integration — not the built-in [AI
+  Chat](/product-guide/ai-chat) (a first-party, Repliers-powered feature). It
+  started as a proof-of-concept with the **EVAS** agent, and demonstrates *how*
+  the portal hands information to an external system and takes commands back —
+  the AI itself is swappable. See [How it
+  works](/product-guide/ai-agent/technical) for the exact protocol.
+</Callout>
+
+## The idea
+
+```
+   ┌──────────────┐   context (listings, listing details, session)   ┌──────────────┐
+   │   Portal     │ ─────────────────────────────────────────────▶ │  External AI  │
+   │  (search)    │                                                 │   (iframe)    │
+   │              │ ◀───────────────────────────────────────────── │               │
+   └──────────────┘     commands (apply filters, open listing)      └──────────────┘
+```
+
+The portal streams what the user is looking at to the agent, and the agent can ask the portal
+to change filters, open a listing, or request the current results — all over
+`window.postMessage`.
+
+## Two ways to connect
+
+- **Embedded** — the portal renders its own chat panel with the agent in an iframe
+  (`NEXT_PUBLIC_AI_AGENT_IFRAME_URL`).
+- **Headless** — the portal renders **no UI**; it finds an _external_ iframe injected by the
+  host system (by DOM id, `@configs/ai-agent` `headlessIframeId`) and wires the same protocol
+  to it. This is the "bring your own AI" mode.
+
+Gated by the `aiAgent` feature flag; lives in the search experience.
+
+## Why it matters
+
+It shows integrators a concrete contract: any assistant that speaks this small message
+protocol can be dropped into a tenant and become search-aware — no portal code changes, just
+config + an iframe.

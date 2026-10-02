@@ -1,0 +1,60 @@
+# Repliers API
+
+The upstream MLS data provider — the reason this backend exists. Everything about
+the client-side mechanics (axios instance, throttling, XFF, error mapping, MLS-prefix
+codec) is in [Architecture → Repliers Proxy](/architecture/repliers-proxy); this page
+covers the account/operational side.
+
+## Keys and boards
+
+- `REPLIERS_API_KEY` — the main key. A **free sample-data key** (board 110) is
+  available at [login.repliers.com](https://login.repliers.com/) and is what the
+  default preset targets — the whole backend runs against it.
+- Paid keys are scoped to one or more real estate **boards**; the instance preset
+  must mirror that scope (`settings.defaults.boardId`, `scrubbing.board_ids`,
+  `APP_DEFAULTS_BOARDIDS`).
+- `REPLIERS_API_KEY_EXTRA` — optional second key for the historical listings behind
+  estimate property details (`EstimateService` applies it with `switchKey`).
+- `REPLIERS_CACHE_WARMUP_API_KEY` — optional key for SSG traffic (builds, ISR, warm-up
+  scripts), so it never spends the live key's quota — see
+  [SSG cache-warmup key](/architecture/repliers-proxy#ssg-cache-warmup-key). Provision
+  it with entitlements no broader than the main key.
+
+## Rate limits
+
+Live requests share one process-wide throttle: `REPLIERS_API_LIMIT` requests per
+`REPLIERS_API_INTERVAL_MS` (default 1/second). With a warmup key configured, SSG
+traffic runs on its own throttle (`REPLIERS_CACHE_WARMUP_API_LIMIT` /
+`REPLIERS_CACHE_WARMUP_API_INTERVAL_MS`). A Repliers 429 reaches the client as a 429
+with the upstream body in `info`; upstream headers, `Retry-After` included, are not
+forwarded.
+
+## Query semantics worth knowing
+
+Verified behaviors that shape how the backend builds requests:
+
+- **`queries[]` is a union** (POST search) — and a parameter present both top-level
+  and inside `queries[]` is rejected with `400 Parameter conflict`. Exclusions
+  (`not:mlsNumber`) must therefore be placed per the rules in
+  [Scrubbing & Restrictions](/architecture/scrubbing#placing-not-on-a-search).
+- **`search` is a per-keyword, case-insensitive starts-with match**; with
+  `searchOperator=OR` + `address.streetNumber` in `searchFields`, a digit keyword
+  that matches no street number zeroes the whole union — the reason MLS-prefix
+  search-widening is confined to the autosuggest MLS leg.
+- **Repeated `mlsNumber` params form a union**; an exact-number lookup changes other
+  defaults upstream — verify against the live API when in doubt.
+- **`standardStatus` cannot be combined with `status` / `lastStatus`** — Repliers
+  answers `400`. On an instance with `APP_ALLOWED_LISTINGS_STANDARD_STATUSES`,
+  `constrainStandardStatus` (`services/listings/listingHelpers.ts`) narrows
+  `standardStatus` onto every listings and favorites query, including each
+  `queries[]` branch: no filter means every allowed status, never every status. So
+  every caller on such an instance must filter in the RESO vocabulary — stats use
+  `Closed` / `Active`, autosuggest uses `REPLIERS_AUTOSUGGEST_LISTING_STANDARD_STATUS`.
+  RESO values are case-sensitive (`Active Under Contract`).
+
+## Environment
+
+`REPLIERS_BASE_URL` (default `https://api.repliers.io`), `REPLIERS_TIMEOUT`,
+`REPLIERS_AGENT_ID`, and the XFF forwarding family
+(`REPLIERS_PROXY_XFF`, `XFF_*`) — see the
+[env reference](/getting-started/environment-variables#repliers-api-repliers_).

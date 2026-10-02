@@ -1,0 +1,52 @@
+# Instances
+
+One codebase, many deployments ("instances") — each with its own market, boards,
+branding, and rules. The backend's per-instance mechanism has exactly three parts:
+
+## 1. Settings preset — `src/settings/instances/<instance>.ts`
+
+A `DeepPartial<AppConfig>` overriding only what differs from `defaults.ts`: boards,
+scrubbing rules, restricted listings, autosuggest tuning, form and event tags,
+MLS-number prefix, contact-form validation variant (`validationVersion`, schemas in
+`src/validate/overrides/`), … Registered in `src/settings/index.ts` and selected at startup by
+`APP_SETTINGS_PRESET`. See [Configuration Model](/getting-started/configuration).
+
+Two properties to keep in mind when writing presets:
+
+- **Arrays replace, not merge** — the preset's array is exactly what the instance
+  gets.
+- Presets can set values that have **no env var** (e.g. Mapbox similarity
+  thresholds) — the preset layer is strictly more expressive.
+
+The `instances/` directory is excluded from the [OSS export](/operations/oss-export)
+— presets may name markets, boards, and business rules that are not public.
+
+## 2. Env file — `.env.<instance>`
+
+Secrets and environment-specific values: API keys, DB/Redis/NATS connections, CRM
+credentials, XFF tokens. Never committed; mirrored into Heroku config vars for
+deployed environments.
+
+## 3. npm scripts + pipeline entries
+
+```jsonc
+"dev:<instance>":        "DOT_ENV_CONFIG=.env.<instance> npm run dev",
+"db:migrate:<instance>": "DOT_ENV_CONFIG=.env.<instance> npm run db:migrate"
+```
+
+plus a deployment entry in `bitbucket-pipelines.yml` pointing the instance's branch
+at its Heroku app.
+
+## Onboarding checklist
+
+1. Create `src/settings/instances/<instance>.ts` (start from a similar market's
+   preset); register it in `src/settings/index.ts` **inside the `@oss-remove`
+   markers**.
+2. Create `.env.<instance>` from `env.example`; set the Repliers key, boards,
+   `APP_SETTINGS_PRESET=<instance>`, CORS domain, and integration credentials.
+3. Add `dev:<instance>` (and, if persistent, `db:migrate:<instance>`) scripts.
+4. Provision the Heroku app (+ Postgres/Redis add-ons if needed); set config vars;
+   generate/upload JWT keys.
+5. Add the pipeline deployment entry and environment variables in Bitbucket.
+6. Verify scrubbing rules against the board's regulations **before** going live —
+   `SETTINGS_SCRUBBING_*` defaults are written for the sample board, not yours.

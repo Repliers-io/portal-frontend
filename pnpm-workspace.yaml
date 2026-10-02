@@ -1,0 +1,55 @@
+packages:
+  - 'packages/*'
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+
+blockExoticSubdeps: true
+minimumReleaseAge: 8640 # 6 days
+
+# Next 16.3.1 (published 2026-08-13) was adopted before the 6-day quarantine elapsed:
+# it patches App Router regressions shipped in 16.3.0 (live headers(), cache tag
+# revalidation, prefetch loops, image response). Versions are pinned so the waiver
+# covers only this release — delete the block on the next Next upgrade.
+minimumReleaseAgeExclude:
+  - next@16.3.1
+  - eslint-config-next@16.3.1
+  - '@next/env@16.3.1'
+  - '@next/mdx@16.3.1'
+  - '@next/third-parties@16.3.1'
+  - '@next/bundle-analyzer@16.3.1'
+  - '@next/eslint-plugin-next@16.3.1'
+  - '@next/swc-darwin-arm64@16.3.1'
+  - '@next/swc-darwin-x64@16.3.1'
+  - '@next/swc-linux-arm64-gnu@16.3.1'
+  - '@next/swc-linux-arm64-musl@16.3.1'
+  - '@next/swc-linux-x64-gnu@16.3.1'
+  - '@next/swc-linux-x64-musl@16.3.1'
+  - '@next/swc-win32-arm64-msvc@16.3.1'
+  - '@next/swc-win32-x64-msvc@16.3.1'
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - esbuild
+  - sharp
+  - unrs-resolver
+
+overrides:
+  'minimatch@>=9.0.0 <9.0.6': '>=10.2.5'
+  'minimatch@>=9.0.0 <9.0.7': '>=10.2.5'
+  'dompurify@>=3.1.3 <=3.3.1': '>=3.4.11'
+  'eslint-import-resolver-typescript': '3.10.0'
+  # @turf/buffer pins the ancient CJS d3-geo@1.7.1, whose named exports fail
+  # under Node's ESM loader (breaks the locations generator). Force the ESM 3.x.
+  '@turf/buffer>d3-geo': '3.1.1'
+  # Dedupe @types/react across the workspace: ai-agent-client/docs (`^19`) pulled
+  # 19.2.14 while portal-frontend pins 19.2.17, and two @types/react copies make
+  # React.Ref/Key structurally unrelated — breaking portal-frontend's tsc at every
+  # ref/key boundary (TextField, next/image, DatePicker). Pin one version.
+  '@types/react': '19.2.17'
+  '@types/react-dom': '19.2.3'

@@ -1,0 +1,6 @@
+export { BuildingsEmptyState } from './BuildingsEmptyState'
+export { BuildingsPagination } from './BuildingsPagination'
+export { LocBuildingCard } from './LocBuildingCard'
+export { LocBuildingsBreadcrumbs } from './LocBuildingsBreadcrumbs'
+export { LocBuildingsFooter } from './LocBuildingsFooter'
+export { LocBuildingsHeader } from './LocBuildingsHeader'

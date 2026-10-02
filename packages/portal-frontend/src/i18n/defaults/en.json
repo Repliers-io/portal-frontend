@@ -1,0 +1,899 @@
+{
+  "HomePage": {
+    "welcome": "DEFAULTNAME",
+    "welcomeDescription": "DEFAULTNAME serves over XX,XXX real estate professionals in DEFAULTSTATE. As a top-rated multiple listing service (MLS), we provide property information and innovative products.",
+    "justListed": "Just Listed",
+    "recentlySold": "Recently Sold",
+    "trackMarket": "Track the {city} Market in Real Time"
+  },
+  "Estimates": {
+    "getStarted": "Get Started",
+    "locationBanner": "{city} Home Value Estimate",
+    "locationDescription": "Discover your {city} home's current market value with real-time data and comprehensive market insights. Track {city} real estate trends including average home prices, days on market, and active inventory levels across all neighbourhoods. Whether you're considering selling or simply want to understand what your home is worth in today's market, our {city} home valuation tool provides accurate estimates based on recent sales data and current market conditions. Get instant access to {city} housing statistics and see how your neighbourhood compares to the broader market.",
+    "regulations": "",
+    "recentlySoldComparables": "Recently Sold Comparables",
+    "similarProperties": "Similar Properties",
+    "estimateFlowBannerTitle": "How Do We Estimate Your Home's Value?",
+    "estimateFlowBannerSteps": {
+      "propertyTax": {
+        "title": "Property Tax",
+        "description": "A key benchmark. Tax assessments help ground your estimate in real, municipality-backed data."
+      },
+      "location": {
+        "title": "Location & Neighborhood",
+        "description": "Local market trends and recent nearby sales are major drivers of home value."
+      },
+      "propertyType": {
+        "title": "Property Type & Size",
+        "description": "Whether it's a condo or a detached home, the size of your home is a key factor to determine your home's value."
+      },
+      "lotSize": {
+        "title": "Lot Size & Features",
+        "description": "Bigger lots and unique shapes like corner or pie lots often increase desirability."
+      },
+      "age": {
+        "title": "Age & Condition",
+        "description": "Newer and well-maintained homes tend to hold more value over time."
+      },
+      "upgrades": {
+        "title": "Upgrades & Extras",
+        "description": "Renovations, modern finishes, finished basements, and upgraded appliances can significantly increase your home's worth."
+      },
+      "maintenanceFees": {
+        "title": "Maintenance Fees",
+        "description": "Lower monthly fees can make units more attractive and increase resale value."
+      },
+      "exposure": {
+        "title": "Exposure & Amenities",
+        "description": "A bright southern view and top-tier amenities like gyms or pools boost appeal."
+      }
+    },
+    "form": {
+      "expenses": {
+        "title": "Expenses",
+        "annualPropertyTaxes": "Annual Property Taxes",
+        "maintenanceFee": "Maintenance Fee"
+      },
+      "extras": {
+        "title": "Extras",
+        "additionalFeatures": "Additional Features (hardwood floors, stone countertops, hot tub, professional landscaping, etc)",
+        "additionalFeaturesShort": "Additional Features",
+        "additionalFeaturesHint": "(hardwood floors, stone countertops, hot tub, professional landscaping, etc)"
+      },
+      "intentions": {
+        "title": "When would you like to sell your home?",
+        "timeline": "When are you looking to sell?"
+      },
+      "lotInformation": {
+        "title": "Lot Information",
+        "lotShape": "Lot Shape",
+        "shapeStandard": "Standard (Rectangular Shape)",
+        "shapeIrregular": "Irregular (Custom Shape)",
+        "lotSize": "Lot Size",
+        "width": "Width",
+        "depth": "Depth",
+        "lotArea": "Lot Area"
+      },
+      "mortgage": {
+        "title": "Home Equity Calculator",
+        "purchasePrice": "Purchase price",
+        "purchaseDate": "Purchase date",
+        "mortgageBalance": "Mortgage balance"
+      },
+      "contacts": {
+        "title": "What is the best way to contact {name}?",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "phone": "Phone"
+      },
+      "basicDetails": {
+        "propertyType": "Property type",
+        "numbers": "Numbers",
+        "bedrooms": "Bedrooms",
+        "bathrooms": "Bathrooms",
+        "parkingSpaces": "Parking Spaces",
+        "garageSpaces": "Garage Spaces"
+      },
+      "homeDetails": {
+        "title": "Home Characteristics",
+        "styleOfHome": "Style of Home",
+        "exterior": "Exterior",
+        "squareFootage": "Square Footage",
+        "heating": "Heating",
+        "exposure": "Exposure",
+        "basementDetails": "Basement Details",
+        "pets": "Pets",
+        "swimmingPool": "Swimming Pool",
+        "amenities": "Amenities"
+      },
+      "address": {
+        "placeholder": "Enter your home address",
+        "apt": "Apt # (optional)",
+        "loading": "Loading...",
+        "noLocations": "No locations"
+      },
+      "navigation": {
+        "previous": "Previous",
+        "goBack": "Go back",
+        "next": "Next",
+        "calculate": "Calculate",
+        "update": "Update"
+      },
+      "header": {
+        "title": "{mode, select, edit {Edit} other {Fill in}} details of {owner, select, agent {the} other {your}} property",
+        "backToClient": "Back to Client",
+        "backToClients": "Back to Clients",
+        "restart": "Restart"
+      }
+    },
+    "homeFacts": {
+      "style": "Style",
+      "styleOfHome": "Style of Home",
+      "bedrooms": "Bedrooms",
+      "bathrooms": "Bathrooms",
+      "garageSpaces": "Garage Spaces",
+      "parkingSpaces": "Parking Spaces",
+      "exterior": "Exterior",
+      "annualPropertyTaxes": "Annual Property Taxes",
+      "yearBuilt": "Year Built",
+      "lotSizeFeet": "Lot Size (Feet)",
+      "lotArea": "Lot Area",
+      "squareFootage": "Square Footage",
+      "basementDetails": "Basement Details",
+      "heating": "Heating",
+      "swimmingPool": "Swimming Pool",
+      "exposure": "Exposure",
+      "amenities": "Amenities",
+      "maintenanceFee": "Maintenance Fee",
+      "pets": "Pets",
+      "extras": "Extras",
+      "purchasePrice": "Purchase price",
+      "purchaseDate": "Purchase date",
+      "mortgageBalance": "Mortgage balance"
+    },
+    "housePicture": "House picture",
+    "streetView": "Street View"
+  },
+  "Search": {
+    "autosuggestPlaceholder": "Enter a place or address",
+    "metaTitleTemplate": "{sentence} | Map Search",
+    "metaDescriptionTemplate": "Browse {sentence} on the interactive map."
+  },
+  "Menu": {
+    "toggleNavigation": "Toggle navigation",
+    "map": "Map",
+    "locations": "Locations",
+    "estimate": "Estimate",
+    "dashboard": "Market Insights",
+    "blog": "Blog",
+    "favorites": "Favorites",
+    "saveSearch": "Saved Searches",
+    "adminAgents": "Agents",
+    "adminClients": "Clients",
+    "imageFavorites": "Image Favorites",
+    "recentlyViewed": "Recently Viewed",
+    "accountSettings": "Account Settings",
+    "signOut": "Sign Out",
+    "greeting": "Hello,",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "Footer": {
+    "description": "Our mission is to make the MLS more valuable while remaining committed to the needs of local markets. We do this by delivering exceptional customer service and striving for continuous innovation.",
+    "fullscreen": ""
+  },
+  "Listing": {
+    "status": {
+      "sale": "For sale",
+      "rent": "For rent",
+      "sold": "Sold",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "offMarket": "Off Market"
+    },
+    "mlsNumber": "MLS® # {number}"
+  },
+  "Map": {
+    "startDraw": "Click and drag to draw your search",
+    "editPolygon": "Click inside the polygon to edit it",
+    "editVertex": "Click on points to edit them",
+    "startFreehand": "Hold the mouse button and draw your search area",
+    "freehandDone": "Clear the area to draw a new one",
+    "switchTo3DView": "Switch to 3D view",
+    "styleButtonTooltip": "Change the map style",
+    "3DViewTiltHint": "{modifier} + drag to tilt",
+    "3DViewRotateHint": "{modifier} + drag to rotate",
+    "3DViewTiltAndRotateHint": "{modifier} + drag to tilt & rotate",
+    "locationsButtonTooltip": "Pick locations to narrow down your search",
+    "layersButtonTooltip": "Show extra data layers",
+    "registeredUserTooltip": "This feature is available for registered users only.",
+    "saveSearchLoginPrompt": "Save this search to get alerts for new listings. <login>Sign in</login> to use it.",
+    "drawAreaTooltip": "Draw a custom search area — available to registered users.",
+    "drawButtonTooltip": "Draw a custom search area",
+    "freehandButtonTooltip": "Draw a search area freehand",
+    "drawDisabledWhileLocations": "{feature} — unavailable while locations are selected",
+    "overlayDisabledWhilePolygon": "{feature} — unavailable while a search area is drawn",
+    "showOverlayLayer": "Show {layer} layer",
+    "hideOverlayLayer": "Hide {layer} layer",
+    "showingListingsIn": "Showing listings in {location}",
+    "featuredListings": "{slug}'s Favorite Listings",
+    "saveSearchLimit": "We cannot save searches with more than {limit} listings{place}",
+    "saveSearchError": "Something went wrong",
+    "saveSearchCreated": "Search saved. View it in Saved Searches.",
+    "saveSearchReplaced": "Previous search with the same filters was replaced by the new one.",
+    "saveSearchReplacedNamed": "Previous search \"{name}\" with the same filters was replaced by the new one.",
+    "centeringTo": "Centering map to {location}",
+    "locate": "Center the map on my location",
+    "myLocation": "My location",
+    "geolocationDenied": "Location access denied. Enable location permission in your browser settings.",
+    "geolocationUnavailable": "Couldn't determine your location. Please try again.",
+    "webglUnavailable": "The map can't be loaded because WebGL is unavailable. Enable hardware acceleration in your browser settings and reload the page.",
+    "recenter": "Center map on this area",
+    "showShadows": "Show sun and shadows",
+    "hideShadows": "Hide sun and shadows",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetRotation": "Reset rotation",
+    "showListingsHere": "Show listings here",
+    "removeThisLocation": "Remove this location"
+  },
+  "MapFilters": {
+    "aiCovers": "Compare",
+    "aiSearch": "Image search",
+    "saveSearch": "Save search",
+    "advancedFilters": "Advanced",
+    "listingTypes": {
+      "condo": "Condos",
+      "coop": "Co-op"
+    },
+    "listingStatuses": {
+      "active": "For sale",
+      "sold": "Sold",
+      "all": "Both",
+      "rent": "For rent"
+    },
+    "transactionType": {
+      "sale": "For sale",
+      "lease": "For lease"
+    },
+    "beds": "Beds",
+    "baths": "Baths",
+    "allBedrooms": "All beds",
+    "allBaths": "All baths",
+    "minBedrooms": "{count}+ beds",
+    "minBaths": "{count}+ baths",
+    "garage": "Garage",
+    "parking": "Parking",
+    "price": "Price",
+    "anyPrice": "Any price",
+    "yearBuilt": "Year built",
+    "search": "Keywords",
+    "searchPlaceholder": "e.g. pool, fireplace, waterfront",
+    "style": "Style",
+    "basement": "Basement",
+    "openHouse": "Open houses",
+    "openHouseOptions": {
+      "none": "None",
+      "today": "Today",
+      "thisWeekend": "This weekend",
+      "any": "Any time"
+    },
+    "cancelled": "Cancelled listings",
+    "delistedDate": "Delisted date",
+    "maintenanceFee": "Maintenance fee",
+    "lotSize": "Lot size",
+    "lotFrontage": "Lot frontage",
+    "propertySize": "Property size",
+    "from": "From",
+    "to": "To",
+    "any": "Any",
+    "min": "Min",
+    "max": "Max",
+    "sqft": "sqft",
+    "feet": "ft",
+    "daysOnMarket": "Days on market",
+    "sold": "Sold",
+    "leased": "Leased",
+    "soldWithin": "Sold within",
+    "none": "None",
+    "studio": "Studio"
+  },
+  "Dialogs": {
+    "AiSearch": {
+      "inspirations": "Inspirations",
+      "features": "Features",
+      "favorites": "Favorites",
+      "describe": "Use AI to personalise your search. Describe features that you are looking for (e.g. <examples></examples>etc) or upload an image of a property that you like and see listings with them!",
+      "describeFeaturesPlaceholder": "Describe features",
+      "pasteImageUrlPlaceholder": "Paste an image URL",
+      "search": "Search",
+      "or": "or"
+    },
+    "Contact": {
+      "contactTitle": "Contact Us",
+      "requestInfoTitle": "Request Info"
+    },
+    "AdvancedFilters": {
+      "title": "Advanced filters",
+      "advancedFiltersTab": "Advanced filters",
+      "qualityFiltersTab": "Quality filters",
+      "yearBuilt": "Year built",
+      "any": "Any",
+      "from": "From",
+      "to": "To",
+      "qualityExcellent": "<b>Excellent</b> – Top condition, high-end materials, move-in ready.",
+      "qualityGood": "<b>Good</b> – Well-maintained with quality finishes and minimal wear.",
+      "qualityAverage": "<b>Average</b> – Functional and livable, with some aging or outdated features.",
+      "qualityFair": "<b>Fair</b> – Noticeable wear, some repairs or updates needed.",
+      "qualityPoor": "<b>Poor</b> – Significant issues, major repairs or renovations required.",
+      "features": "Features",
+      "rawSearch": "Pool, fireplace, view...",
+      "rawMore": "+{count} more"
+    },
+    "Common": {
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "delete": "Delete",
+      "save": "Save",
+      "continue": "Continue",
+      "updatesNotice": "After removal, you will not receive any updates about it."
+    },
+    "RemoveFavorite": {
+      "title": "Remove property from favorites",
+      "confirm": "Are you sure you want to remove this property from favorites?"
+    },
+    "RemoveImageFavorite": {
+      "title": "Remove image from favorites",
+      "confirm": "Are you sure you want to remove this image from favorites?"
+    },
+    "RemoveEstimate": {
+      "title": "Remove Estimate",
+      "confirm": "Are you sure you want to remove this estimate?",
+      "removedSuccess": "Estimate removed successfully",
+      "removedError": "Error removing estimate"
+    },
+    "DeleteSavedSearch": {
+      "title": "Delete saved search",
+      "confirm": "Are you sure you want to delete this saved search?",
+      "notice": "After deletion, you will not receive any updates about it."
+    },
+    "Otp": {
+      "invalidCode": "Please enter a valid 6-digit code",
+      "checkEmailPhone": "Please check your email/phone for a one time password (OTP) to proceed.",
+      "resendCode": "Resend code",
+      "unlocksIn": "Unlocks in {seconds}s",
+      "confirmTitle": "Sign In Confirmation",
+      "linkExpired": "The link you are trying to use is expired.",
+      "checkNewLink": "Please check your email/phone for a new authentication link",
+      "confirmFailed": "Failed to confirm OTP"
+    },
+    "Profile": {
+      "title": "Edit Profile",
+      "registeredOn": "Registered on",
+      "contactPhoneLabel": "Contact Phone",
+      "updatedSuccess": "User has been updated",
+      "updatedError": "An error occurred while saving the user."
+    },
+    "Cookie": {
+      "title": "Cookie Consent",
+      "consent": "By continuing to search or by clicking “Accept”, you agree to the storing of cookies to enhance your site experience and for analytical purposes. To learn more about how we use the cookies, please see our <link>cookies policy</link>.",
+      "accept": "Accept and Close"
+    },
+    "SaveSearch": {
+      "loadingName": "Loading...",
+      "description": "Save your search and get notifications about new properties that match your search criteria.",
+      "notificationFrequency": "Notification Frequency",
+      "nameWithinArea": "Listings within {radius} of {area}",
+      "nameInState": "Listings in {state}"
+    }
+  },
+  "AiChat": {
+    "startMessage": "AI Search...",
+    "continueMessage": "Continue the search...",
+    "clarifyMessage": "Extend and clarify your criteria..."
+  },
+  "Charts": {
+    "timeRange": "Time range",
+    "timeRanges": {
+      "6": "6 Months",
+      "12": "1 Year",
+      "24": "2 Years",
+      "120": "10 Years"
+    },
+    "average": "Average",
+    "median": "Median",
+    "volume": "Volume",
+    "sold": "Sold",
+    "soldCondos": "Condos Sold",
+    "salePrice": "Sale Price",
+    "daysOnMarket": "Days on Market",
+    "medianSoldPrice": "Median Sold Price",
+    "medianDaysOnMarket": "Median Days On Market",
+    "averageDaysOnMarket": "Average Days On Market",
+    "soldPriceAndDaysOnMarketTitle": "Sold Price & Days On Market in {name}",
+    "salesPrice": "Sales Price",
+    "salesVolume": "Sales Volume",
+    "noData": "No data"
+  },
+  "Property": {
+    "restricted": "This listing is only visible to registered users due to MLS compliance.",
+    "restrictedHistory": "The listing history for this property is only visible to registered users due to MLS compliance.",
+    "daysOnMarket": "{count, plural, =0 {🔥 Listed today} =1 {1 day on market} other {# days on market}}",
+    "monthsOnMarket": "{count, plural, other {# months on market}}",
+    "yearsOnMarket": "{count, plural, other {# years on market}}",
+    "updatedDaysAgo": "{count, plural, =0 {Updated today} =1 {Updated 1 day ago} other {Updated # days ago}}",
+    "listedLabel": "Listed:",
+    "soldDateLabel": "Sold date:",
+    "leasedDateLabel": "Leased date:"
+  },
+  "Statistics": {
+    "insightsTitle": "{name} Insights",
+    "statsDisclaimer": "Generated based on property type and location.\nAverage values are derived using median calculations.",
+    "activeListings": "Active Listings",
+    "activeListingsValue": "{value, plural, =0 {0 active listings} =1 {1 active listing} other {# active listings}}",
+    "activeListingsMonth": "For {month}",
+    "activeListingsTooltip": "Active listings for {propertyClass} properties in {name} for {month}",
+    "soldPrices": "Median Sold Price",
+    "soldPricesValue": "${value, number}",
+    "soldPricesMonth": "For {month}",
+    "soldPricesTooltip": "Median sales price for {propertyClass} properties in {name} for {month}",
+    "newListings": "New Listings",
+    "newListingsTooltip": "New listings for {propertyClass} properties in {name}",
+    "soldListings": "{propertyClass, select, condo {Condo} residential {Residential} other {{propertyClass}}} Sold",
+    "soldListingsTooltip": "Number of sold listings for {propertyClass} properties in {name}",
+    "daysOnMarket": "Days on Market",
+    "daysOnMarketTooltip": "Median days on market for {propertyClass} properties in {name}",
+    "volume": "Sales Volume",
+    "volumeTooltip": "Total sales volume for {propertyClass} properties in {name}"
+  },
+  "PDP": {
+    "listedByLabel": "Listed By",
+    "boughtWithLabel": "Bought With",
+    "listingSourceLabel": "Source",
+    "mlsNumberLabel": "MLS® #",
+    "currentHistoryItem": "Viewing now",
+    "openHistoryItem": "View",
+    "showcaseCards": {
+      "map": {
+        "title": "Map",
+        "description": "See property on map"
+      },
+      "streetView": {
+        "title": "Street View",
+        "description": "Take a walk nearby"
+      },
+      "tour3d": {
+        "title": "3D Tour",
+        "description": "Explore this home in 3D"
+      },
+      "tourVideo": {
+        "title": "Video Tour",
+        "description": "Watch the property video"
+      }
+    },
+    "sections": {
+      "description": {
+        "name": "Description"
+      },
+      "details": {
+        "name": "Home Details"
+      },
+      "parcelFacts": {
+        "name": "Public Record",
+        "groups": {
+          "parcel": "Parcel",
+          "transfer": "Last Transfer",
+          "assessment": "Assessment & Taxes"
+        }
+      },
+      "features": {
+        "name": "Features",
+        "groups": {
+          "bedsAndBaths": "Beds & Baths",
+          "heatingAndCooling": "Heating & Cooling",
+          "parkingAndGarage": "Parking & Garage",
+          "basement": "Basement",
+          "condoFeatures": "Condo Features"
+        }
+      },
+      "exterior": {
+        "name": "Exterior",
+        "groups": {
+          "construction": "Construction",
+          "lot": "Lot",
+          "constructionDetails": "Construction Details",
+          "waterAndSewer": "Water & Sewer",
+          "legal": "Legal",
+          "condoDetails": "Condo Details"
+        }
+      },
+      "appliances": {
+        "name": "Appliances & Equipment",
+        "groups": {
+          "appliancesIncluded": "Appliances Included",
+          "exclusions": "Exclusions",
+          "featuresEquipmentIncluded": "Features / Equipment Included",
+          "rentalEquipment": "Rental Equipment"
+        }
+      },
+      "neighborhood": {
+        "name": "Neighborhood"
+      },
+      "rooms": {
+        "name": "Rooms"
+      },
+      "condominium": {
+        "name": "Condominium",
+        "groups": {
+          "pets": "Pets",
+          "condoAmenities": "Amenities",
+          "nearbyAmenities": "Nearby"
+        }
+      },
+      "history": {
+        "name": "Sale History"
+      },
+      "liveByDemographics": {
+        "name": "Demographics"
+      },
+      "openHouse": {
+        "name": "Open Houses"
+      }
+    },
+    "fields": {
+      "category": "Category",
+      "style": "Style",
+      "type": "Type",
+      "fronting": "Fronting",
+      "secondaryDwellingUnit": "Secondary Dwelling Unit (SUD)",
+      "titleForm": "Title Form",
+      "taxesYear": "Taxes / Year",
+      "associationFeePOTL": "Association Fee/POTL",
+      "status": "Status",
+      "daysOnMarket": "Days on Market",
+      "listDate": "List Date",
+      "soldDate": "Sold Date",
+      "listingUpdatedOn": "Last Updated On",
+      "yearBuilt": "Year Built",
+      "parcelNumber": "Parcel Number (APN)",
+      "subdivision": "Subdivision",
+      "zoning": "Zoning",
+      "legalDescription": "Legal Description",
+      "assessedValue": "Assessed Value",
+      "assessedLand": "Assessed Land",
+      "assessedImprovements": "Assessed Improvements",
+      "assessmentYear": "Assessment Year",
+      "marketValue": "Market Value",
+      "marketValueYear": "Market Value Year",
+      "annualTax": "Annual Tax",
+      "taxYear": "Tax Year",
+      "lastTransferDate": "Transfer Date",
+      "lastTransferPrice": "Transfer Price",
+      "builderModel": "Builder / Model",
+      "lotSize": "Lot Size",
+      "totalBeds": "Total Beds",
+      "baths": "Baths",
+      "totalEnsuites": "Total Ensuites",
+      "heatingType": "Heating Type",
+      "heatingFuel": "Heating Fuel",
+      "airConditioning": "Air Conditioning",
+      "fireplaces": "Fireplaces",
+      "fuel": "Fuel",
+      "totalParking": "Total Parking",
+      "garageSpaces": "Garage Spaces",
+      "drivewaySpaces": "Driveway Spaces",
+      "coveredSpaces": "Covered Spaces",
+      "garageType": "Garage Type",
+      "driveway": "Driveway",
+      "parkingDescription": "Parking Description",
+      "parkingType": "Parking Type",
+      "entrance": "Entrance",
+      "sizeEstimated": "Size (estimated)",
+      "acres": "Acres",
+      "frontage": "Frontage",
+      "depth": "Depth",
+      "irregularShape": "Irregular shape",
+      "lotImprovements": "Lot Improvements",
+      "foundationType": "Foundation Type",
+      "roofMaterial": "Roof Material",
+      "exterior": "Exterior",
+      "floorCovering": "Floor Covering",
+      "waterSupply": "Water Supply",
+      "sewer": "Sewer",
+      "brokerage": "Brokerage",
+      "legalDescription": "Legal Description",
+      "appliancesIncluded": "Appliances Included",
+      "exclusions": "Exclusions",
+      "featuresEquipmentIncluded": "Features / Equipment Included",
+      "rentalEquipment": "Rental Equipment",
+      "neighborhoodInfluences": "Neighborhood Influences",
+      "condoFees": "Condo Fees",
+      "feeIncludes": "Fee Includes",
+      "specialAssessment": "Special Assessment",
+      "storiesBuild": "#Stories (Build)",
+      "levelsUnit": "#Levels (Unit)",
+      "ccpName": "CCP# / Name",
+      "restrictions": "Restrictions",
+      "laundry": "Laundry",
+      "storageLocker": "Storage Locker",
+      "pets": "Pets",
+      "condoAmenities": "Amenities",
+      "nearbyAmenities": "Nearby"
+    }
+  },
+  "Blog": {
+    "browseByCategory": "Browse by Category",
+    "browseByTag": "Browse by Tag",
+    "postsTaggedWith": "Posts tagged with",
+    "postsIn": "Posts in",
+    "noBlogPostsAvailable": "No blog posts available yet.",
+    "minRead": "min read",
+    "loadMore": "Load More",
+    "moreLikeThis": "More like this",
+    "inTheNews": "In the News",
+    "recentReviews": "Recent Client Reviews",
+    "homesSelling": "Homes {name} is Selling",
+    "soldBy": "Sold by {name}",
+    "meetOurTeam": "Meet our Team",
+    "authors": "Authors",
+    "homesClosed": "Homes Closed",
+    "contactMe": "Contact Me",
+    "latestPost": "This is the latest post",
+    "oldestPost": "This is the oldest post"
+  },
+  "Breadcrumbs": {
+    "home": "Home",
+    "blog": "Blog",
+    "buildings": "Buildings",
+    "pages": "Pages"
+  },
+  "liveByDemographics": {
+    "title": "{name} Demographics",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "attribution": "Source: {attribution}"
+  },
+  "LocationHeader": {
+    "title": "{listingType, select, residential {{listingStatus, select, rent {Homes for Rent} other {Homes for Sale}}} condo {{listingStatus, select, rent {Condos for Rent} other {Condos for Sale}}} townhome {{listingStatus, select, rent {Townhomes for Rent} other {Townhomes for Sale}}} residentialTownhome {{listingStatus, select, rent {Townhouses for Rent} other {Townhouses for Sale}}} condoTownhome {{listingStatus, select, rent {Condo Townhouses for Rent} other {Condo Townhouses for Sale}}} coop {{listingStatus, select, rent {Co-ops for Rent} other {Co-ops for Sale}}} semiDetached {{listingStatus, select, rent {Semi-Detached Homes for Rent} other {Semi-Detached Homes}}} multiFamily {{listingStatus, select, rent {Multi-Family Properties for Rent} other {Multi-Family Properties}}} land {{listingStatus, select, rent {Land for Rent} other {Land for Sale}}} business {Business Properties} commercial {Commercial Real Estate} penthouse {{listingStatus, select, rent {Penthouses for Rent} other {Penthouses for Sale}}} loft {{listingStatus, select, rent {Lofts for Rent} other {Lofts for Sale}}} other {Real Estate}}",
+    "exploreMap": "Explore Map",
+    "marketInsights": "Market Insights",
+    "cityInsights": "{city} Insights",
+    "exploreBuildings": "Explore Condos",
+    "exploreListings": "Explore Listings"
+  },
+  "Building": {
+    "navigation": {
+      "info": "Information",
+      "amenities": "Amenities",
+      "location": "Location",
+      "faq": "FAQ",
+      "reviews": "Reviews",
+      "videos": "Videos",
+      "similar": "Similar",
+      "condos": "Condos",
+      "sold": "Recent Sales"
+    },
+    "infoTitle": "Building Information",
+    "amenitiesTitle": "Amenities",
+    "nearbyAmenitiesTitle": "Nearby Amenities",
+    "faqTitle": "Frequently Asked Questions",
+    "reviewsTitle": "Reviews and News",
+    "condosTitle": "Condos for Sale",
+    "condosTitleAt": "Condos for Sale at {building}",
+    "soldTitle": "Recent Sales",
+    "soldTitleAt": "Recent Sales at {building}",
+    "built": "Built",
+    "stories": "Stories",
+    "units": "Units",
+    "condoSize": "Condo Size",
+    "developer": "Developer",
+    "builder": "Builder",
+    "architect": "Architect",
+    "rentalCap": "Rental Cap",
+    "showMore": "Show more",
+    "contactTitle": "Contact Us",
+    "contactQuestion": "Have a question about {building}?"
+  },
+  "Buildings": {
+    "titleIn": "Condo Buildings in {location}"
+  },
+  "Locations": {
+    "popularCities": "Popular Cities",
+    "popularCondos": "Popular Condos",
+    "popularHoods": "Popular Neighbourhoods",
+    "popularSearches": "Popular Searches in {location}",
+    "nearbyHoods": "Nearby Neighbourhoods",
+    "nearbyCities": "Nearby Cities",
+    "hoodsOfCity": "Neighborhoods of {city}",
+    "citiesOfRegion": "Cities of {state}"
+  },
+  "Forms": {
+    "signInTitle": "Sign in",
+    "signUpTitle": "Sign up",
+    "confirmationTitle": "Confirmation",
+    "signInButton": "Continue",
+    "signUpButton": "Continue",
+    "googleSignInButton": "Continue with Google",
+    "signInEmailLabel": "Email",
+    "signInPhoneLabel": "Phone number",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
+    "nameLabel": "Name",
+    "namePlaceholder": "Enter your name",
+    "nameRequired": "Name is required",
+    "nameMaxLength": "Max field length is 70 chars",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter your email",
+    "emailInvalid": "Enter valid email",
+    "phoneLabel": "Phone",
+    "phonePlaceholder": "(555) 555-1234",
+    "phoneInvalid": "Incorrect phone format",
+    "phoneRequired": "Required field ",
+    "emailOrPhoneRequired": "Enter your email or phone",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Enter your message",
+    "messageRequired": "Message is required and should be more than 10 symbols",
+    "messageMaxLength": "Message should be less than 1024 symbols",
+    "dateLabel": "Date",
+    "dateRequired": "Pick a date",
+    "dateInvalid": "Pick a date in the future",
+    "timeLabel": "Time",
+    "timeRequired": "Pick a time",
+    "timeInvalid": "Pick a valid time",
+    "financingLabel": "I want to talk about financing",
+    "submitButton": "Submit",
+    "requestInfoButton": "Request info",
+    "requestTourButton": "Request a tour",
+    "scheduleMeetingButton": "Schedule a Meeting",
+    "messageSent": "Message has been sent",
+    "subscribeSuccess": "You've been subscribed successfully",
+    "subscribeError": "Subscription failed. Please try again.",
+    "alternativeContact": "or reach us at",
+    "privacyPolicy": "privacy policy",
+    "termsAndConditions": "terms and conditions",
+    "contactMessagePrefix": "I want to talk about",
+    "legalText": "By clicking {action} I agree to be contacted by {siteName} via phone, email, and/or text. To opt-out, you can reply 'stop' at any time or click the unsubscribe link in the emails. Message and data rates may apply. Our",
+    "contactTitle": "Contact Me",
+    "contactSubtitle": "Gain a deeper understanding of Seattle's real estate market, find your dream home or sell your property.",
+    "subscribeTitle": "Follow Seattle Real Estate Trends",
+    "subscribeSubtitle": "Join 2,000+ subscribers and get our 5-minute weekly newsletter on what's happening with Seattle real estate.",
+    "subscribeButton": "Subscribe",
+    "unsubscribeDescription": "Click 'Unsubscribe' to opt out of all future communications.",
+    "signInWithGoogle": "Sign in with Google",
+    "notMemberYet": "Not a member yet?",
+    "returnToSignIn": "Return to sign in",
+    "unsubscribe": "Unsubscribe"
+  },
+  "EmptyStates": {
+    "Chat": {
+      "title": "No chat history yet!",
+      "description": "Start a conversation to get assistance with your property search."
+    },
+    "Favorites": {
+      "title": "No favorite properties yet!",
+      "description": "Start exploring properties and save the ones you love by clicking the heart icon."
+    },
+    "ImageFavorites": {
+      "title": "No saved images yet!",
+      "description": "Start saving images of the homes you like by clicking the star icon. Your saved pictures will appear here for easy access."
+    },
+    "Listings": {
+      "title": "No listings found in this area!",
+      "description": "Try zooming out or exploring a more populated area to discover available properties."
+    },
+    "Recents": {
+      "title": "No recently viewed listings yet!",
+      "description": "Start browsing and exploring property listings to build your viewing history here."
+    },
+    "SavedSearch": {
+      "title": "No saved searches yet!",
+      "description": "Start exploring the map and save neighborhoods you like to stay updated on new property listings."
+    },
+    "Catalog": {
+      "title": "No listings found for this area.",
+      "titleWithFilters": "No listings found for this area and filters.",
+      "resetFilters": "Reset filters"
+    }
+  },
+  "Widgets": {
+    "noData": "No data",
+    "estimatedValueTitle": "The estimated value of your home is:",
+    "created": "Created:",
+    "lastUpdated": "Last Updated:",
+    "lastEmailSent": "Last Email Sent:",
+    "minRange": "Min Range",
+    "maxRange": "Max Range",
+    "allNeighbourhoods": "All neighbourhoods",
+    "sortGainHighToLow": "% Gain - High to Low",
+    "sortGainLowToHigh": "% Loss - Low to High",
+    "sortAvgHighToLow": "Average Price - High to Low",
+    "sortAvgLowToHigh": "Average Price - Low to High"
+  },
+  "CmsWidgets": {
+    "readFullArticle": "Read Full Article",
+    "noAuthors": "No authors found",
+    "asSeenOn": "As seen on",
+    "estimateAlt": "Wondering what your home is worth?",
+    "topEmployersTitle": "Our Clients Work at Great Seattle Companies",
+    "servicesTitle": "One point of contact for all your needs",
+    "servicesSubtitle": "Thinking of buying or selling? We'd love to chat.",
+    "servicesBuyerTitle": "Buyer",
+    "servicesBuyerDescription": "Find your dream home with us - explore a world of properties tailored to fit your lifestyle and budget.",
+    "servicesBuyerButton": "SEARCH",
+    "servicesSellerTitle": "Seller",
+    "servicesSellerDescription": "Sell with confidence and maximise your profits with our expert strategies and personalised support.",
+    "servicesSellerButton": "LIST YOUR HOME"
+  },
+  "Profile": {
+    "title": "My Profile",
+    "emailPreferences": "Email preferences",
+    "thankYouFeedback": "Thank you for your feedback.",
+    "unsubscribeNotice": "<b>{email}</b> will no longer receive<br></br><b>{site}</b> notifications.",
+    "tellUsWhy": "Tell us why you're leaving",
+    "additionalComments": "Additional comments",
+    "reasonRequired": "Please enter your reason",
+    "send": "Send",
+    "reasonBought": "Bought a house already",
+    "reasonNotRelevant": "Not relevant content",
+    "reasonTooMany": "Too many emails",
+    "reasonOther": "Other"
+  },
+  "Agent": {
+    "myClients": "My Clients",
+    "notifications": "Notifications:",
+    "monthly": "Monthly",
+    "none": "None",
+    "searchClient": "Search a Client...",
+    "estimateButton": "Estimate",
+    "intendsToSell": "Intends to sell:",
+    "noEstimates": "No estimates available",
+    "created": "Created:",
+    "address": "Address:",
+    "fubLink": "FUB Link:",
+    "clientProfile": "client profile",
+    "unknownClient": "Unknown client"
+  },
+  "NavigationBar": {
+    "openGridGallery": "Open Grid Gallery",
+    "startSlideshow": "Start Slideshow",
+    "backToGallery": "Back to Gallery"
+  },
+  "Photos": {
+    "starToSave": "Star to save for later use",
+    "save": "Save",
+    "searchImageNow": "Search this image right away",
+    "aiSearch": "AI Search"
+  },
+  "Carousel": {
+    "noItems": "No items available",
+    "noReviews": "No reviews available"
+  },
+  "Filters": {
+    "sortBy": "Sort by:",
+    "sortNewest": "Newest to oldest",
+    "sortRecentlyUpdated": "Recently updated",
+    "sortRecentlySold": "Recently sold",
+    "sortPriceHighLow": "Price (high to low)",
+    "sortPriceLowHigh": "Price (low to high)",
+    "sortQualityHighLow": "Quality (high to low)",
+    "sortQualityLowHigh": "Quality (low to high)"
+  },
+  "HeroGallery": {
+    "startSlideshow": "Start Slideshow",
+    "seeAllPhotos": "See all {count} photos"
+  },
+  "Templates": {
+    "needSignIn": "You need to <link>Sign in</link> to view this page.",
+    "redirecting": "Redirecting to <link>Sign in</link> page...",
+    "listingError": {
+      "403": "Access denied. You are not authorized to view this listing.",
+      "404": "We're sorry. The listing you are looking for isn't there.",
+      "410": "The listing you are looking for was {lastStatus}.",
+      "429": "Too many requests. Please try again in a minute.",
+      "500": "An unexpected error occurred. Please try again later."
+    }
+  }
+}

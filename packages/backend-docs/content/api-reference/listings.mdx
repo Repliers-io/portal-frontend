@@ -1,0 +1,53 @@
+# Listings
+
+`src/routes/listings.ts` — guest-allowed (passthrough JWT) throughout; guest
+responses are [scrubbed](/architecture/scrubbing), and
+[restricted listings](/architecture/scrubbing#restricted-listings) are excluded at
+every exit.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /listings/search` | Property search — filters, pagination, map polygons, cluster aggregates |
+| `POST /listings/search` | Same, with complex bodies (`queries[]` unions) |
+| `GET /listings/count` | Listings count (cached) |
+| `POST /listings/count` | Count for multiple filter sets in one call |
+| `GET /listings/:mlsNumber` | Single listing detail; unavailable/hidden listings return the configured `hide_unavailable_listings_http_code` (default 410) |
+| `GET /listings/:mlsNumber/similar` | Similar listings for a property |
+| `GET /listings/history` | Cross-board history of the property behind an MLS number — see below |
+| `GET /listings/locations` | MLS locations (area/city/neighborhood) with active-listing counts |
+| `GET /listings/lastUpdatedOn` | Timestamp of the newest listing update |
+| `POST /listings/nlp` | Natural-language property search (NLP → MLS filters) |
+| `GET /listings/featured/:slug` | Featured listings — the slug maps to a Repliers clientId via `SETTINGS_FEATURED_LISTINGS` |
+
+## Behavioral notes
+
+- **Search side effects** — the search handlers append the identity fields
+  (`status, permissions, address, duplicates, boardId`) to `fields`/`clusterFields`
+  so scrubbing works on cluster-inlined listings.
+- **`aggregates=listPrice`** returns two histograms (`sale`, `lease`) spanning
+  0–5,000,000 and 0–10,000 plus a trailing `+` bucket. Bucket width defaults to
+  100000 / 500 and is tunable per axis with `aggregatesListPriceSaleBucketSize` /
+  `aggregatesListPriceLeaseBucketSize` — a narrower bucket adds resolution without
+  moving the range.
+- **Status vocabulary** — on an instance with `APP_ALLOWED_LISTINGS_STANDARD_STATUSES`,
+  every search is narrowed to the allowed `standardStatus` set, so filtering there by
+  `status` / `lastStatus` gets a Repliers `400` — see
+  [Repliers API](/integrations/repliers-api#query-semantics-worth-knowing).
+- **Several values are OR-ed** — `brokerage` and any `raw.<field>` accept repeated
+  values, and Repliers matches any of them. A lone `raw.*` value is forwarded as a
+  string.
+- **`imagesOrder`** (`score` / `original`) only applies to AI image search: Repliers
+  answers `400` unless `imageSearchItems` or `coverImage` is in the same request.
+- **`GET /:mlsNumber`** records a property-view event (fire-and-forget second
+  handler) — see [Events & Messaging](/architecture/events-and-messaging).
+- **`GET /history`** proxies the Repliers property-history endpoint: Repliers
+  resolves the *property* behind the MLS number, so results span every board the
+  account reads — unlike the `history` array nested in a listing detail, which is
+  board-scoped. Records are not date-ordered, the requested listing is among them,
+  and a listing syndicated across boards appears once per board — ordering and
+  de-duplication are the consumer's concern. Registered above `/:mlsNumber` (route
+  order matters: `@koa/router` matches in registration order). Not cached (the
+  per-user `app_state` argument would poison the cache key) and records no view
+  event.
+- **Route order** — `history`, `locations`, `lastUpdatedOn`, `featured` are all
+  registered before the parametric `/:mlsNumber`.

@@ -1,0 +1,49 @@
+# User & Favorites
+
+## User — `/user`
+
+`src/routes/user.ts` + sub-routers `user/assets.ts`, `user/social.ts`, `user/boss.ts`.
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `GET /user/me` | strict | Current user's profile from Repliers (fname/lname, contacts, preferences, tags, searches…) |
+| `PATCH /user` | strict | Update the profile; with `preferences.unsubscribe` set, reports an `Unsubscribed` CRM event (second handler, tags from `SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_UNSUBSCRIBED`) |
+| `GET /user/agent` | guest-allowed | Agent info for the current context |
+| `POST /user/assets/:type` | strict | Upload a user asset of the given type |
+| `GET /user/assets/:type` | strict | List user assets |
+| `POST /user/assets/:type/remove` | strict | Delete a user asset |
+| `GET /user/social/:provider/url` | strict | Start linking a social account |
+| `GET /user/social/:provider/cb` | strict | OAuth callback — stores the access/refresh token |
+| `GET /user/social/:provider/refresh` | strict | Refresh the stored token |
+| `GET /user/social/{:provider}` | strict | Linked-account state |
+| `DELETE /user/social/:provider` | strict | Unlink |
+| `POST /user/boss/tag` | strict | Add tag(s) to the user's CRM (Follow Up Boss) profile |
+
+Assets, social links, and CRM sync require [persistence](/architecture/persistence).
+
+## Favorites — `/favorites`
+
+`src/routes/favorites.ts` — strict JWT.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /favorites` | Add a favorite |
+| `GET /favorites` | List the client's favorited properties |
+| `DELETE /favorites/:favoriteId` | Remove a favorite |
+
+Favorites are stored in Repliers (via `services/repliers/favorites.ts`), not in the
+local database. Restricted listings are dropped from responses, but `DELETE` checks
+ownership against the unfiltered list — a listing favorited before it was restricted
+can still be removed.
+
+## Saved searches — `/searches`
+
+`src/routes/searches.ts`.
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /searches` | strict | Create a saved search — the client is notified when new matching listings hit the market. Reports a save-search event (second handler) |
+| `GET /searches` | strict | List/filter saved searches |
+| `GET /searches/:searchId` | guest-allowed | Saved-search detail |
+| `PATCH /searches/:searchId` | strict | Update |
+| `DELETE /searches/:searchId` | strict | Delete |

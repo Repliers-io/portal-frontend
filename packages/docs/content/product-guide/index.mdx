@@ -1,0 +1,71 @@
+# Portal Product Guide
+
+**Version:** 1.0
+**Last Updated:** February 2025
+
+## What is Portal?
+
+Portal is a **white-label real estate platform** built on the **Repliers API**. It enables brokerages, teams, and agents to launch branded property search websites without building from scratch. Each client gets unique branding, features, and MLS data—all powered by a single codebase. The Repliers API supplies the data, a proxy backend sits in front of it (the frontend never calls Repliers directly), and Portal delivers the frontend.
+
+## Who It Serves
+
+Portal is a **B2B** product for real-estate businesses that want their own branded
+property-search site — large brokerages, boutique agencies, teams, and solo agents. Each becomes
+a **tenant**: one codebase, its own brand, feature set, and MLS data.
+
+Those businesses serve **end users (B2C)**:
+
+- **Buyers** - Search properties, save favorites, contact agents
+- **Sellers** - Get home estimates, find listing agents
+- **Renters** - Search rental listings
+
+## Core Features
+
+| Feature                                         | Description                                                          | URL                                                                                 |
+| ----------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [Property Search](/product-guide/search)        | Map and grid views with filters                                      | `/search/*`                                                                         |
+| [Listing Detail](/product-guide/listing-detail) | Full property page: gallery, details, history, agent contact         | `/listing/*`                                                                        |
+| [Home Estimate](/product-guide/estimate)        | AVM-powered property valuation                                       | `/estimate`                                                                         |
+| [User Features](/product-guide/user-features)   | Favorites, image favorites, saved searches, recently viewed, profile | `/favorites`, `/image-favorites`, `/saved-searches`, `/recently-viewed`, `/profile` |
+| [Market Dashboard](/product-guide/dashboard)    | Market statistics and trends by city                                 | `/dashboard/*`                                                                      |
+| [Blog & CMS](/product-guide/cms-content)        | Editorial and static pages via a pluggable CMS                       | `/blog/*`, `/page/*`, `/pages/*`                                                    |
+| [Location Pages](/product-guide/locations)      | SEO city/neighborhood catalog                                        | `/locations/*`                                                                      |
+
+## Architecture at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     TENANT WEBSITES                         │
+│   tenant-a.com     tenant-b.com     tenant-c.com     …       │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                ┌─────────▼─────────┐
+                │   PORTAL (Next.js) │
+                │   Single Codebase  │
+                └─────────┬─────────┘
+                          │
+                ┌─────────▼─────────┐
+                │   PROXY BACKEND    │
+                │ (NEXT_PUBLIC_API_URL)│
+                └─────────┬─────────┘
+                          │
+                ┌─────────▼─────────┐
+                │   REPLIERS API     │
+                └─────────┬─────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+   ┌────▼────┐      ┌────▼────┐      ┌────▼────┐
+   │  MLS A  │      │  MLS B  │      │  MLS C  │
+   │ region  │      │ region  │      │ region  │
+   └─────────┘      └─────────┘      └─────────┘
+```
+
+## Quick Links
+
+- [Multi-tenant System](/product-guide/multi-tenant) - How client configurations work
+- [Content Management](/product-guide/content-management) - WordPress, Ghost, Markdown, local MDX sources
+- [Integrations](/product-guide/integrations) - APIs, maps, CRM, analytics
+- [AI Agent Integration](/product-guide/ai-agent) - Connect an external AI over a message protocol
+- [Technical Guide](/technical-guide) - Developer documentation
+- [Glossary](/glossary) - Real estate terminology

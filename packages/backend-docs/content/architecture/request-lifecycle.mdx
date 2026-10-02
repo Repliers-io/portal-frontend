@@ -1,0 +1,71 @@
+# Request Lifecycle
+
+## Middleware chain
+
+`src/app.ts` composes the chain; every middleware is resolved from the DI container:
+
+1. **Error handler** (inline, first — so it wraps everything downstream)
+2. `middleware.container` — creates the per-request child container on `ctx.state.container`
+3. `middleware.container.xff` — registers the request's `XFFProvider` in that container
+4. `middleware.compress`, `middleware.cors`, `middleware.helmet`,
+   `middleware.bodyparser`, `middleware.xss`, `middleware.sslify`,
+   `middleware.swagger`
+5. `middleware.logger`, `middleware.pino`
+6. The root router (`/api`)
+
+## The handler pattern
+
+Every route handler follows the same shape (the "house pattern"):
+
+```ts
+router.post("/", authMiddleware, async (ctx) => {
+   ctx.state['enable.xff'] = true;                       // 1. mark user-facing
+   const { error, value } = schema.validate(              // 2. Joi-validate
+      getBody(ctx.request.body));
+   if (error) ctx.throw(new ApiError(error.message, 400));
+   const service = ctx.state.container.resolve(MyService); // 3. per-request resolve
+   ctx.body = await service.method(value);                 // 4. DTO in, payload out
+});
+```
+
+- **`ctx.state['enable.xff'] = true`** — set by every user-facing route; it lets the
+  [XFF provider](/architecture/repliers-proxy#client-ip-forwarding-xff) forward the
+  real client IP to Repliers.
+- **Validation** — schemas live in `src/validate/<feature>.ts`. The service receives
+  the validated DTO, never the raw body.
+- **Resolution** — services come from `ctx.state.container` (request-scoped), not the
+  global container.
+- Some routes chain a **second handler** for fire-and-forget side effects — see
+  [Events & Messaging](/architecture/events-and-messaging).
+
+## Authentication middlewares
+
+Two variants, both resolved from the container (see
+[Authentication](/architecture/authentication)):
+
+- `middleware.jwt` — strict; 401 without a valid token.
+- `middleware.jwt.passthrough` — guest-allowed; a *missing* token passes through,
+  an *invalid* one still throws 401.
+
+The decoded payload lands in `ctx.state["user"]` (`sub` = clientId as a string).
+
+## Error handling
+
+Throw `ApiError` (`src/lib/errors.ts`) — never a raw `Error` — via
+`ctx.throw(new ApiError(message, status))`. The global handler in `app.ts` maps
+everything to a JSON body:
+
+```json
+{ "message": "400 - <details> - /api/<path>", "userMessage": "<details>", "info": {} }
+```
+
+- An `ApiError` whose options carry `Retry-After` sets that header, whatever its
+  status (today: the OTP resend cooldown, `403`). The options themselves are returned
+  as `info`.
+- `HttpError` (koa's own, including koa-jwt failures) keeps its status; koa-jwt
+  details are appended from `originalError`.
+- Anything else becomes a 500 `Internal Server Error` (with stack traces outside
+  production).
+- Do **not** wrap route bodies in try/catch — the global handler is the only place
+  errors are shaped. Note: use `ctx.throw(...)`, not `ctx.assert(...)` — due to a koa
+  quirk, errors thrown by `ctx.assert` bypass this handler.

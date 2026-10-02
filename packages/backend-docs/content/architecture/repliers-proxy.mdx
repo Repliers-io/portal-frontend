@@ -1,0 +1,160 @@
+# Repliers Proxy
+
+All upstream traffic goes through the client family in `src/services/repliers/`:
+
+```
+services/repliers/
+├── base.ts        # RepliersBase — axios instance, throttling, XFF, error mapping
+├── listings.ts    # search / single / similar / history …
+├── locations.ts   # locations & autocomplete
+├── estimate.ts    # AVM estimates
+├── favorites.ts   # favorites
+├── searches.ts    # saved searches
+├── clients.ts     # Repliers clients (users)
+├── agents.ts      # agents
+├── messages.ts    # Messages API (OTP, inquiries)
+├── buildings.ts   # buildings
+└── normalize.ts   # response normalization helpers
+```
+
+Domain services (`services/listings.ts`, `services/estimate.ts`, …) depend on these
+clients; nothing outside `services/repliers/` builds a Repliers URL.
+
+## `RepliersBase`
+
+- One axios instance per client, `baseURL = config.repliers.base_url`, the API key in
+  the `REPLIERS-API-KEY` header, `timeout` from `REPLIERS_TIMEOUT`.
+- **Throttling** — every request goes through a `p-throttle` wrapper with an
+  `onDelay` hook for logging. There are two, both container singletons, so each limit
+  is process-wide: `throttler:repliers` (`providers/throttler/repliers.ts`, at most
+  `REPLIERS_API_LIMIT` requests per `REPLIERS_API_INTERVAL_MS`) carries live traffic;
+  `throttler:repliers:warmup` carries SSG traffic once a warmup key is configured —
+  see [SSG cache-warmup key](#ssg-cache-warmup-key).
+- **Key switching** — `switchKey(key)` rebuilds the axios instance and keeps the
+  active throttler. Its caller is `EstimateService`, which moves its historical-listings
+  client onto `REPLIERS_API_KEY_EXTRA` when that key is set.
+- Upstream failures are mapped to `ApiError("Repliers API error: <status>")` with the
+  upstream status, and the upstream response body travels in the error's `info`; the
+  [global error handler](/architecture/request-lifecycle#error-handling) shapes them
+  like any other error. Upstream headers (`Retry-After` included) are not forwarded.
+
+## Client IP forwarding (XFF)
+
+Repliers wants the *real* client IP for analytics and rate decisions, but the backend
+sits behind load balancers — and some requests are not user traffic at all (SSR/SSG
+from the frontend's Next.js server). `XFFProvider` (`src/lib/xffprovider.ts`) decides
+per request:
+
+- Routes opt in with `ctx.state['enable.xff'] = true`; the provider is instantiated
+  per request by `middleware.container.xff`. The flag is read when the Repliers call
+  is made, not when the provider is built — services are often resolved by middleware
+  that runs before the handler sets it.
+- The globally toggled `REPLIERS_PROXY_XFF` must also be on.
+- **SSR requests** — identified by the `X-Forwarded-For-Token` header matching
+  `XFF_SSR_TOKEN`; the real client IP is extracted from the `X-Forwarded-For` chain at
+  `XFF_SSR_IPADDR_OFFSET` positions from the end.
+- **SSG requests** — identified by `XFF_SSG_TOKEN`; these carry no client IP, so
+  forwarding is skipped, and with a warmup key configured they move to the
+  [cache-warmup key and throttle](#ssg-cache-warmup-key).
+- Both tokens are compared with `timingSafeEqual`. The `REPLIERS_PROXY_XFF_*` names
+  still work as legacy aliases.
+- When enabled, the IP is sent upstream as `x-repliers-forwarded-for`.
+
+### Diagnosing a missing header
+
+`XFFProvider.skipReason()` names why a call goes out without the header: `ssg`,
+`route-flag-missing`, `proxy-disabled`, `no-client-ip`, or `no-request-context` (the
+dummy provider, used outside an HTTP request). Every such call logs at `info`:
+
+```
+Repliers call without x-repliers-forwarded-for   { url, reason }
+```
+
+A user-facing route showing `route-flag-missing` is missing its `enable.xff` line.
+
+### Which token to send
+
+The frontend picks the token in `src/utils/xff.ts`. The rule is **"is there a real
+client IP behind this render?"**, not "is there a headers object" — under
+`dynamic = 'force-static'` and during runtime ISR regeneration, Next hands back a
+truthy but empty headers stub. Sending the SSR token there produced a chain with no
+user in it, so the backend billed the production Repliers key and reported the
+frontend dyno's own egress IP as the end user. Build-time renders, ISR regeneration
+and warm-up scripts all send the SSG token; only a request carrying a real
+`x-forwarded-for` sends the SSR one. Never send an empty-valued `X-Forwarded-For` —
+it shifts the offset arithmetic below by one.
+
+### Chain shapes
+
+Every proxy hop appends the peer that connected to it, so the offset is a property of
+the deployment. The shape below is one production example, not a rule — a CDN is
+absent on some deployments:
+
+```
+Browser → CDN → router → portal-frontend    # CDN absent on some deployments
+Browser →       router → portal-backend     # no CDN in front of the backend here
+```
+
+| Traffic | Chain reaching the backend | Resolved by |
+| --- | --- | --- |
+| Browser → backend directly | `<client>` | last entry |
+| SSR, CDN present | `<client>, <cdn-edge>, <frontend-egress>` | offset 3 → index 0 |
+| SSR, no CDN | `<client>, <frontend-egress>` | offset 3 out of bounds → walks down to 2 → index 0 |
+
+`getClientIpBehindSSR` walks the offset down until it is in bounds, which is what lets
+a single offset serve both shapes. The non-SSR branch takes the last entry, which is
+correct only while nothing sits between the browser and the backend — put a CDN in
+front of the backend and its edge IP gets forwarded as the end user.
+
+## SSG cache-warmup key
+
+Build-time renders, ISR regeneration and warm-up scripts hit the backend in bursts.
+With `REPLIERS_CACHE_WARMUP_API_KEY` set, `RepliersBase` moves a request carrying the
+SSG token off the live path:
+
+- it uses the warmup key instead of `REPLIERS_API_KEY` — a separate Repliers-side
+  quota;
+- it goes through its own throttle, `throttler:repliers:warmup`
+  (`providers/throttler/repliersWarmup.ts`; `REPLIERS_CACHE_WARMUP_API_LIMIT` per
+  `REPLIERS_CACHE_WARMUP_API_INTERVAL_MS`, defaulting to the live pair) — a build never
+  queues behind live users on the local limiter.
+
+Both switches share one condition, `xff.isSsg() && cache_warmup_api_key`: without the
+key an SSG request is indistinguishable from a live one. The throttle choice survives
+`switchKey()`, so an SSG request stays on the warmup throttle whichever key ends up on
+the wire.
+
+Startup fails fast (an `assert` in `src/config.ts`) when the warmup key is set but
+`XFF_SSG_TOKEN` is empty — the key could never be selected, and that misconfiguration
+would otherwise look exactly like a working deploy.
+
+The token now decides which upstream key is billed: treat `XFF_SSG_TOKEN` as a secret
+(anyone holding it can drain the warmup quota) and give the warmup key no broader
+entitlements than the main key.
+
+## MLS-number prefix codec
+
+Some boards store MLS numbers with a letter prefix (`ABC2563312`) while the portal
+deals only in clean numbers (`2563312`). The boundary is
+`src/lib/mlsNumberPrefix.ts`, driven by `settings.mlsNumberPrefix` (set per instance;
+empty everywhere else, making every helper a no-op):
+
+- `stripMlsNumbers(data, prefix)` — strips the prefix from every `mlsNumber` in a
+  response, deep: listings, history, comparables, similar, cluster-inlined. The `raw`
+  MLS payload stays verbatim.
+- `addMlsNumbers(data, prefix)` — prefixes every `mlsNumber` in request params (top
+  level and `body.queries[]`).
+- `addMlsPrefix(value, prefix)` — for MLS numbers in URL path segments
+  (`/listings/{mlsNumber}`).
+- `addMlsSearchVariant(query, prefix)` — widens a digit-only free-text `search` to
+  `search=<n> <PREFIX><n>` with `searchOperator=OR`. Wired **only** in the
+  autosuggest MLS leg — a Repliers quirk makes OR-widening unsafe whenever
+  `searchFields` contains `address.streetNumber` (or is absent): a digit keyword that
+  matches no street number zeroes the whole union.
+
+The codec is wired inside `services/repliers/listings.ts` (`search`, `single`,
+`similar`) and `services/repliers/favorites.ts` — callers never see prefixed numbers.
+
+Ordering trap: restriction exclusions (`not:<mls>`) must be prefixed **after**
+`addMlsNumbers` runs, or the codec would turn `not:2559393` into `ABCnot:2559393` —
+see [Scrubbing & Restrictions](/architecture/scrubbing#restricted-listings).

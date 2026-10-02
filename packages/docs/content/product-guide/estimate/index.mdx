@@ -1,0 +1,93 @@
+import { Callout } from 'nextra/components'
+
+# Home Estimate
+
+The Home Estimate feature gives property owners an automated valuation of their home, powered
+by an AVM (Automated Valuation Model). It's a lead-generation flow for sellers.
+
+![The estimate entry point — "How much is my home worth?" with an address search](/img/estimate.webp)
+
+<Callout type="info">
+  Technical anatomy (multi-step form providers, routing, config) is in [How it
+  works](/product-guide/estimate/technical).
+</Callout>
+
+## Overview
+
+| Aspect            | Details                                                        |
+| ----------------- | -------------------------------------------------------------- |
+| **URL**           | `/estimate` (+ `/estimate/[[...slugs]]`, `/estimate/embedded`) |
+| **Feature Flag**  | `estimate`                                                     |
+| **Auth Required** | No (verification during the flow)                              |
+| **Purpose**       | Lead generation for sellers                                    |
+
+## What is AVM?
+
+An **Automated Valuation Model (AVM)** estimates property values using:
+
+- Recent comparable sales (comps)
+- Property characteristics (beds, baths, sqft)
+- Location data
+- Market trends and historical price data
+
+## User Flow
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Enter      │     │   Confirm    │     │   Add        │     │   View       │
+│   Address    │────▶│   Property   │────▶│   Details    │────▶│   Estimate   │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+                                                                      │
+                                                                      ▼
+                                                              ┌──────────────┐
+                                                              │   Contact    │
+                                                              │   Agent      │
+                                                              └──────────────┘
+```
+
+1. **Enter address** — autocomplete via Google Places.
+2. **Confirm property** — user confirms the matched property.
+3. **Add details** — beds, baths, sqft, year built, type, condition, upgrades.
+4. **View estimate** — value range, confidence, comparable sales, price trends.
+5. **Contact agent** — CTA for a professional CMA / consultation.
+
+![The multi-step details form, pre-filled — for an address already in the MLS the estimate pulls the property's known facts (style, square footage, year built, exterior, heating) and jumps straight to the Lot Information step](/img/estimate-prefill.webp)
+
+<Callout type="info">
+  **Known-address pre-fill.** When the entered address already exists in the MLS
+  data, the flow auto-fills the property characteristics from the database and
+  skips ahead to **Lot Information & Expenses** — the user only completes what's
+  missing (e.g. annual property taxes) instead of re-entering everything.
+</Callout>
+
+## Estimate results
+
+The result page shows an estimated value with a min/max range, current property
+facts, comparable sales, and local market trends.
+
+![The estimate results page — the valuation with a min/max range, full home facts, a price-trend chart, local market insights, a market-temperature gauge, and comparable properties](/img/estimate-results.webp)
+
+<Callout type="info">
+  **Signed-in estimates are shareable.** Running the estimate while logged in
+  saves it under a persistent id (e.g. `/estimate/01KWHD…`) with a **Share
+  Estimate** action, so the result can be revisited or sent to an agent.
+</Callout>
+
+## Lead generation
+
+The flow captures seller leads and routes them to the CRM (Follow Up Boss):
+
+1. **Soft lead** — user views the estimate (tracked).
+2. **Form lead** — user submits the contact form.
+3. **CRM** — the lead is sent to Follow Up Boss.
+
+## Accuracy considerations
+
+AVM estimates are not appraisals — accuracy drops for unique properties, recent
+un-recorded renovations, rural areas with few comps, rapid market shifts, and variable condo
+units. For an accurate valuation, recommend a professional CMA or appraisal.
+
+## Configuration
+
+Estimate behavior (steps, fields, validation) is driven by `@configs/estimate`; see
+[How it works → Configuration](/product-guide/estimate/technical#configuration).

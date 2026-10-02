@@ -1,0 +1,219 @@
+# Content Management
+
+Technical documentation for Portal's multi-source content system.
+
+## Architecture
+
+```
+CmsService.getPagesClient().getPage(slug)
+                │
+                ▼
+┌─────────────────────────────────────────────┐
+│         CMS_PAGES_CLIENT = ?                │
+├─────────────────────────────────────────────┤
+│  wordpress  │    ghost    │    markdown     │
+└──────┬────────────┬────────────┬────────────┘
+       │            │            │
+       ▼            ▼            ▼
+   WordPress     Ghost       Local MDX
+     API          API          Files
+       │            │            │
+       └────────────┴────────────┘
+                    │
+             Fallback to MDX
+              if not found
+                    │
+                    ▼
+            CmsContentRenderer
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+   HTML string            MDX component
+        │                       │
+   HtmlRenderer            MdxRenderer
+```
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Static pages source (default: markdown)
+CMS_PAGES_CLIENT=wordpress|ghost|markdown
+
+# Blog source
+CMS_BLOG_CLIENT=wordpress|ghost
+
+# WordPress
+WORDPRESS_API_URL=https://example.com
+WORDPRESS_API_USER=user
+WORDPRESS_API_PASSWORD=password
+
+# Ghost
+GHOST_API_URL=https://example.ghost.io
+GHOST_API_KEY=abc123
+```
+
+### Static Page Slugs
+
+When using `MarkdownClient`, Portal needs to know which pages exist locally (since it can't "scan" the filesystem at runtime). This whitelist is defined in `configs/defaults/content.ts`:
+
+```typescript
+staticPageSlugs: [
+  'privacy-policy',
+  'terms-of-use',
+  'cookies-policy',
+  'dmca-notice',
+  'accessibility',
+  'contact-us',
+  'about'
+]
+```
+
+**Why needed:**
+
+- `MarkdownClient.getPages()` uses this list to return all available pages
+- Without it, the client wouldn't know which MDX files exist
+- WordPress/Ghost clients don't need this — they query the API for all pages
+
+## CMS Clients
+
+| Client            | Class                                  | Fallback         |
+| ----------------- | -------------------------------------- | ---------------- |
+| `WordPressClient` | `services/CMS/clients/WordPressClient` | → MarkdownClient |
+| `GhostClient`     | `services/CMS/clients/GhostClient`     | → MarkdownClient |
+| `MarkdownClient`  | `services/CMS/clients/MarkdownClient`  | —                |
+
+All clients implement `CmsClient` interface. WordPress and Ghost clients automatically fallback to `MarkdownClient` when content is not found.
+
+## Local Content (MDX)
+
+### Directory Structure
+
+```
+/src/content/
+├── defaults/                 ← Base content
+│   ├── contact-us/
+│   │   ├── Markdown.mdx
+│   │   └── meta.json
+│   └── privacy-policy/
+│
+└── <tenant>/                 ← Tenant override
+    └── contact-us/
+        ├── Markdown.mdx
+        └── meta.json
+```
+
+### Resolution Order
+
+1. `content/{tenant}/{slug}/` — tenant-specific
+2. `content/defaults/{slug}/` — fallback
+
+### MDX Syntax
+
+MDX = Markdown + JSX. You can import and use React components:
+
+```mdx
+import { ContactWidget } from '@shared/CmsWidgets/widgets'
+import { Button, Stack } from '@mui/material'
+
+# Contact Us
+
+Regular markdown: **bold**, _italic_, [links](/).
+
+<Stack spacing={2}>
+  <ContactWidget />
+  <Button variant="contained">Click</Button>
+</Stack>
+```
+
+### Capabilities
+
+| Feature          | Example                                    |
+| ---------------- | ------------------------------------------ |
+| Markdown         | `# Title`, `**bold**`, `- list`            |
+| MUI components   | `<Button>`, `<Stack>`, `<Box>`             |
+| Portal widgets   | `<ContactWidget />`, `<SubscribeWidget />` |
+| Local components | `import Form from './Form.tsx'`            |
+
+### Limitations
+
+- Imports must be at the top of the file
+- Hooks cannot be used directly in MDX (only inside components)
+- Interactive components need `'use client'`
+
+### meta.json
+
+Each MDX page needs a `meta.json` file:
+
+```json
+{
+  "title": "Contact Us",
+  "excerpt": "Get in touch with our team",
+  "meta": {
+    "description": "Contact us for real estate inquiries.",
+    "keywords": ["contact", "support"]
+  }
+}
+```
+
+## How-To
+
+### Add a New Static Page
+
+1. **Create MDX content:**
+
+   ```
+   content/defaults/my-page/
+   ├── Markdown.mdx
+   └── meta.json
+   ```
+
+2. **Register slug** in `configs/defaults/content.ts`:
+
+   ```typescript
+   staticPageSlugs: [..., 'my-page']
+   ```
+
+3. **Create route** at `app/(StaticPages)/my-page/page.tsx`:
+
+   ```typescript
+   import { Page40XTemplate, StaticPageTemplate } from '@templates'
+   import { CmsContentRenderer } from '@shared/CmsContentRenderer'
+   import CmsService from 'services/CMS'
+
+   const slug = 'my-page'
+
+   export async function generateMetadata() {
+     const page = await CmsService.getPagesClient().getPage(slug)
+     return {
+       title: page?.meta?.title || page?.title,
+       description: page?.meta?.description
+     }
+   }
+
+   export default async function StaticPage() {
+     const page = await CmsService.getPagesClient().getPage(slug)
+
+     if (!page) return <Page40XTemplate />
+
+     return (
+       <StaticPageTemplate title={page.title}>
+         <CmsContentRenderer content={page.content} />
+       </StaticPageTemplate>
+     )
+   }
+   ```
+
+### Override Page for Tenant
+
+To override a page for a specific tenant:
+
+1. Create `content/<tenant>/contact-us/Markdown.mdx` + `meta.json`
+2. If WordPress doesn't have `contact-us` → fallback triggers
+3. MDX loads from `content/<tenant>/` instead of `content/defaults/`
+
+## Related
+
+- [Product Guide: Content Management](/product-guide/content-management) — Business context
+- [Architecture](/technical-guide/architecture) — Project structure

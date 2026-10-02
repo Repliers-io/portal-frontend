@@ -1,0 +1,36 @@
+# Agent & Admin
+
+The agent-facing surface: agents manage their clients, estimates, and messages.
+Both routers are strict-JWT with [role checks](/architecture/authentication#agents-and-roles).
+
+## Agent — `/agent`
+
+`src/routes/agent.ts`. The agentId always comes from the token — an agent can only
+see their own clients.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /agent/client` | Create a client |
+| `GET /agent/client` | List the agent's clients |
+| `GET /agent/client/:clientId` | Client detail |
+| `PATCH /agent/client/:clientId` | Update a client |
+| `POST /agent/estimate/:clientId` | Create an estimate for a client |
+| `GET /agent/estimate/:clientId` | Client's estimates |
+| `POST /agent/estimate/:estimateId/send` | Send an estimate to the client |
+| `PATCH /agent/estimate/:estimateId` | Update an estimate |
+| `DELETE /agent/estimate/:estimateId` | Delete an estimate |
+| `POST /agent/messages/:clientId` | Send a message to a client |
+| `GET /agent/messages/:clientId` | Message history with a client |
+| `GET /agent/boss/people` | Look up people in the CRM |
+| `POST /agent/boss/people` | Create/update a CRM person |
+
+## Admin — `/admin`
+
+`src/routes/admin.ts` — the whole router is gated with
+`roleMiddleware([UserRole.Admin, UserRole.Root])`.
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /admin/agents` | List agents |
+| `POST /admin/agents` | Create an agent |
+| `PATCH /admin/agents/:agentId` | Update an agent |

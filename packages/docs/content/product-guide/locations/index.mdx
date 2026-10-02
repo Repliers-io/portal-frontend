@@ -1,0 +1,35 @@
+import { Callout } from 'nextra/components'
+
+# Location Pages
+
+An SEO-oriented catalog of the tenant's geography — areas, cities, and neighborhoods — with
+listings, nearby locations, and breadcrumbs on each page. It gives search engines (and users)
+a browsable tree of every market the tenant covers.
+
+<Callout type="info">
+  Technical details (provider, layout, the pre-generated tree) are in [How it
+  works](/product-guide/locations/technical).
+</Callout>
+
+## What it is
+
+| Route                   | Content                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `/locations`            | Top of the location tree (areas / cities).               |
+| `/locations/[...slugs]` | A specific area / city / neighborhood with its listings. |
+
+Each page shows the location's active listings, pagination, nearby locations, and a
+breadcrumb trail. URL style and depth are tenant-configurable.
+
+<Callout type="warning">
+  The location tree is **pre-generated per tenant**, not built at runtime. Regenerate it with
+  `pnpm generate:locations <tenant>` — see
+  [How it works](/product-guide/locations/technical#gotchas--hints).
+</Callout>
+
+## Configuration
+
+| Config              | Drives                                                                         |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `@configs/location` | Data `source`, URL style (`useStateCodeRoute`), SEO thresholds, nearby radius. |
+| `@configs/features` | `locations` gate.                                                              |

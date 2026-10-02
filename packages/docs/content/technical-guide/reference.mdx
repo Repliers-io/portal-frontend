@@ -1,0 +1,253 @@
+# Reference
+
+Quick lookup tables for common values, codes, and configurations.
+
+## Listing Statuses
+
+The MLS `status` field is coarse — only two values. Granular states (sold,
+expired, leased, price change, …) live in the separate `lastStatus` field as
+3-character codes.
+
+### `status`
+
+| Code | Meaning     | Description                               |
+| ---- | ----------- | ----------------------------------------- |
+| `A`  | Active      | On-market / available                     |
+| `U`  | Unavailable | Off-market (sold, expired, terminated, …) |
+
+### `lastStatus`
+
+3-character codes mapped to display labels in
+`configs/defaults/listings.ts` (`statusLabels`).
+
+| Code  | Label                                   |
+| ----- | --------------------------------------- |
+| `Sus` | Suspended                               |
+| `Exp` | Expired                                 |
+| `Sld` | Sold                                    |
+| `Ter` | Terminated                              |
+| `Dft` | Deal Fell Through                       |
+| `Lsd` | Leased                                  |
+| `Sc`  | Sold Conditionally                      |
+| `Sce` | Sold Conditionally with Escape Clause   |
+| `Lc`  | Leased Conditionally                    |
+| `Lce` | Leased Conditionally with Escape Clause |
+| `Pc`  | Price Change                            |
+| `Ext` | Extension                               |
+| `New` | New                                     |
+| `Cs`  | Coming Soon                             |
+
+### Usage
+
+```typescript
+// Coarse availability
+if (listing.status === 'A') {
+  // Show "Active" badge
+}
+
+// Granular state via lastStatus
+const soldListings = listings.filter((l) => l.lastStatus === 'Sld')
+```
+
+## Listing Types
+
+The `listingType` filter keys. Each key is a query fragment (`class` / `propertyType` /
+`style`) declared per tenant in `@configs/filters` `listingTypeDeclaration`; the MLS values
+behind a key differ per board. Default selector (`listingTypes`):
+
+| Key            | Type                                                |
+| -------------- | --------------------------------------------------- |
+| `allListings`  | All listings — derived: union of the rendered types |
+| `residential`  | Residential                                         |
+| `condo`        | Condo                                               |
+| `townhome`     | Townhome (class-agnostic)                           |
+| `semiDetached` | Semi-Detached                                       |
+| `multiFamily`  | Multi-Family                                        |
+| `land`         | Land                                                |
+| `business`     | Business                                            |
+| `commercial`   | Commercial                                          |
+
+Keys a tenant may add (`availableListingTypes`): `residentialTownhome`, `condoTownhome`,
+`coop` (co-ops; SERHANT declares it as the `Stock Cooperative` style), `other` (catch-all
+bucket), and the derived `penthouse` / `loft` search shortcuts.
+
+### Usage
+
+```typescript
+const { addFilters } = useSearchActions()
+
+addFilters({ listingType: 'condo' })
+// multi-select tenants (`multiListingType: true`)
+addFilters({ listingType: ['residential', 'townhome'] })
+```
+
+## Sort Options
+
+| Code              | Description    | Direction     |
+| ----------------- | -------------- | ------------- |
+| `listPriceAsc`    | Price          | Low to High   |
+| `listPriceDesc`   | Price          | High to Low   |
+| `soldDateDesc`    | Sold Date      | Newest first  |
+| `updatedOnDesc`   | Updated        | Most recent   |
+| `bedsDesc`        | Bedrooms       | Most first    |
+| `sqftDesc`        | Square Feet    | Largest first |
+| `daysOnMarketAsc` | Days on Market | Newest first  |
+
+### Usage
+
+```typescript
+// Set sort
+setFilters({ ...filters, sortBy: 'listPriceDesc' })
+```
+
+## Feature Flags
+
+Static per-tenant flags from `configs/<tenant>/features.ts` (the `defaults`
+build ships 22 flags). The full list with descriptions, defaults, dependencies,
+and how flags are set lives in
+[Capabilities & Flags](/getting-started/capabilities-and-flags). Defaults below
+are the `configs/defaults/features.ts` values.
+
+| Flag                     | Description                         | Default |
+| ------------------------ | ----------------------------------- | ------- |
+| `map`                    | Interactive map search              | `true`  |
+| `estimate`               | Home valuation / AVM                | `true`  |
+| `dashboard`              | Market dashboard                    | `true`  |
+| `blog`                   | Blog section (CMS)                  | `true`  |
+| `locations`              | Locations directory                 | `false` |
+| `buildings`              | Buildings directory                 | `false` |
+| `openHouse`              | Open houses                         | `false` |
+| `favorites`              | Save favorite listings              | `true`  |
+| `saveSearch`             | Save search filters                 | `true`  |
+| `liveBy`                 | LiveBy demographics / overlays      | `true`  |
+| `aiSearch`               | Natural-language query parsing      | `true`  |
+| `aiChat`                 | Conversational AI chat in search    | `true`  |
+| `aiAgent`                | AI agent (embedded EVAS iframe)     | `false` |
+| `blurRestrictedProperty` | Blur restricted listings for guests | `false` |
+
+### Usage
+
+```typescript
+import features from '@configs/features'
+
+// Page-level gate
+if (!features.blog) return <Page40XTemplate />
+
+// Conditional render
+{features.aiChat && <AIChatWidget />}
+```
+
+## URL Parameters
+
+### Search Filters
+
+| Parameter      | Type   | Example                  |
+| -------------- | ------ | ------------------------ |
+| `city`         | string | `Seattle`                |
+| `area`         | string | `King County`            |
+| `neighborhood` | string | `Belltown`               |
+| `status`       | enum   | `active`, `sold`, `rent` |
+| `type`         | string | `condo`, `residential`   |
+| `minPrice`     | number | `500000`                 |
+| `maxPrice`     | number | `1000000`                |
+| `minBeds`      | number | `2`                      |
+| `maxBeds`      | number | `4`                      |
+| `minBaths`     | number | `1`                      |
+| `minSqft`      | number | `1000`                   |
+| `maxSqft`      | number | `3000`                   |
+| `minYearBuilt` | number | `2000`                   |
+| `soldWithin`   | number | `90` (days)              |
+| `sortBy`       | enum   | `listPriceDesc`          |
+| `page`         | number | `1`                      |
+
+### Example URL
+
+```
+/search/map?city=Seattle&status=active&minPrice=500000&maxPrice=1000000&minBeds=2&type=condo&sortBy=listPriceDesc
+```
+
+## Path Aliases
+
+| Alias          | Resolves To                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `@configs/*`   | `src/configs/[tenant]/*` → `src/configs/defaults/*`           |
+| `@content/*`   | `src/content/[tenant]/*` → `src/content/defaults/*`           |
+| `@icons/*`     | `src/assets/icons/[tenant]/*` → `src/assets/icons/defaults/*` |
+| `@defaults/*`  | `src/configs/defaults/*`                                      |
+| `@templates`   | `src/components/templates`                                    |
+| `@templates/*` | `src/components/templates/components/*`                       |
+| `@pages/*`     | `src/components/pages/*`                                      |
+| `@shared/*`    | `src/components/shared/*`                                     |
+
+## API Endpoints
+
+| Endpoint         | Method | Description         |
+| ---------------- | ------ | ------------------- |
+| `/listings`      | GET    | Search listings     |
+| `/listings/:id`  | GET    | Get listing details |
+| `/locations`     | GET    | Get geography data  |
+| `/favorites`     | GET    | Get user favorites  |
+| `/favorites`     | POST   | Add favorite        |
+| `/favorites/:id` | DELETE | Remove favorite     |
+| `/searches`      | GET    | Get saved searches  |
+| `/searches`      | POST   | Save search         |
+| `/estimate`      | POST   | Get home estimate   |
+| `/user`          | GET    | Get user profile    |
+| `/user`          | PUT    | Update user         |
+| `/auth/login`    | POST   | Login               |
+| `/auth/logout`   | POST   | Logout              |
+| `/auth/refresh`  | POST   | Refresh token       |
+
+## Board IDs
+
+The MLS feed is identified by a numeric `boardId`, set per tenant in `configs/<tenant>/search.ts`
+(`defaultBoardId` = the board listing details are read from; `distinctBoardIds` = boards
+addressed by their own id — see
+[Regional & MLS Limits](/getting-started/regional-and-mls-limits#multi-board-idx-vs-vow)).
+Known board ids and the MLS / region they map to:
+
+| Board id | MLS         | Region                                |
+| -------- | ----------- | ------------------------------------- |
+| `2`      | TRREB       | Toronto / GTA, ON                     |
+| `18`     | CREB        | Calgary, AB                           |
+| `68`     | MLS PIN     | Boston, MA                            |
+| `71`     | SmartMLS    | Connecticut, USA                      |
+| `90`     | TRREB (VOW) | Toronto / GTA, ON                     |
+| `91`     | TRREB (IDX) | Toronto / GTA, ON                     |
+| `110`    | —           | sample / demo data (`defaults` build) |
+| `149`    | NWMLS       | Seattle, WA                           |
+
+## HTTP Status Codes
+
+| Code  | Meaning      | Action                 |
+| ----- | ------------ | ---------------------- |
+| `200` | Success      | Process response       |
+| `201` | Created      | Resource created       |
+| `400` | Bad Request  | Check request params   |
+| `401` | Unauthorized | Refresh token or login |
+| `403` | Forbidden    | No permission          |
+| `404` | Not Found    | Resource doesn't exist |
+| `429` | Rate Limited | Wait and retry         |
+| `500` | Server Error | Retry or report        |
+
+## Breakpoints
+
+Custom values from `configs/defaults/theme/breakpoints.ts` — they **override the MUI defaults**
+(600/900/1200/1536):
+
+| Name | Width   | Usage         |
+| ---- | ------- | ------------- |
+| `xs` | 0px+    | Mobile        |
+| `sm` | 640px+  | Tablet        |
+| `md` | 960px+  | Small desktop |
+| `lg` | 1280px+ | Desktop       |
+| `xl` | 1920px+ | Large desktop |
+
+### Usage
+
+```tsx
+import { useMediaQuery, useTheme } from '@mui/material'
+
+const theme = useTheme()
+const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+```
