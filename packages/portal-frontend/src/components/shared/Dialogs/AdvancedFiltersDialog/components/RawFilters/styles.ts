@@ -1,6 +1,8 @@
 import { lighten, type Theme } from '@mui/material'
 import { yellow } from '@mui/material/colors'
 
+import { searchFieldHeight } from './SearchField'
+
 // the search match: the chip in titles, values and labels, the circle on a chevron
 export const matchColor = yellow[300]
 
@@ -12,9 +14,12 @@ export const matchedChevron = {
   }
 } as const
 
-// the docked search: the 42px pill with 16px below, and 16px above from `sm`; the
-// expanded titles dock right under it
-const searchBarHeight = { xs: 58, sm: 74 }
+// the docked search: the tenant's field with 16px below, and 16px above from `sm`;
+// the expanded titles dock right under it
+const searchBarHeight = {
+  xs: searchFieldHeight + 16,
+  sm: searchFieldHeight + 32
+}
 
 // Flat rows as serhant.com's filter lists: no Paper shadow, no Paper corners and no rule
 // between rows. Each part takes its own `sx` (MUI wraps the summary in an `h3` heading,
@@ -50,7 +55,7 @@ export const flatSummary = {
   minHeight: 44,
   pl: 2,
   pr: 1.5,
-  borderRadius: '100px',
+  borderRadius: 1,
   color: 'common.black',
   '&:hover': { bgcolor: 'action.hover' },
   '&.Mui-expanded': {

@@ -1,10 +1,10 @@
 [
   {
-    "source": "/ny",
+    "source": "/tx",
     "destination": "/locations"
   },
   {
-    "source": "/ny/:path*",
+    "source": "/tx/:path*",
     "destination": "/locations/:path*"
   },
   {
@@ -38,9 +38,5 @@
   {
     "source": "/about",
     "destination": "/page/about"
-  },
-  {
-    "source": "/sale",
-    "destination": "/estimate"
   }
 ]

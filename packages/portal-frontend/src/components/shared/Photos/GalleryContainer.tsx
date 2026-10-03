@@ -34,7 +34,8 @@ export const GalleryContainer = React.forwardRef<
               }),
           overflow: 'hidden',
           position: 'relative',
-          touchAction: 'pan-x'
+          // the page keeps the vertical scroll; Embla takes the horizontal swipe
+          touchAction: 'pan-y'
         }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

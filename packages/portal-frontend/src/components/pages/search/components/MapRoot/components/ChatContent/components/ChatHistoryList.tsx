@@ -4,7 +4,6 @@ import React, { type MouseEvent, useEffect, useRef, useState } from 'react'
 
 import { Box, Stack } from '@mui/material'
 
-import cardsConfig from '@configs/cards-grids'
 import { EmptyChat } from '@shared/EmptyStates'
 import { ListingCarousel } from '@shared/Listing'
 
@@ -12,7 +11,11 @@ import { type ApiListing } from 'services/API'
 import useClientSide from 'hooks/useClientSide'
 import useIntersectionObserver from 'hooks/useIntersectionObserver'
 
-import { maxContainerWidth, maxHistoryHeight } from '../constants'
+import {
+  maxContainerWidth,
+  maxHistoryHeight,
+  singleColumnQuery
+} from '../constants'
 import { type ChatItem } from '../types'
 import { hasFilters } from '../utils'
 
@@ -196,8 +199,17 @@ export const ChatHistoryList = React.forwardRef<
                     sx={{
                       px: 2,
                       mb: -1,
-                      maxWidth: cardsConfig.gridSideContainerWidth,
-                      '& .carousel-header': { mb: -1 }
+                      '& .carousel-header': { mb: -1 },
+                      // one column wide, the counter keeps the first row to itself and
+                      // the arrows drop to the second, beside Open grid
+                      [singleColumnQuery]: {
+                        '& .carousel-header': { position: 'relative' },
+                        '& .carousel-header > * + *': {
+                          position: 'absolute',
+                          right: 0,
+                          bottom: 0
+                        }
+                      }
                     }}
                   >
                     {carousel.listings?.length ? (

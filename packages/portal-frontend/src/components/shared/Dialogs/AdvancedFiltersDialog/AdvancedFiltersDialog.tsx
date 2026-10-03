@@ -23,7 +23,9 @@ export const AdvancedFiltersDialog = () => {
       slotProps={{ transition: { timeout: animate ? 200 : 0 } }}
       sx={{
         zIndex: 'modal',
-        '& .MuiPaper-root': {
+        // the drawer's own paper only: `.MuiPaper-root` also reaches every nested
+        // Paper (the Features accordions)
+        '& .MuiDrawer-paper': {
           borderRadius: 0, // override default border radius
           // pin the width so the drawer stays the same size while loading
           width: { xs: '100%', sm: 480 },

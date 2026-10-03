@@ -7,6 +7,7 @@ import { ToolbarMenuItemBadge } from '@templates/components/Header/components/To
 
 export const AdvancedFiltersMenuItem = ({
   activeColor = 'primary',
+  selectedColor = palette[activeColor].main,
   selected,
   onClick,
   count = 0,
@@ -16,52 +17,50 @@ export const AdvancedFiltersMenuItem = ({
   count?: number
   selected?: boolean
   activeColor?: 'primary' | 'secondary'
+  // the selected tab's text, hover tint and underline, when they leave the palette
+  selectedColor?: string
   onClick?: () => void
   startIcon?: React.ReactNode
   children: React.ReactNode
-}) => {
-  const themeColor = palette[activeColor].main
+}) => (
+  <ToolbarMenuItemBadge color={activeColor} count={count}>
+    <MenuItem
+      component="a"
+      selected={selected}
+      onClick={onClick}
+      sx={{
+        px: { xs: 1, sm: 1.5 },
+        lineHeight: 2,
+        borderRadius: 1,
+        position: 'relative',
+        display: 'inline-block',
 
-  return (
-    <ToolbarMenuItemBadge color={activeColor} count={count}>
-      <MenuItem
-        component="a"
-        selected={selected}
-        onClick={onClick}
-        sx={{
-          px: { xs: 1, sm: 1.5 },
-          lineHeight: 2,
-          borderRadius: 1,
-          position: 'relative',
-          display: 'inline-block',
+        '&.Mui-selected:hover': {
+          bgcolor: lighten(selectedColor, 0.95)
+        },
 
-          '&.Mui-selected:hover': {
-            bgcolor: lighten(themeColor, 0.95)
-          },
+        '&.Mui-selected': {
+          color: selectedColor,
+          bgcolor: 'common.white'
+        },
 
-          '&.Mui-selected': {
-            color: themeColor,
-            bgcolor: 'common.white'
-          },
-
-          '&.Mui-selected::after': {
-            content: '""',
-            left: 0,
-            right: 0,
-            height: 4,
-            bottom: { xs: -8, sm: -14 },
-            position: 'absolute',
-            bgcolor: themeColor,
-            borderRadius: '4px 4px 0 0',
-            pointerEvents: 'none'
-          }
-        }}
-      >
-        <Stack spacing={1} direction="row" alignItems="center">
-          {startIcon}
-          {children}
-        </Stack>
-      </MenuItem>
-    </ToolbarMenuItemBadge>
-  )
-}
+        '&.Mui-selected::after': {
+          content: '""',
+          left: 0,
+          right: 0,
+          height: 4,
+          bottom: { xs: -8, sm: -14 },
+          position: 'absolute',
+          bgcolor: selectedColor,
+          borderRadius: '4px 4px 0 0',
+          pointerEvents: 'none'
+        }
+      }}
+    >
+      <Stack spacing={1} direction="row" alignItems="center">
+        {startIcon}
+        {children}
+      </Stack>
+    </MenuItem>
+  </ToolbarMenuItemBadge>
+)

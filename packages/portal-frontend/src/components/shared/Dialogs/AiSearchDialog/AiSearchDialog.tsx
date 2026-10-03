@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import React from 'react'
 import { useTranslations } from 'next-intl'
 
 import {
+  Box,
   DialogContent,
   DialogTitle,
   Stack,
@@ -74,7 +74,10 @@ export const AiSearchDialog = () => {
             </ToggleButton>
           </ToggleButtonGroup>
 
-          {mode === 'inspirations' && <InspirationsBrowser />}
+          {/* stays mounted: a remount re-rolls the random group covers */}
+          <Box width="100%" hidden={mode !== 'inspirations'}>
+            <InspirationsBrowser />
+          </Box>
 
           {mode === 'favorites' && <ImageFavoritesBrowser />}
 

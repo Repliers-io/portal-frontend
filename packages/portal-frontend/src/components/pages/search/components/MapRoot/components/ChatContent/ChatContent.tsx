@@ -216,6 +216,7 @@ export const ChatContent = ({ onCarouselCardClick }: ChatContentProps) => {
         bottom: 0,
         top: 8, // GridDesktopContainer has { mt: -1 }, so we need to offset by 8px
         position: 'absolute',
+        containerType: 'inline-size',
         zIndex: 'drawer',
         bgcolor: 'background.paper',
         opacity: visible ? 1 : 0,

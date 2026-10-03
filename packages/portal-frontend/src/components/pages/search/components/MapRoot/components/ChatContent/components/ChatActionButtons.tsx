@@ -1,3 +1,5 @@
+import { useTranslations } from 'next-intl'
+
 import { Button, CircularProgress, Stack } from '@mui/material'
 
 import {
@@ -16,6 +18,8 @@ export const ChatActionButtons = ({
   onApply: () => void
   onReset: () => void
 }) => {
+  const t = useTranslations()
+
   return (
     <Stack spacing={1} direction="row" alignItems="center" px={2}>
       {(button === 'apply' || loading) && (
@@ -32,9 +36,8 @@ export const ChatActionButtons = ({
             )
           }
           onClick={onApply}
-          sx={{ width: 142 }}
         >
-          Apply Filters
+          {t('AiChat.applyFilters')}
         </Button>
       )}
 
@@ -45,9 +48,8 @@ export const ChatActionButtons = ({
           variant="contained"
           startIcon={<DeleteOutlineOutlinedIcon />}
           onClick={onReset}
-          sx={{ width: 142 }}
         >
-          Reset Filters
+          {t('EmptyStates.Catalog.resetFilters')}
         </Button>
       )}
     </Stack>

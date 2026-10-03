@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl'
 
 import { DialogTitle, MenuList } from '@mui/material'
+import { red } from '@mui/material/colors'
 
 import features from '@configs/features'
 import { AiIcon, FeaturesIcon, SettingsIcon } from '@configs/icons'
@@ -37,14 +38,17 @@ export const AdvancedFiltersMenu = ({
       sx={{
         py: '0 !important',
         pl: { xs: 1, sm: 2, md: 4 },
-        boxShadow: 1
+        boxShadow: 1,
+        // the shadow falls over the Features search docked under the bar (z-index 3)
+        position: 'relative',
+        zIndex: 4
       }}
     >
       <MenuList
         sx={{
           display: 'flex',
-          py: { xs: 1, sm: 1.75 },
-          gap: { xs: 1, sm: 2 }
+          gap: 1,
+          py: { xs: 1, sm: 1.75 }
         }}
       >
         <AdvancedFiltersMenuItem
@@ -71,6 +75,7 @@ export const AdvancedFiltersMenu = ({
         {featuresTab && (
           <AdvancedFiltersMenuItem
             count={featuresCount}
+            selectedColor={red[900]}
             selected={selected === 'features'}
             onClick={() => onChange('features')}
             startIcon={<FeaturesIcon sx={{ fontSize: 22 }} />}

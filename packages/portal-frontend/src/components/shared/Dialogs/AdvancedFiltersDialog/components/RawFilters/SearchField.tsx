@@ -4,6 +4,9 @@ import { CloseIcon, SearchIcon } from '@configs/icons'
 
 import { noAutofillInputProps } from 'utils/inputAttrs'
 
+// the theme's field: 12px + a 24px line + 12px; the docked titles sit under it
+export const searchFieldHeight = 48
+
 export const SearchField = ({
   value,
   placeholder,
@@ -15,14 +18,15 @@ export const SearchField = ({
 }) => (
   <TextField
     fullWidth
-    size="small"
     value={value}
     placeholder={placeholder}
     onChange={(e) => onChange(e.target.value)}
+    // the chat input's 12px from the glyph to the text
+    sx={{ '& .MuiInputBase-input': { pl: 1.5 } }}
     slotProps={{
       input: {
         startAdornment: (
-          <InputAdornment position="start">
+          <InputAdornment position="start" sx={{ m: 0 }}>
             <SearchIcon color="text.secondary" size={16} />
           </InputAdornment>
         ),

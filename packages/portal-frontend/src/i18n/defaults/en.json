@@ -391,7 +391,9 @@
   "AiChat": {
     "startMessage": "AI Search...",
     "continueMessage": "Continue the search...",
-    "clarifyMessage": "Extend and clarify your criteria..."
+    "clarifyMessage": "Extend and clarify your criteria...",
+    "applyFilters": "Apply filters",
+    "openGrid": "Open grid"
   },
   "Charts": {
     "timeRange": "Time range",

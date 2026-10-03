@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 
 import { MenuIcon } from '@configs/icons'
+import layoutConfig from '@configs/layout'
 
 import { type CmsMenuItem } from 'services/CMS'
 import useBreakpoints from 'hooks/useBreakpoints'
@@ -27,10 +28,13 @@ import { ProfileMenuPill } from '.'
 
 export const MobileMenu = ({
   items: propItems,
-  cmsItems
+  cmsItems,
+  headerHeight = layoutConfig.headerHeight
 }: {
   items: ToolbarItem[]
   cmsItems?: CmsMenuItem[]
+  // the header stays above the open menu, so the items start below it
+  headerHeight?: number | typeof layoutConfig.headerHeight
 }) => {
   const [open, setOpen] = useState(false)
   const { desktop } = useBreakpoints()
@@ -89,7 +93,8 @@ export const MobileMenu = ({
           backdrop: { sx: { backdropFilter: 'blur(60px)' } }
         }}
       >
-        <Box sx={{ mt: { xs: '64px', sm: '72px' } }}>
+        <Box>
+          <Box sx={{ height: headerHeight }} />
           <List sx={{ py: 1, px: 0 }}>
             {items.map((item, index) => (
               <ListItemButton
