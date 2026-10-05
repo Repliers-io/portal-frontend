@@ -12,6 +12,8 @@
 import { cache } from 'react'
 import path from 'path'
 
+import features from '@configs/features'
+
 import { readFile } from 'fs/promises'
 
 import { logError } from 'utils/log'
@@ -41,12 +43,30 @@ function buildCountsMap(areas: AreaWithCities[]): Map<string, number> {
   return map
 }
 
+const emptyTree = (): TreeResult => ({
+  tree: { areas: [] },
+  metadata: {
+    requestCount: 0,
+    processingTime: 0,
+    totalListings: 0,
+    retriedCount: 0,
+    failedCount: 0
+  },
+  stats: undefined,
+  countsMap: new Map(),
+  statusMap: new Map()
+})
+
 /**
  * Read + expand `locations.json`. Wrapped in React's `cache` so the several callers
  * inside one request — generateMetadata and the page body both resolve location names
  * against the tree — share a single read and parse of a file measured in hundreds of KB.
  */
 export const loadStaticTree = cache(async (): Promise<TreeResult> => {
+  // Only tenants with the locations feature generate locations.json; for the rest
+  // the empty tree is the expected state, not a missing file to report on every page.
+  if (!features.locations) return emptyTree()
+
   const instance = process.env.NEXT_PUBLIC_APP_CONFIGURATION || 'defaults'
   const filePath = path.join(
     process.cwd(),
@@ -63,19 +83,7 @@ export const loadStaticTree = cache(async (): Promise<TreeResult> => {
       `[loadStaticTree] locations.json not found at ${filePath}. ` +
         'Run "npm run generate:locations" to generate it. Returning empty tree.'
     )
-    return {
-      tree: { areas: [] },
-      metadata: {
-        requestCount: 0,
-        processingTime: 0,
-        totalListings: 0,
-        retriedCount: 0,
-        failedCount: 0
-      },
-      stats: undefined,
-      countsMap: new Map(),
-      statusMap: new Map()
-    }
+    return emptyTree()
   }
 
   const raw = JSON.parse(content) as {
