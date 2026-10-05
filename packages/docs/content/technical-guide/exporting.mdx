@@ -36,8 +36,11 @@ Runs three scripts into `../opensource-portal-monorepo`:
    files), so gitignored build output, local tool artifacts and `*.generated.json` never ship.
    Keeps only the `defaults` tenant: excludes every other tenant (config folders **and**
    `_<tenant>/` component forks), secrets (`.env*`), the override machinery
-   (`webpack-override.js`, `turbopack-override.js`, `generate-tsconfig.js`, `fetch-features.ts`)
-   and `middleware.ts`. `_opensource/` override folders are flattened onto their siblings.
+   (`webpack-override.js`, `turbopack-override.js`, `generate-tsconfig.js`, `fetch-features.ts`),
+   `middleware.ts`, our Heroku hosting tooling, and one-off client-feed tooling with its data
+   (the blacklist lives in `scripts/oss-shared.ts`). The frontend's own `.npmrc` +
+   `pnpm-lock.yaml` (its standalone Heroku install) stay behind — the workspace installs from
+   the root ones. `_opensource/` override folders are flattened onto their siblings.
 2. **`copy-oss-package.ts`** — rebuilds the root + frontend `package.json`: drops
    blacklisted deps and strips instance-specific and internal scripts. `prebuild` stays, minus
    the internal generators (`generate:rewrites && generate:deployment-id`), so the shipped
