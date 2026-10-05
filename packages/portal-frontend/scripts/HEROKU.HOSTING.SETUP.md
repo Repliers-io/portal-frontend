@@ -83,6 +83,8 @@ mlspin-portal-dev.condosportal.ca CNAME floral-scorpion-lk8ro138dydc3od867f1234.
 
 > **Good to know:** Make sure to **NOT** mark the `HEROKU_APP_NAME` variable as **Secured** so you can easily verify it.
 
+5. Optionally add `BUILD_DOCUMENTATION` = `true` to also ship both docs sites under `/documentation` (built in the pipeline by `pnpm build:documentation`, since Heroku itself only sees `packages/portal-frontend`)
+
 ### Update Bitbucket Pipelines Configuration
 
 #### Add Custom Pipeline

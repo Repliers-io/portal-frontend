@@ -3,6 +3,9 @@ import { Layout, Navbar } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import type { ReactNode } from 'react'
+// Default portal logo (house), a copy of portal-frontend/public/logo.svg. Imported, not
+// served from public/, so the static export's basePath reaches its URL.
+import logo from './logo.svg'
 // Required for theme styles — previously was imported under the hood
 import 'nextra-theme-docs/style.css'
 // Default-portal branding (Poppins + green accents); imported after the theme CSS to win.
@@ -21,7 +24,7 @@ export const metadata = {
   robots: 'noindex, nofollow',
   // Reuse the house logo as the tab icon so the browser loads it instead of probing
   // /favicon.ico (which the MDX catch-all would otherwise try to resolve as a page).
-  icons: { icon: '/logo.svg' }
+  icons: { icon: logo.src }
 }
 
 const BitbucketIcon = () => (
@@ -48,9 +51,8 @@ const navbar = (
           fontWeight: 600
         }}
       >
-        {/* Default portal logo (house), duplicated into docs/public/logo.svg */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="" width={24} height={24} />
+        <img src={logo.src} alt="" width={24} height={24} />
         Portal Docs
       </span>
     }

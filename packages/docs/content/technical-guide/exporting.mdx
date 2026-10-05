@@ -32,19 +32,27 @@ pnpm copy:opensource
 
 Runs three scripts into `../opensource-portal-monorepo`:
 
-1. **`copy-oss.ts`** — mirrors `packages/**`, keeping only the `defaults` tenant. Excludes
-   every other tenant (config folders **and** `_<tenant>/` component forks), secrets
-   (`.env*`), the override machinery (`webpack-override.js`, `turbopack-override.js`,
-   `generate-tsconfig.js`, `fetch-features.ts`), `middleware.ts`, and build/test artifacts
-   (`coverage`, `.turbo`, `test-results`, `playwright-report`). `_opensource/` override
-   folders are flattened onto their siblings.
+1. **`copy-oss.ts`** — mirrors `packages/**` as git sees it (tracked + untracked-but-not-ignored
+   files), so gitignored build output, local tool artifacts and `*.generated.json` never ship.
+   Keeps only the `defaults` tenant: excludes every other tenant (config folders **and**
+   `_<tenant>/` component forks), secrets (`.env*`), the override machinery
+   (`webpack-override.js`, `turbopack-override.js`, `generate-tsconfig.js`, `fetch-features.ts`)
+   and `middleware.ts`. `_opensource/` override folders are flattened onto their siblings.
 2. **`copy-oss-package.ts`** — rebuilds the root + frontend `package.json`: drops
-   blacklisted deps, strips instance-specific and internal scripts, and renames `dev:only` →
-   `dev` (so the shipped `dev`/`build` skip the internal prebuild).
+   blacklisted deps and strips instance-specific and internal scripts. `prebuild` stays, minus
+   the internal generators (`generate:rewrites && generate:deployment-id`), so the shipped
+   `dev`/`build` regenerate the files the export does not carry.
 3. **`copy-oss-configs.ts`** — copies the config whitelist, **strips the `webpack` and
    `turbopack` sections from `next.config.js`** (the `OverridePlugin` is internal — the export
-   runs on **Turbopack**), copies a whitelist of `public/` assets plus the root
-   `pnpm-workspace.yaml` + `.npmrc`, then generates `pnpm-lock.yaml` (`pnpm install --lockfile-only`).
+   runs on **Turbopack**), copies a whitelist of `public/` assets plus the docs screenshots
+   (`packages/docs/public/img`), copies the root `pnpm-workspace.yaml` + `.npmrc` +
+   `.gitignore` + `pnpm-lock.yaml`, then prunes that lockfile to the exported packages
+   (`pnpm install --lockfile-only`) — so the export installs the versions the monorepo tested.
+
+The export ships both docs sites inside the portal: `pnpm build:documentation` builds them as
+static exports into `packages/portal-frontend/public/documentation` (served at
+`/documentation`, `/documentation/frontend`, `/documentation/backend`); run it before
+`pnpm frontend:build` / `pnpm frontend:dev`. `pnpm clean:documentation` removes them.
 
 ## Standalone tenant export
 
@@ -55,7 +63,7 @@ pnpm export:frontend <tenant>      # e.g. pnpm export:frontend justinhavre-avm
 Produces `../<tenant>-frontend/` — the contents of `packages/portal-frontend` promoted to the
 repo root (no monorepo wrapper, no `ai-agent-client` / `docs` / backend). `scripts/export-frontend-tenant.ts`:
 
-1. **Mirror + filter** — copies the frontend, keeping **both** `defaults` and `<tenant>`
+1. **Mirror + filter** — copies the frontend as git sees it (gitignored files never ship), keeping **both** `defaults` and `<tenant>`
    configs/content/icons, filtering every other tenant.
 2. **Flatten forks** — physically overlays `_<tenant>/` (and `_opensource/`) component forks
    onto their default siblings, since the resolver plugin does not ship (see gotcha below).
@@ -108,6 +116,14 @@ The config **alias mechanism stays live** (tenant-first tsconfig paths), while t
   `oss-shared.ts` + the three copy scripts. (2) A shared/default file that hardcodes another
   tenant's `_<other>/` path breaks every export that strips that tenant; grep
   `from '..._<tenant>/'` in non-fork files.
+</Callout>
+
+<Callout type="info">
+  **`/documentation` is served only while the folder exists.** `generate-rewrites.ts` emits
+  the `/documentation` rewrites (and thereby the route-guard allowlist) only when
+  `public/documentation` is present, so `build:documentation` / `clean:documentation`
+  regenerate the rewrites themselves. Restart a running dev server afterwards. On a Heroku deploy the docs are built in the Bitbucket pipeline (Heroku
+  only sees `packages/portal-frontend`), opted in per deployment with `BUILD_DOCUMENTATION=true`.
 </Callout>
 
 ## After export

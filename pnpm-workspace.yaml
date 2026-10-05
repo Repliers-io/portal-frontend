@@ -9,6 +9,12 @@ allowBuilds:
   unrs-resolver: true
 
 blockExoticSubdeps: true
+
+# Node 25+ warns on every read of the global localStorage without --localstorage-file;
+# nextra's @typescript/vfs probes it on load, so each build worker printed an
+# ExperimentalWarning. Disabled, it stays undefined as before, minus the warning.
+nodeOptions: '--no-experimental-webstorage'
+
 minimumReleaseAge: 8640 # 6 days
 
 # Next 16.3.1 (published 2026-08-13) was adopted before the 6-day quarantine elapsed:

@@ -33,6 +33,8 @@ export const MegaMenuItemTitle = ({
     <Typography
       variant={layout.variant}
       href={link ? item.url : undefined}
+      target={item.external ? '_blank' : undefined}
+      rel={item.external ? 'noopener' : undefined}
       component={link ? Link : 'span'}
       onClick={() => link && onItemClick?.(item)}
       sx={{

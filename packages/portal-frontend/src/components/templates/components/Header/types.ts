@@ -30,6 +30,8 @@ export interface DropdownItem {
   url?: string
   title: string
   count?: number
+  /** Opens in a new tab */
+  external?: boolean
   children?: DropdownItem[]
   /** Custom rendered content — if set, replaces default item rendering */
   render?: React.ReactNode

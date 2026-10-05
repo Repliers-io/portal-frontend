@@ -6,6 +6,7 @@
     "dev": "next dev -p 4001",
     "build": "next build",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
+    "build:static": "next build && pagefind --site out --output-path out/_pagefind",
     "start": "next start -p 4001",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "prettier": "prettier --check ./**/*.{ts,tsx,js,mdx}",

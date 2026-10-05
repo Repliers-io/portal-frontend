@@ -47,6 +47,8 @@
     "docs:backend:build": "pnpm --filter backend-docs run build",
     "docs:backend:start": "pnpm --filter backend-docs run start",
     "docs:backend:type-check": "pnpm --filter backend-docs run type-check",
+    "build:documentation": "pnpm --filter portal-frontend run build:documentation",
+    "clean:documentation": "pnpm --filter portal-frontend run clean:documentation",
     "clean:all": "pnpm -r run clean",
     "build:all": "pnpm -r run build",
     "export:frontend": "tsx scripts/export-frontend-tenant.ts",

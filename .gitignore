@@ -1,0 +1,92 @@
+# Portal Monorepo .gitignore
+
+# Dependencies
+node_modules/
+packages/*/node_modules/
+.pnpm-store
+
+# Build outputs
+packages/*/.next/
+packages/*/out/
+packages/*/build/
+packages/*/dist/
+.next/
+.pnpm-store/
+
+# Pagefind search index (generated on build)
+packages/*/public/_pagefind/
+
+# Static docs assembled by `build:documentation`
+packages/portal-frontend/public/documentation/
+
+# Runtime data
+packages/*/logs
+packages/*/*.log
+packages/*/npm-debug.log*
+packages/*/yarn-debug.log*
+packages/*/yarn-error.log*
+
+# TypeScript
+packages/*/*.tsbuildinfo
+packages/*/tsconfig.tsbuildinfo
+
+# Generated pre-build artifacts (rewrites, redirects)
+packages/*/*.generated.json
+!packages/portal-frontend/redirects-buildings.generated.json
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing
+packages/*/coverage/
+packages/*/.nyc_output
+packages/*/test-result.json
+coverage/
+
+# IDE
+.vscode
+.vscode/mcp.json
+packages/*/.vscode
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lock files (keep package-lock.json in root)
+packages/*/package-lock.json
+packages/*/yarn.lock
+
+# Tools and scripts
+.tools
+certificates
+
+# Million Lint
+.million
+
+# Playwright local artifacts
+.playwright/
+.playwright-cli/
+.playwright-mcp/
+packages/*/playwright-report/
+packages/*/test-results/
+
+# Claude Code MCP (contains API tokens)
+.mcp.json
+
+# History
+.history/*
+
+.vercel
+.env*
+
+# Intermediate input/output of the search-boundary generator (scripts/fetch-gta-areas.ts)
+gta-areas.json
+gta-areas-merged.json
