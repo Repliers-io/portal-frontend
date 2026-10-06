@@ -18,7 +18,7 @@ own repo. Both strip the internals that must not ship and produce an installable
 
 | Command                         | Output                          | Scope                                | Use case                  |
 | ------------------------------- | ------------------------------- | ------------------------------------ | ------------------------- |
-| `pnpm copy:opensource`          | `../opensource-portal-monorepo` | Whole monorepo, `defaults` tenant    | Public OSS release        |
+| `pnpm export:oss`               | `../portal-monorepo-oss` | Whole monorepo, `defaults` tenant    | Public OSS release        |
 | `pnpm export:frontend <tenant>` | `../<tenant>-frontend`          | Frontend only, one tenant, flat root | Standalone tenant handoff |
 
 Both share pure helpers in `scripts/oss-shared.ts` (exclusion globs, file scan, the
@@ -27,10 +27,10 @@ Both share pure helpers in `scripts/oss-shared.ts` (exclusion globs, file scan, 
 ## Open-source monorepo export
 
 ```bash
-pnpm copy:opensource
+pnpm export:oss
 ```
 
-Runs three scripts into `../opensource-portal-monorepo`:
+Runs three scripts into `../portal-monorepo-oss`:
 
 1. **`copy-oss.ts`** — mirrors `packages/**` as git sees it (tracked + untracked-but-not-ignored
    files), so gitignored build output, local tool artifacts and `*.generated.json` never ship.
