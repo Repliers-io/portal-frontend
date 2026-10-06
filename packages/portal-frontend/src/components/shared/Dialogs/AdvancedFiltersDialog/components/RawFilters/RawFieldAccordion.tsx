@@ -92,6 +92,8 @@ export const RawFieldAccordion = ({
       onChange={keepDockedTitle}
     >
       <AccordionSummary
+        // MUI turns the summary's ripple off; the tap ripple is the row's touch feedback
+        disableRipple={false}
         expandIcon={<ExpandMoreIcon />}
         sx={[
           flatSummary,

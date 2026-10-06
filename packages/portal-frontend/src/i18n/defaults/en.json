@@ -243,6 +243,9 @@
     "aiSearch": "Image search",
     "saveSearch": "Save search",
     "advancedFilters": "Advanced",
+    "layoutList": "List view",
+    "layoutMap": "Map view",
+    "layoutChat": "Chat",
     "listingTypes": {
       "condo": "Condos",
       "coop": "Co-op"

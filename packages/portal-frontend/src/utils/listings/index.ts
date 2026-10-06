@@ -46,7 +46,11 @@ export {
   soldDateRange
 } from './formatters'
 export { resolveGalleryImages } from './gallery'
-export { type ListingMarkerColor, resolveListingMarkerColor } from './markers'
+export {
+  type ListingMarkerColor,
+  multiUnitKey,
+  resolveListingMarkerColor
+} from './markers'
 export {
   sanitizeAddress,
   sanitizeScrubbed,

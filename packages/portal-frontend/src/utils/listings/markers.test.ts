@@ -2,7 +2,7 @@ import { markerColors } from '@configs/colors'
 
 import { type ApiListing } from 'services/API'
 
-import { resolveListingMarkerColor } from './markers'
+import { multiUnitKey, resolveListingMarkerColor } from './markers'
 
 // active listing whose price is restricted for guests (displayPublic 'N').
 // It is NOT sold — status stays 'A' even when the price is scrubbed.
@@ -29,5 +29,19 @@ describe('resolveListingMarkerColor', () => {
   it('colours a genuinely sold listing with the sold variant', () => {
     const { color } = resolveListingMarkerColor({ listing: sold })
     expect(color).toBe(markerColors.sold.color)
+  })
+})
+
+const atAddress = (streetNumber: string, streetName: string) =>
+  ({
+    address: { streetNumber, streetName, city: 'New York City' }
+  }) as unknown as ApiListing
+
+describe('multiUnitKey', () => {
+  // REBNY spells one building both ways (RLS20113631 / RLS20111258)
+  it('puts units of one building under one key whatever the street casing', () => {
+    expect(multiUnitKey(atAddress('225', '74TH'))).toBe(
+      multiUnitKey(atAddress('225', '74th'))
+    )
   })
 })

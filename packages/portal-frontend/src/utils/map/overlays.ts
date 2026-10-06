@@ -83,6 +83,52 @@ export const markerLinkId = (polygon?: {
 }): string | undefined =>
   polygon?.showOnMarkerHover ? overlayLinkId : undefined
 
+// One marker point per polygon, at the centre its location carries
+const withCenterPoints = (data: FeatureCollection): FeatureCollection => ({
+  ...data,
+  features: data.features.flatMap((feature) => {
+    const { longitude, latitude } = feature.properties ?? {}
+    return feature.geometry.type === 'Point' ||
+      !Number.isFinite(longitude) ||
+      !Number.isFinite(latitude)
+      ? [feature]
+      : [
+          feature,
+          {
+            type: 'Feature' as const,
+            geometry: {
+              type: 'Point' as const,
+              coordinates: [longitude, latitude]
+            },
+            properties: feature.properties
+          }
+        ]
+  })
+})
+
+/**
+ * A touch map can't hover a polygon, and the mouse events a tap emulates reach the
+ * polygon layers through any marker above them. So there every polygon-select overlay
+ * selects through name markers at its polygons' centres instead, as the neighborhoods
+ * do: a tap previews the boundary, the tooltip's button selects, and the polygons keep
+ * no hover or click of their own.
+ */
+export const toMarkerSelect = (
+  overlay: OverlayLayerDefinition
+): OverlayLayerDefinition =>
+  overlay.selectable === 'polygon'
+    ? {
+        ...overlay,
+        selectable: 'marker',
+        marker: overlay.marker ?? { type: 'name' },
+        // the neighborhoods' name-marker clustering (configs/defaults/overlays/liveBy.ts)
+        cluster: overlay.cluster ?? { radius: 60, maxZoom: 13, minPoints: 2 },
+        polygon: { ...overlay.polygon, showOnMarkerHover: true },
+        fetchData: async (...args) =>
+          withCenterPoints(await overlay.fetchData(...args))
+      }
+    : overlay
+
 /** The overlay's main colour — defaults to the palette `info` colour (also when
  *  the overlay is missing). Single source of truth: callers never hardcode a
  *  fallback hex that would drift from the config. */

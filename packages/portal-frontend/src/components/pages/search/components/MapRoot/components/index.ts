@@ -1,5 +1,6 @@
 export { CalendarSlider } from './CalendarSlider'
 export { ChatContent } from './ChatContent'
+export { FloatingLayoutSwitch } from './FloatingLayoutSwitch'
 export { GridContent } from './GridContent'
 export { GridDesktopContainer } from './GridDesktopContainer'
 export { GridFilters } from './GridFilters'
@@ -12,7 +13,6 @@ export { MapControls } from './MapControls'
 export { MapDrawButton, useMapDraw } from './MapDrawButton'
 export { MapLayersMenu } from './MapLayersMenu'
 export { MobileCircularProgress } from './MobileCircularProgress'
-export { OpenDrawerButton } from './OpenDrawerButton'
 export {
   OverlayToggleButton,
   type OverlayToggleButtonProps

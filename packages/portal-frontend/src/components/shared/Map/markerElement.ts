@@ -21,7 +21,9 @@ const STYLE_ID = 'listing-marker-styles'
 const font = typography.fontFamily
 
 // Name-tag markers (overlay name labels) are single-line and truncate with an
-// ellipsis past this width, so long names don't produce huge markers.
+// ellipsis past this width, so long names don't produce huge markers. A phone or
+// tablet map (below `md`) gives them up to 70% of the screen and a second line
+// instead — 16px lines in 3px padding keep a one-line tag at the same 26px.
 const nameMaxWidth = 140
 
 // Pop-in animation, configurable via @configs/map (enable/disable + speed).
@@ -54,6 +56,7 @@ ${popKeyframes}.lm{position:relative;cursor:pointer;border-radius:40px;width:max
 .lm__shape{box-sizing:border-box;border:2px solid #fff;background:var(--lm-color);color:#fff;font:12px/22px ${font};text-align:center;user-select:none;position:relative;z-index:10}
 .lm__pill{min-width:44px;min-height:26px;padding:0 4px;border-radius:8px}
 .lm__name{max-width:${nameMaxWidth}px;min-height:26px;padding:0 8px;border-radius:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:959.95px){.lm__name{max-width:70vw;padding:3px 8px;line-height:16px;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}}
 .lm__dot{width:16px;height:16px;border-radius:50%}
 .lm__hit{display:none;position:absolute;top:50%;left:50%;width:44px;height:44px;transform:translate(-50%,-50%);border-radius:50%}
 @media(hover:none){.lm__hit{display:block}}

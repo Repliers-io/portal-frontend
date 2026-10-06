@@ -36,6 +36,13 @@ const GithubIcon = () => (
   </svg>
 )
 
+// Inside the portal (`build:documentation` sets DOCS_BASE_PATH) the navbar links the hub and
+// the frontend site. Plain <a>: next/link would prefix the basePath, and both are separate
+// apps. Classes of Nextra's own navbar links, hidden below md like them — its mobile menu
+// takes no custom items.
+const portalLinkClass =
+  'x:focus-visible:nextra-focus x:text-sm x:contrast-more:text-gray-700 x:contrast-more:dark:text-gray-100 x:whitespace-nowrap x:text-gray-600 x:hover:text-black x:dark:text-gray-400 x:dark:hover:text-gray-200 x:ring-inset x:transition-colors x:max-md:hidden'
+
 const navbar = (
   <Navbar
     logo={
@@ -49,12 +56,23 @@ const navbar = (
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={logo.src} alt="" width={24} height={24} />
-        Portal Backend Docs
+        Backend Docs
       </span>
     }
     projectLink="https://github.com/Repliers-io/portal-backend"
     projectIcon={<GithubIcon />}
-  />
+  >
+    {process.env.DOCS_BASE_PATH && (
+      <>
+        <a href="/documentation" className={portalLinkClass}>
+          All Docs
+        </a>
+        <a href="/documentation/frontend" className={portalLinkClass}>
+          Frontend Docs
+        </a>
+      </>
+    )}
+  </Navbar>
 )
 
 export default async function RootLayout({

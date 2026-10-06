@@ -7,6 +7,8 @@ import { Box } from '@mui/material'
 
 import content from '@configs/content'
 
+import { AutoplayVideo } from 'components/atoms'
+
 import useClientSide from 'hooks/useClientSide'
 
 import { randomImage } from './utils'
@@ -44,11 +46,8 @@ const BannerImage = ({
     <Box width="100%" height="100%" position="absolute" bgcolor={bgcolor}>
       {ready &&
         (videoSource ? (
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
+          <AutoplayVideo
+            src={splashSource}
             aria-label={siteName}
             style={{
               width: '100%',
@@ -56,9 +55,7 @@ const BannerImage = ({
               objectFit: 'cover',
               objectPosition
             }}
-          >
-            <source src={splashSource} type="video/mp4" />
-          </video>
+          />
         ) : (
           <Image
             fill

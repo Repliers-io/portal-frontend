@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Badge, Button, Skeleton } from '@mui/material'
 
 import { SettingsIcon } from '@configs/icons'
+import { useAdvancedFilterSlots } from '@shared/Dialogs/AdvancedFiltersDialog/components'
 
 import { useDialog } from 'providers/DialogProvider'
 import { useSearch } from 'providers/SearchProvider'
@@ -20,14 +20,11 @@ export const AdvancedFiltersButton = ({
   const { showDialog } = useDialog('filters')
   const { filters, filtersDisabled } = useSearch()
 
-  const [filtersCounter, setFiltersCounter] = useState(0)
-
-  // the dialog holds both tabs, so the button counts the AI quality filters too
-  useEffect(() => {
-    setFiltersCounter(
-      countAdvancedFilters(filters) + countAiQualityFilters(filters)
-    )
-  }, [filters])
+  // the button counts what the dialog holds: both tabs and, on phones, the bar's own
+  // filters (beds, baths) that move into it
+  const slots = useAdvancedFilterSlots()
+  const filtersCounter =
+    countAdvancedFilters(filters, slots) + countAiQualityFilters(filters)
 
   if (!clientSide) {
     return (

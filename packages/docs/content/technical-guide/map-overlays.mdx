@@ -186,6 +186,12 @@ On the PDP, `ParcelProvider` finds the parcel under the listing with the same ma
   `OverlayLocationButton` ("Show listings here" / "Remove this location"). The button renders
   only on a tap-opened tooltip of a selectable overlay, so the same card stays read-only on the
   PDP.
+- **A phone or tablet search map selects through markers only.** `OverlayLayersController`
+  passes every overlay through `toMarkerSelect` below `md`: a `selectable: 'polygon'` overlay
+  gets name markers at its polygons' centres (clustered like the neighborhoods), its polygons
+  show only on a marker preview, and it keeps no polygon hover or click — which a tap on any
+  marker above it used to trigger. Below `md` a name marker may wrap to a second line within
+  70% of the screen.
 - **A search polygon switches selectable overlays off.** `useOverlayPolygonGuard` turns off
   every active overlay with `locationTypes` the moment a drawn or URL-loaded polygon appears,
   so a marker selection can't silently replace the polygon. Clearing the polygon does not bring

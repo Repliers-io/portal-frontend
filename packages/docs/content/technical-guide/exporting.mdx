@@ -55,7 +55,9 @@ Runs three scripts into `../opensource-portal-monorepo`:
 The export ships both docs sites inside the portal: `pnpm build:documentation` builds them as
 static exports into `packages/portal-frontend/public/documentation` (served at
 `/documentation`, `/documentation/frontend`, `/documentation/backend`); run it before
-`pnpm frontend:build` / `pnpm frontend:dev`. `pnpm clean:documentation` removes them.
+`pnpm frontend:build` / `pnpm frontend:dev`. `pnpm clean:documentation` removes them. In that
+build each site's navbar links the hub (**All Docs**) and the sibling site (desktop only);
+the standalone docs builds omit those links.
 
 ## Standalone tenant export
 

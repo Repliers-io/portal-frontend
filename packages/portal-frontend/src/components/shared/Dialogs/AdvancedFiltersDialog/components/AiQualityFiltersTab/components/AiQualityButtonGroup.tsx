@@ -25,12 +25,10 @@ export const AiQualityButtonGroup = ({
 }) => {
   const values = useMemo(() => items.map((item) => item[1]), [items])
 
+  // a single URL value (`overallQuality=average`) arrives as a string, a repeated one as an array
   const groupValue = useMemo(() => {
-    if (Array.isArray(propsValue)) {
-      const selected = propsValue.filter((v) => values.includes(v))
-      if (selected.length) return selected
-    }
-    return null
+    const selected = [propsValue ?? []].flat().filter((v) => values.includes(v))
+    return selected.length ? selected : null
   }, [propsValue, values])
 
   const handleChange = (

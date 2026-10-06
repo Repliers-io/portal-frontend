@@ -5,7 +5,11 @@ export { MapBackdropIcon } from './MapBackdropIcon'
 export { MapCenterButton } from './MapCenterButton'
 export { MapContainer } from './MapContainer'
 export { MapControlButton, mapControlSx } from './MapControlButton'
-export { controlsRowClearance, MapControlsStack } from './MapControlsStack'
+export {
+  borderMargin,
+  controlsRowClearance,
+  MapControlsStack
+} from './MapControlsStack'
 export { MapLayoutSwitch } from './MapLayoutSwitch'
 export { MapLocateButton } from './MapLocateButton'
 export { MapNavigation } from './MapNavigation'

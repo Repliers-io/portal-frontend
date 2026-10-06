@@ -3,7 +3,11 @@ import React from 'react'
 import { alpha, Box, ToggleButton, ToggleButtonGroup } from '@mui/material'
 
 import { primary } from '@configs/colors'
-import { DirectionsIcon, MapIcon, PublicIcon } from '@configs/icons'
+import {
+  ForestOutlinedIcon,
+  PublicIcon,
+  SignpostOutlinedIcon
+} from '@configs/icons'
 
 import { useMapOptions } from 'providers/MapOptionsProvider'
 import useClientSide from 'hooks/useClientSide'
@@ -12,14 +16,32 @@ import { capitalize } from 'utils/strings'
 type MapStyle = 'map' | 'hybrid' | 'satellite'
 type MapStyleButtonProps = [name: MapStyle, icon: React.ReactElement]
 
+// Translucent chrome of a toggle group floating over the map
+export const floatingGroupSx = {
+  boxShadow: 1,
+  backdropFilter: 'blur(4px)',
+  bgcolor: alpha('#FFFFFF', 0.7),
+  '& .MuiToggleButton-root.Mui-selected': {
+    bgcolor: alpha(primary, 0.8)
+  },
+  // a tap leaves :hover on the segment, where the theme's opaque `primary.dark`
+  // wins the specificity tie with the rule above
+  '@media (hover: none)': {
+    '& .MuiToggleButton-root.Mui-selected:hover': {
+      bgcolor: alpha(primary, 0.8)
+    }
+  }
+}
+
 export const MapStyleSwitch = () => {
   const clientSide = useClientSide()
   const { style, setStyle } = useMapOptions()
 
   const buttons: MapStyleButtonProps[] = [
     ['satellite', <PublicIcon sx={{ fontSize: 18 }} key="satellite" />],
-    ['hybrid', <DirectionsIcon sx={{ fontSize: 20 }} key="hybrid" />],
-    ['map', <MapIcon key="map" color="" />]
+    ['hybrid', <SignpostOutlinedIcon sx={{ fontSize: 20 }} key="hybrid" />],
+    // the vector style shows the same tree as the map's loading placeholder
+    ['map', <ForestOutlinedIcon sx={{ fontSize: 19 }} key="map" />]
   ]
 
   const handleChange = (e: React.MouseEvent, value: MapStyle) => {
@@ -38,17 +60,12 @@ export const MapStyleSwitch = () => {
         disabled={!clientSide}
         onChange={handleChange}
         sx={{
+          ...floatingGroupSx,
           flexShrink: 0,
           minWidth: 'max-content',
-          boxShadow: 1,
-          backdropFilter: 'blur(4px)',
-          bgcolor: alpha('#FFFFFF', 0.7),
           '& .MuiToggleButton-root': {
             px: 2,
             fontWeight: 400,
-            '&.Mui-selected': {
-              bgcolor: alpha(primary, 0.8)
-            },
             '&.Mui-disabled': {
               border: 0
             }

@@ -85,9 +85,12 @@ const FiltersContent = ({ onSubmit, onReset }: FormProps) => {
 
   return (
     <>
+      {/* centred on the tab bar (64px on a phone, where MUI's tabs are 48px tall, 72px
+          from `sm`) and above it: the bar is raised (z-index 4) to cast its shadow on
+          the Features search */}
       <DialogCloseButton
         onClose={hideDialog}
-        sx={tabBar ? { top: 12, right: 12 } : {}}
+        sx={tabBar ? { top: { xs: 8, sm: 12 }, right: 12, zIndex: 5 } : {}}
       />
 
       {tabBar ? (

@@ -1,28 +1,12 @@
-export const throttle = (func: (...args: any[]) => void, delay: number) => {
-  let lastCall = 0
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-
-  return function throttle(this: unknown, ...args: unknown[]) {
-    const now = Date.now()
-
-    if (lastCall + delay <= now) {
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-        timeoutId = null
-      }
-      lastCall = now
-      func.apply(this, args)
-    } else if (!timeoutId) {
-      timeoutId = setTimeout(
-        () => {
-          lastCall = Date.now()
-          timeoutId = null
-          func.apply(this, args)
-        },
-        delay - (now - lastCall)
-      )
-    }
-  }
+/** Smooth-scrolls a horizontal row of section tabs so `item` sits in its middle. */
+export const centerInRow = (row: HTMLElement, item: HTMLElement) => {
+  const rowRect = row.getBoundingClientRect()
+  const itemRect = item.getBoundingClientRect()
+  const left =
+    row.scrollLeft +
+    (itemRect.left - rowRect.left) -
+    (rowRect.width - itemRect.width) / 2
+  row.scrollTo({ left, behavior: 'smooth' })
 }
 
 export const updateUrlAnchor = (anchor: string) => {

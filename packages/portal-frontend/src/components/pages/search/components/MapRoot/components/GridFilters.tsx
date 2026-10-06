@@ -22,7 +22,8 @@ export const GridFilters = () => {
           height: 34,
           minWidth: 100,
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          justifyContent: { xs: 'center', md: 'flex-start' }
         }}
       >
         {loading || !page ? (

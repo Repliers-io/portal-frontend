@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { Box, Container, Stack } from '@mui/material'
 
@@ -6,10 +6,10 @@ import useBreakpoints from 'hooks/useBreakpoints'
 import useClientSide from 'hooks/useClientSide'
 
 import { NavigationItems, SkeletonItems } from './components'
+import { useSectionNav } from './useSectionNav'
 
-// Active = last section in document order whose top has passed this line
-// relative to the scroll container's top edge.
-const DETECTION_LINE = 100
+// a section lands 32px under the bar
+const sectionGap = 32
 
 export type NavigationBarItem = { id: string; label: string }
 
@@ -40,87 +40,37 @@ export const NavigationBar = ({
 }: NavigationBarProps) => {
   const clientSide = useClientSide()
   const { desktop } = useBreakpoints()
-  const [activeIndex, setActiveIndex] = useState(-1)
   const [scrollTop, setScrollTop] = useState(0)
-  const rafRef = useRef<number | null>(null)
-  const idleTimerRef = useRef<number | null>(null)
-  const clickLockedRef = useRef(false)
-  const containerRef = useRef<HTMLElement | Window | null>(null)
-  const itemsRef = useRef(items)
-  itemsRef.current = items
+  const barRef = useRef<HTMLDivElement | null>(null)
+
+  // the listing browser dialog's scroller when the bar sits in it; the window otherwise
+  const root =
+    clientSide && containerId ? document.getElementById(containerId) : null
+
+  const { available, active, onSelect } = useSectionNav({
+    sections: items,
+    root,
+    barRef,
+    gap: sectionGap,
+    enabled: loaded
+  })
 
   const stickyLeft = scrollTop > (stickyOffsets?.left || barOffset)
   const stickyRight = scrollTop > (stickyOffsets?.right || barOffset)
 
-  const runDetect = useCallback(() => {
-    const container = containerRef.current
-    const containerOffset =
-      !container || container instanceof Window
-        ? 0
-        : container.getBoundingClientRect().top
-
-    let next = -1
-    itemsRef.current.forEach(({ id }, i) => {
-      const el = document.getElementById(id)
-      if (!el) return
-      const { top, bottom } = el.getBoundingClientRect()
-      if (top - containerOffset <= DETECTION_LINE && bottom >= 0) next = i
-    })
-    setActiveIndex((prev) => (next !== prev ? next : prev))
-  }, [])
-
-  const handleChange = (index: number) => {
-    setActiveIndex(index)
-    clickLockedRef.current = true
-    if (idleTimerRef.current !== null) {
-      clearTimeout(idleTimerRef.current)
-      idleTimerRef.current = null
-    }
-  }
-
   useEffect(() => {
-    if (!clientSide || !desktop || !loaded) return
+    const getScrollTop = () => (root ? root.scrollTop : window.scrollY)
+    const onScroll = () => setScrollTop(getScrollTop())
+    const container: HTMLElement | Window = root ?? window
 
-    const container =
-      (containerId ? document.getElementById(containerId) : window) || window
-    containerRef.current = container
-
-    const getScrollTop = () =>
-      container instanceof Window ? container.scrollY : container.scrollTop
-
-    runDetect()
-    setScrollTop(getScrollTop())
-
-    const onScroll = () => {
-      setScrollTop(getScrollTop())
-
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null
-        if (!clickLockedRef.current) {
-          runDetect()
-          return
-        }
-        if (idleTimerRef.current !== null) clearTimeout(idleTimerRef.current)
-        idleTimerRef.current = window.setTimeout(() => {
-          clickLockedRef.current = false
-          idleTimerRef.current = null
-          runDetect()
-        }, 150)
-      })
-    }
-
+    onScroll()
     container.addEventListener('scroll', onScroll, { passive: true })
-
-    return () => {
-      container.removeEventListener('scroll', onScroll)
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      if (idleTimerRef.current !== null) clearTimeout(idleTimerRef.current)
-    }
-  }, [clientSide, loaded, runDetect])
+    return () => container.removeEventListener('scroll', onScroll)
+  }, [root])
 
   return (
     <Box
+      ref={barRef}
       sx={{
         py: 1,
         px: 4,
@@ -159,10 +109,9 @@ export const NavigationBar = ({
 
           {desktop && loaded ? (
             <NavigationItems
-              items={items}
-              active={activeIndex}
-              onChange={handleChange}
-              containerId={containerId}
+              items={available}
+              active={active}
+              onSelect={onSelect}
             />
           ) : (
             <SkeletonItems />

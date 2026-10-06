@@ -16,6 +16,7 @@ import {
 import { firstWord } from 'utils/strings'
 
 import { AdvancedFiltersMenuItem } from './AdvancedFiltersMenuItem'
+import { useAdvancedFilterSlots } from './useAdvancedFilterSlots'
 
 // the tabs fit narrow dialogs by their labels' first words: "Advanced filters" → "Advanced"
 export const AdvancedFiltersMenu = ({
@@ -31,7 +32,10 @@ export const AdvancedFiltersMenu = ({
   const aiFiltersCount = countAiQualityFilters(dialogState)
   // the raw fields count under their own tab, not under Advanced
   const featuresCount = selectedRawFields(dialogState).length
-  const advFiltersCount = countAdvancedFilters(dialogState) - featuresCount
+  // on phones the tab also holds the bar's own filters (beds, baths)
+  const slots = useAdvancedFilterSlots()
+  const advFiltersCount =
+    countAdvancedFilters(dialogState, slots) - featuresCount
 
   return (
     <DialogTitle
@@ -47,8 +51,12 @@ export const AdvancedFiltersMenu = ({
       <MenuList
         sx={{
           display: 'flex',
-          gap: 1,
-          py: { xs: 1, sm: 1.75 }
+          // the free room splits into equal gaps between the tabs
+          justifyContent: 'space-between',
+          py: { xs: 1, sm: 1.75 },
+          // the tabs shrink into the room the title's right padding leaves the close
+          // button; MUI's Badge root, which wraps each tab, is `flex-shrink: 0`
+          '& > .MuiBadge-root': { minWidth: 0, flexShrink: 1 }
         }}
       >
         <AdvancedFiltersMenuItem

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 
 import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 
@@ -126,7 +126,9 @@ export const PricePicker = ({
     onChange?.(bucketPrices(pickerMin, pickerMax))
   }
 
-  useEffect(() => {
+  // before paint: the first frame with the loaded buckets already has the thumbs on
+  // the filter's prices, not on the histogram's edges a frame earlier
+  useLayoutEffect(() => {
     const [minValue, maxValue] = values.map(toSafeNumber)
     setPickerMin(getBucketIndex(minValue, bucketKeys))
     setPickerMax(

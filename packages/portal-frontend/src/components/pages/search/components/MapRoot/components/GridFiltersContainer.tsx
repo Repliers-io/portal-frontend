@@ -21,6 +21,8 @@ export const GridFiltersContainer = ({
       maxWidth="lg"
       disableGutters
       sx={{
+        // phones: the column header sits closer to the cards below
+        mb: { xs: -2, md: 0 },
         zIndex: 'drawer',
         position: 'relative'
       }}
@@ -28,7 +30,7 @@ export const GridFiltersContainer = ({
       <Stack
         spacing={0}
         flexWrap="wrap"
-        direction="row"
+        direction={{ xs: 'column', md: 'row' }}
         alignItems="center"
         justifyContent="space-between"
         sx={{

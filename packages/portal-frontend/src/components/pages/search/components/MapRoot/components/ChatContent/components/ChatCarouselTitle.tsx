@@ -7,7 +7,6 @@ import { Box, Button, Stack, Typography } from '@mui/material'
 import { WindowOutlinedIcon } from '@configs/icons'
 import { ListingsCounter } from '@shared/Filters'
 
-import { singleColumnQuery } from '../constants'
 import { type ChatCarouselData } from '../types'
 
 type ChatCarouselTitleProps = {
@@ -44,21 +43,15 @@ export const ChatCarouselTitle = ({
         </Typography>
       )}
 
-      <Box
-        sx={{
-          flex: 1,
-          textAlign: 'right',
-          // one column wide, Open grid starts the second row on the left
-          [singleColumnQuery]: { flexBasis: '100%', display: 'flex' }
-        }}
-      >
+      {/* Open grid starts the second row on the left, the carousel arrows end it */}
+      <Box sx={{ flexBasis: '100%', display: 'flex' }}>
         <Button
           size="small"
           variant="text"
           onClick={onOpenGrid}
           endIcon={<WindowOutlinedIcon fontSize="small" />}
           // starting its row, the label (not the padding) lines up with the counter
-          sx={{ [singleColumnQuery]: { ml: -2 } }}
+          sx={{ ml: -2 }}
         >
           {t('openGrid')}
         </Button>

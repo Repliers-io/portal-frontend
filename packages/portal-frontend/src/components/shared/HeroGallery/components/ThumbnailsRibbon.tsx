@@ -224,9 +224,9 @@ export const ThumbnailsRibbon = ({
           overflowX: { xs: 'visible', md: 'hidden' },
           overflowY: { xs: 'hidden', md: 'scroll' },
 
-          // keep horizontal ribbon swipes from scrolling the page behind it;
+          // the ribbon takes the horizontal swipe, the page keeps the vertical scroll;
           // reset at md where the ribbon becomes a vertical scroller
-          touchAction: { xs: 'pan-x', md: 'auto' },
+          touchAction: { xs: 'pan-x pan-y', md: 'auto' },
           overscrollBehaviorX: { xs: 'contain', md: 'auto' },
 
           willChange: 'scroll-position',

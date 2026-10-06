@@ -15,7 +15,7 @@ import {
 } from 'utils/filters'
 
 import { RawFieldAccordion } from './RawFieldAccordion'
-import { SearchField } from './SearchField'
+import { searchBarHeight, SearchField } from './SearchField'
 import { useRawFilterOptions } from './useRawFilterOptions'
 
 const minQueryLength = 3
@@ -62,9 +62,13 @@ export const RawFilters = ({
           top: 0,
           // above the docked titles (2) and the checkbox inputs (1) passing under it
           zIndex: 3,
-          pt: { xs: 0, sm: 2 },
+          // the field rests 16px above the bar's bottom, the tenant's bar height sets
+          // the gap above it
+          height: searchBarHeight,
+          boxSizing: 'border-box',
           pb: 2,
           display: 'flex',
+          alignItems: 'flex-end',
           bgcolor: 'common.white'
         }}
       >

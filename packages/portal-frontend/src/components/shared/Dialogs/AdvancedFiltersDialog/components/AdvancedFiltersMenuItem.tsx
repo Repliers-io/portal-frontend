@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { lighten, MenuItem, Stack } from '@mui/material'
+import { Box, lighten, MenuItem } from '@mui/material'
 
 import palette from '@configs/theme/palette'
 import { ToolbarMenuItemBadge } from '@templates/components/Header/components/ToolbarMenu'
@@ -33,10 +33,13 @@ export const AdvancedFiltersMenuItem = ({
         lineHeight: 2,
         borderRadius: 1,
         position: 'relative',
-        display: 'inline-block',
+        minWidth: 0,
 
+        // a touch screen keeps `:hover` on the tapped tab until the next tap, so the
+        // tint (and MUI's own touch tint) gives way to the plain ground there
         '&.Mui-selected:hover': {
-          bgcolor: lighten(selectedColor, 0.95)
+          bgcolor: 'common.white',
+          '@media (hover: hover)': { bgcolor: lighten(selectedColor, 0.95) }
         },
 
         '&.Mui-selected': {
@@ -57,10 +60,30 @@ export const AdvancedFiltersMenuItem = ({
         }
       }}
     >
-      <Stack spacing={1} direction="row" alignItems="center">
+      {/* The label goes first in a reversed wrapping row, so a tab too narrow for
+          both wraps its icon onto the second line, clipped at one line's height; the
+          label is cut with an ellipsis only once it alone no longer fits. The clip is
+          on this row: the item keeps its overflow for the underline below. */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row-reverse',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
+          columnGap: 1,
+          height: '1lh',
+          overflow: 'hidden'
+        }}
+      >
+        <Box
+          component="span"
+          sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          {children}
+        </Box>
         {startIcon}
-        {children}
-      </Stack>
+      </Box>
     </MenuItem>
   </ToolbarMenuItemBadge>
 )

@@ -4,6 +4,8 @@ import { Box } from '@mui/material'
 
 import gridConfig from '@configs/cards-grids'
 
+import { ContentShadow } from 'components/atoms'
+
 const { mapTopOffset } = gridConfig
 
 export const GridMobileDrawer = ({
@@ -16,7 +18,6 @@ export const GridMobileDrawer = ({
   return (
     <Box
       sx={{
-        pt: { xs: 5.75, sm: 0 },
         top: mapTopOffset,
         left: 0,
         right: 0,
@@ -31,7 +32,20 @@ export const GridMobileDrawer = ({
         overflow: 'hidden'
       }}
     >
-      {children}
+      {/* the whole panel scrolls, starting below the FloatingLayoutSwitch */}
+      <Box
+        sx={{
+          pt: { xs: 6.75, sm: 0 },
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          scrollbarWidth: 'thin'
+        }}
+      >
+        {children}
+      </Box>
+      {/* after the content, so the band also lies over the absolute chat panel */}
+      <ContentShadow visible sx={{ top: 0 }} />
     </Box>
   )
 }

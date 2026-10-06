@@ -8,6 +8,7 @@ import {
   displayOnMap,
   getMarkerLabel,
   type ListingMarkerColor,
+  multiUnitKey,
   resolveListingMarkerColor,
   scrubbed
 } from 'utils/listings'
@@ -38,11 +39,6 @@ export type MarkerDescriptor = {
   }
 }
 
-const muKey = (listing: ApiListing): string => {
-  const { streetName, streetNumber, city } = listing.address
-  return `${streetName}-${streetNumber}-${city}`.toLowerCase()
-}
-
 // Commercial/Residential listings are never grouped — each shows its own marker
 // (mirrors the legacy MarkerExtension.putUniqueProperty).
 const groupable = (listing: ApiListing): boolean =>
@@ -58,7 +54,7 @@ const buildGroups = (listings: ApiListing[]): Record<string, AddressGroup> => {
   const groups: Record<string, AddressGroup> = {}
   listings.forEach((listing) => {
     if (!groupable(listing)) return
-    const key = muKey(listing)
+    const key = multiUnitKey(listing)
     if (groups[key]) groups[key].mlsNumbers.push(listing.mlsNumber)
     else groups[key] = { listing, mlsNumbers: [listing.mlsNumber] }
   })
@@ -76,11 +72,11 @@ export const listingDescriptors = (
   const descriptors: MarkerDescriptor[] = []
 
   onMap.forEach((listing) => {
-    const group = groupable(listing) ? groups[muKey(listing)] : undefined
+    const key = multiUnitKey(listing)
+    const group = groupable(listing) ? groups[key] : undefined
     const multiUnit = group ? group.mlsNumbers.length > 1 : false
 
     if (multiUnit) {
-      const key = muKey(listing)
       if (renderedGroups.has(key)) return
       renderedGroups.add(key)
     }

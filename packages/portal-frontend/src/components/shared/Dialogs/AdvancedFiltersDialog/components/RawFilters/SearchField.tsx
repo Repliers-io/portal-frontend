@@ -4,8 +4,9 @@ import { CloseIcon, SearchIcon } from '@configs/icons'
 
 import { noAutofillInputProps } from 'utils/inputAttrs'
 
-// the theme's field: 12px + a 24px line + 12px; the docked titles sit under it
-export const searchFieldHeight = 48
+// the docked search: 16px, the theme's field (12px + a 24px line + 12px), 16px; the
+// expanded titles dock right under it
+export const searchBarHeight = 80
 
 export const SearchField = ({
   value,

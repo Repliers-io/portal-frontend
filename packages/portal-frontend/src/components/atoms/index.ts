@@ -1,5 +1,6 @@
 export { default as AndroidSwitch } from './AndroidSwitch'
 export { default as Asterisk } from './Asterisk'
+export { AutoplayVideo } from './AutoplayVideo'
 export { default as BlurredOverlay } from './BlurredOverlay'
 export { default as ContentShadow, contentShadowTop } from './ContentShadow'
 export { default as DateLabel } from './DateLabel'

@@ -51,8 +51,6 @@ export const ChatInput = forwardRef<
         ? t('AiChat.continueMessage')
         : t('AiChat.startMessage')
 
-    const bgcolor = placeholder === 'start' ? 'background.paper' : ''
-
     const handleFocus = () => {
       setFocused(true)
       onFocus?.()
@@ -149,7 +147,7 @@ export const ChatInput = forwardRef<
           '& input': { py: '0 !important', height: '44px !important' }, // fix jumping scroll position when focusing input
           '& .MuiOutlinedInput-root': {
             transition: 'background 0.15s linear',
-            bgcolor, // see constant defined above
+            bgcolor: 'background.paper',
             '&:hover': {
               bgcolor: activeBgColor,
               '& fieldset': { border: 0 }

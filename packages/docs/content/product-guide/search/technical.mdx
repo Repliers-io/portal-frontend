@@ -54,11 +54,13 @@ MapPageContent                         owns the fetch effect + URL sync
    ├─ SunriseSliderContainer           { SunriseSlider, CalendarSlider } — shadows/time (tenant)
    ├─ MapTitle · SaveSearchCanvas
    ├─ SelectedLocationsBar             mobile: the selected-location chips at the bottom edge
+   ├─ FloatingLayoutSwitch             mobile: `MapLayoutSwitch variant="floating"` over the map —
+   │                                   Chat | Map | List with `aiChat`, else one Map/List button
    ├─ ListingDrawer                    mobile: tapped-marker listing preview
    ├─ GridDesktopContainer | GridMobileDrawer
    │  ├─ GridFilters
    │  ├─ GridContent                   the card grid
-   │  └─ ChatContent                   AI chat panel — `features.aiChat`
+   │  └─ ChatContent                   AI chat panel — `features.aiChat` (mobile: its own GridMobileDrawer)
    ├─ ListingBrowserDialog             wide-desktop: paged listing browser
    ├─ SaveSearchDialog                 `features.saveSearch`
    ├─ SupportAgent                     EVAS agent iframe — `features.aiAgent`

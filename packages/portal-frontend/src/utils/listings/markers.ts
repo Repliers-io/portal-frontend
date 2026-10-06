@@ -6,6 +6,14 @@ import { factualStatusGroup } from './status'
 
 export type ListingMarkerColor = { color: string; hoverColor?: string }
 
+// One building's units share this key — both the multi-unit marker count and the
+// units the click opens are grouped by it. Case-insensitive: one feed spells the
+// same building `74TH` and `74th`.
+export const multiUnitKey = (listing: ApiListing): string => {
+  const { streetName, streetNumber, city } = listing.address
+  return `${streetName}-${streetNumber}-${city}`.toLowerCase()
+}
+
 /**
  * Resolves a listing's marker colour from the tenant's `markerColors` palette,
  * keyed by the listing's factual lifecycle status. A tenant fills only the

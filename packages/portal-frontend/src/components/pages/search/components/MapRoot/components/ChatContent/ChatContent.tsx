@@ -10,6 +10,7 @@ import { APIChat, type ApiHttpError, type ApiListing } from 'services/API'
 import { useAiSearch } from 'providers/AiSearchProvider'
 import { useMapLocations, useMapOptions } from 'providers/MapOptionsProvider'
 import { useSearch } from 'providers/SearchProvider'
+import useBreakpoints from 'hooks/useBreakpoints'
 import useClientSide from 'hooks/useClientSide'
 
 import { DesktopContentShadow } from '../GridContent/components'
@@ -30,10 +31,10 @@ type ChatContentProps = {
 
 export const ChatContent = ({ onCarouselCardClick }: ChatContentProps) => {
   const clientSide = useClientSide()
-  const { layout } = useMapOptions()
+  const { mobile, tablet } = useBreakpoints()
+  const { layout, setLayout } = useMapOptions()
   const inputRef = useRef<HTMLInputElement | null>(null)
   const { reset: resetAiFilters } = useAiSearch()
-  const { setLayout } = useMapOptions()
   const { clearLocations } = useMapLocations()
   const { applyFilters, applying } = useApplyFilters()
   const { count, listings, filters, resetFilters, clearPoint, clearGridCache } =
@@ -214,17 +215,19 @@ export const ChatContent = ({ onCarouselCardClick }: ChatContentProps) => {
         left: 0,
         right: 0,
         bottom: 0,
-        top: 8, // GridDesktopContainer has { mt: -1 }, so we need to offset by 8px
+        // GridDesktopContainer has { mt: -1 }, so we need to offset by 8px; below md the
+        // chat spans the map's full height in GridMobileDrawer, under the FloatingLayoutSwitch
+        top: { xs: 0, md: 8 },
         position: 'absolute',
-        containerType: 'inline-size',
         zIndex: 'drawer',
         bgcolor: 'background.paper',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none'
       }}
     >
-      <DesktopContentShadow visible={scrollY > 0} />
-      <Box sx={{ px: 2, flex: 1, overflow: 'hidden' }}>
+      {/* phones and tablets get the shared band from GridMobileDrawer */}
+      {!(mobile || tablet) && <DesktopContentShadow visible={scrollY > 0} />}
+      <Box sx={{ px: { xs: 0, md: 2 }, flex: 1, overflow: 'hidden' }}>
         <ChatHistoryList
           open={true}
           width="100%"
@@ -238,7 +241,13 @@ export const ChatContent = ({ onCarouselCardClick }: ChatContentProps) => {
           onCarouselCardClick={onCarouselCardClick}
         />
       </Box>
-      <Box sx={{ pt: 1, pb: 2, px: 4 }}>
+      <Box
+        sx={{
+          py: 2,
+          px: { xs: 2, md: 4 },
+          bgcolor: 'background.default'
+        }}
+      >
         <ChatInput
           ref={inputRef}
           loading={loading}

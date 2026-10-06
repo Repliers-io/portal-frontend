@@ -54,7 +54,7 @@ import { useSearch } from 'providers/SearchProvider'
 import { useUser } from 'providers/UserProvider'
 import useBreakpoints from 'hooks/useBreakpoints'
 import useIntersectionObserver from 'hooks/useIntersectionObserver'
-import { dedupeListings, getSeoUrl } from 'utils/listings'
+import { dedupeListings, getSeoUrl, multiUnitKey } from 'utils/listings'
 import { type MapOrientation } from 'utils/map'
 
 import { SupportAgent } from '..'
@@ -62,6 +62,7 @@ import { SupportAgent } from '..'
 import {
   CalendarSlider,
   ChatContent,
+  FloatingLayoutSwitch,
   GridContent,
   GridDesktopContainer,
   GridFilters,
@@ -69,7 +70,6 @@ import {
   ListingDrawer,
   MapControls,
   MobileCircularProgress,
-  OpenDrawerButton,
   SaveSearchCanvas,
   SunriseSlider,
   SunriseSliderContainer,
@@ -212,13 +212,10 @@ const MapRootComponent = ({
 
   const updateMultiUnits = useCallback(
     (listing: ApiListing) => {
-      const { streetName, streetNumber } = listing.address
-      const updatedUnits = mapListingsRef.current.filter(
-        (p) =>
-          p.address.streetName === streetName &&
-          p.address.streetNumber === streetNumber
+      const key = multiUnitKey(listing)
+      saveMultiUnits(
+        mapListingsRef.current.filter((p) => multiUnitKey(p) === key)
       )
-      saveMultiUnits(updatedUnits)
     },
     [saveMultiUnits]
   )
@@ -404,7 +401,7 @@ const MapRootComponent = ({
         <SaveSearchCanvas />
         {(mobile || tablet) && (
           <>
-            <OpenDrawerButton />
+            <FloatingLayoutSwitch />
             {loading && <MobileCircularProgress />}
           </>
         )}
@@ -418,13 +415,20 @@ const MapRootComponent = ({
       </Box>
 
       {mobile || tablet ? (
-        <GridMobileDrawer show={layout === 'grid'}>
-          <GridFilters />
-          <GridContent
-            gridListingsRef={gridListingsRef}
-            onCardClick={handleCardClick}
-          />
-        </GridMobileDrawer>
+        <>
+          <GridMobileDrawer show={layout === 'grid'}>
+            <GridFilters />
+            <GridContent
+              gridListingsRef={gridListingsRef}
+              onCardClick={handleCardClick}
+            />
+          </GridMobileDrawer>
+          {features.aiChat && (
+            <GridMobileDrawer show={layout === 'chat'}>
+              <ChatContent onCarouselCardClick={handleCarouselCardClick} />
+            </GridMobileDrawer>
+          )}
+        </>
       ) : (
         <GridDesktopContainer>
           <GridFilters />

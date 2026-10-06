@@ -20,7 +20,7 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  description: 'Portal Documentation',
+  description: 'Portal Frontend Documentation',
   robots: 'noindex, nofollow',
   // Reuse the house logo as the tab icon so the browser loads it instead of probing
   // /favicon.ico (which the MDX catch-all would otherwise try to resolve as a page).
@@ -40,6 +40,13 @@ const BitbucketIcon = () => (
   </svg>
 )
 
+// Inside the portal (`build:documentation` sets DOCS_BASE_PATH) the navbar links the hub and
+// the backend site. Plain <a>: next/link would prefix the basePath, and both are separate
+// apps. Classes of Nextra's own navbar links, hidden below md like them — its mobile menu
+// takes no custom items.
+const portalLinkClass =
+  'x:focus-visible:nextra-focus x:text-sm x:contrast-more:text-gray-700 x:contrast-more:dark:text-gray-100 x:whitespace-nowrap x:text-gray-600 x:hover:text-black x:dark:text-gray-400 x:dark:hover:text-gray-200 x:ring-inset x:transition-colors x:max-md:hidden'
+
 const navbar = (
   <Navbar
     logo={
@@ -53,12 +60,23 @@ const navbar = (
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={logo.src} alt="" width={24} height={24} />
-        Portal Docs
+        Frontend Docs
       </span>
     }
     projectLink="https://bitbucket.org/repliers-client-work/smartmls-frontend"
     projectIcon={<BitbucketIcon />}
-  />
+  >
+    {process.env.DOCS_BASE_PATH && (
+      <>
+        <a href="/documentation" className={portalLinkClass}>
+          All Docs
+        </a>
+        <a href="/documentation/backend" className={portalLinkClass}>
+          Backend Docs
+        </a>
+      </>
+    )}
+  </Navbar>
 )
 
 export default async function RootLayout({
