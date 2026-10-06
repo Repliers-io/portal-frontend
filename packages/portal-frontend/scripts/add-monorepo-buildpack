@@ -1,1 +1,0 @@
-heroku buildpacks:add -a <app_name> -i 1 https://github.com/lstoll/heroku-buildpack-monorepo

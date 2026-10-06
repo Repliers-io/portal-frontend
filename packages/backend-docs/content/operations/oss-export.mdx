@@ -4,12 +4,12 @@ The backend is published as an open-source repository. The export is generated â
 never edited by hand:
 
 ```bash
-npm run oss   # scripts/internal/oss-copy.ts . ../portal-backend-oss
+npm run export:oss   # scripts/internal/oss-copy.ts . ../portal-backend-oss
 ```
 
 ## What stays behind
 
-The copy **excludes**: `node_modules`, `.git`, `.history`, `dist`, `.vscode`,
+The copy **excludes**: `node_modules`, `.git`, `.history`, `dist`, `.vscode`, `.claude`,
 `scripts/internal/`, `.env*`, `bitbucket-pipelines.yml`, `.profile`, `keys/`,
 `src/settings/instances/`, `README-extra.md`.
 

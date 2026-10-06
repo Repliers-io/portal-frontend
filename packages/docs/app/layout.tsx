@@ -27,15 +27,11 @@ export const metadata = {
   icons: { icon: logo.src }
 }
 
-const BitbucketIcon = () => (
+const GithubIcon = () => (
   <svg viewBox="0 0 24 24" width="24" height="24">
     <path
-      fill="#94c748"
-      d="M0 6a6 6 0 0 1 6-6h12a6 6 0 0 1 6 6v12a6 6 0 0 1-6 6H6a6 6 0 0 1-6-6z"
-    />
-    <path
-      fill="#101214"
-      d="m17.898 11.353-.994 6.064c-.065.367-.324.583-.691.583H7.787c-.367 0-.627-.216-.691-.583L5.346 6.604C5.28 6.237 5.476 6 5.82 6h12.358c.346 0 .54.237.475.604l-.475 2.85c-.065.41-.303.582-.691.582h-7.432c-.109 0-.173.065-.152.194l.584 3.583c.021.086.086.151.172.151h2.68c.086 0 .15-.065.172-.151l.41-2.59c.044-.324.26-.453.563-.453H17.4c.432 0 .562.216.497.582"
+      fill="currentColor"
+      d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12"
     />
   </svg>
 )
@@ -63,8 +59,8 @@ const navbar = (
         Frontend Docs
       </span>
     }
-    projectLink="https://bitbucket.org/repliers-client-work/smartmls-frontend"
-    projectIcon={<BitbucketIcon />}
+    projectLink="https://github.com/Repliers-io/portal-frontend"
+    projectIcon={<GithubIcon />}
   >
     {process.env.DOCS_BASE_PATH && (
       <>
@@ -98,8 +94,8 @@ export default async function RootLayout({
         <Layout
           navbar={navbar}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://bitbucket.org/repliers-client-work/smartmls-frontend/src/master/packages/docs"
-          editLink="Edit this page on Bitbucket"
+          docsRepositoryBase="https://github.com/Repliers-io/portal-frontend/tree/main/packages/docs"
+          editLink="Edit this page on GitHub"
           sidebar={{ defaultMenuCollapseLevel: 1, toggleButton: true }}
           toc={{ backToTop: true }}
           feedback={{ content: null }}

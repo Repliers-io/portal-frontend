@@ -8,6 +8,15 @@ This application provides a full-featured real estate portal with interactive ma
 
 **Live Demo:** [portal.repliers.com](https://portal.repliers.com/)
 
+The repository is a pnpm workspace:
+
+| Package                    | Contents                                                     |
+| -------------------------- | ------------------------------------------------------------ |
+| `packages/portal-frontend` | the portal app — Next.js (App Router)                        |
+| `packages/ai-agent-client` | the AI chat interface embedded in the portal — Vite + React  |
+| `packages/docs`            | frontend documentation site — Nextra                         |
+| `packages/backend-docs`    | backend documentation site — Nextra                          |
+
 ## Getting Started
 
 ### Prerequisites
@@ -15,6 +24,7 @@ This application provides a full-featured real estate portal with interactive ma
 Before you begin, ensure you have the following installed:
 
 - Node.js (min v22.x)
+- pnpm (min v10.x)
 - Git
 - fully operational Repliers API backend (see [portal-backend](https://github.com/Repliers-io/portal-backend) for instructions on how to get it running locally)
 
@@ -32,21 +42,15 @@ git clone git@github.com:Repliers-io/portal-frontend.git
 cd portal-frontend
 ```
 
-2. **Install dependencies**
+2. **Install dependencies** of every package
 
 ```bash
 pnpm install
 ```
 
-4. **Configure environment variables**
+3. **Configure environment variables**
 
-Create a `.env` file based on the provided `env.example` template:
-
-```bash
-cp env.example .env
-```
-
-Then update the `.env` file with your actual values:
+Create `packages/portal-frontend/.env` with your values:
 
 **API Configuration:**
 
@@ -62,37 +66,10 @@ Then update the `.env` file with your actual values:
 
 > **Note:** All environment variables prefixed with `NEXT_PUBLIC_` will be bundled with the client-side code and exposed to the browser. For more information, see the [Next.js environment variables documentation](https://nextjs.org/docs/app/guides/environment-variables).
 
-5. **Start the development server**
+4. **Start the development server**
 
 ```bash
-pnpm dev
+pnpm frontend:dev
 ```
 
 Your app should now be running on the default port (3000).
-
-### Reload the running development server
-
-From the monorepo root:
-
-```bash
-pnpm frontend:dev:reload
-```
-
-From `packages/portal-frontend`, use `pnpm dev:reload`.
-
-The command updates only the modification time of `next.config.js`. Next.js's
-existing config watcher restarts its server worker on the same port. File contents
-stay unchanged, so the command creates no config diff and needs no backup/restore.
-The dev server must already be running; this command does not start one or wait
-for the restarted worker to become ready. Watch its terminal for the Ready message.
-
-Use it when a newly added tenant component fork is not picked up, or after changing
-the webpack override resolver. Ordinary component/style edits use HMR and do not
-need this command. It can also be called by a script or coding agent after those
-specific changes; do not trigger it on every source edit.
-
-This does not run prebuild, regenerate aliases or clear `.next`. After adding a
-tenant config override, run the existing `generate:tsconfig` command with that
-tenant's environment before reloading. To switch tenants or reread values injected
-by `env-cmd -f .env.<tenant>`, stop and rerun the tenant's development command:
-the automatic worker restart inherits the existing parent process environment.

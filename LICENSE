@@ -1,16 +1,34 @@
-MIT License
+Repliers Source-Available License
 
-Copyright (c) 2025 Repliers
+Copyright (c) 2026 Repliers Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, merge, publish, and distribute the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following
+conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Repliers API Only. The Software, and any modification or derivative work
+   of it, may be used only together with a valid, active Repliers API account
+   (https://repliers.io), and only to access, display, or process data
+   obtained from the Repliers API.
+
+2. No Substitute Data Sources. You may not use, modify, or adapt the
+   Software, or any derivative work, to obtain, display, or process real
+   estate listing, property, or market data from any source other than the
+   Repliers API, including any other MLS feed, IDX/VOW provider, or real
+   estate data API. Use of third-party services that do not provide such
+   data (for example maps, analytics, authentication, or hosting) is
+   permitted.
+
+3. Notices. The above copyright notice and this license shall be included
+   in all copies or substantial portions of the Software.
+
+4. Termination. If you breach any condition of this license, your rights
+   under it terminate automatically.
+
+5. Third-Party Components. Third-party components included in the Software
+   remain subject to their own licenses.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
