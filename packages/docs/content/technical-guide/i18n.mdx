@@ -1,0 +1,117 @@
+import { Callout } from 'nextra/components'
+
+# Internationalization (i18n)
+
+Every user-facing string is resolved through **next-intl** from JSON message files — never
+hardcoded in components and never stored in tenant config. Today the app ships a single
+locale (`en`); the machinery is per-locale-ready but only `en` is wired up.
+
+<Callout type="warning">
+  Two different things are easy to confuse. **Messages** (the translated
+  strings) live in `src/i18n/` and have **no path alias**. `@configs/i18n` is
+  something else entirely — it is the **formatting** config (date/time patterns,
+  `timeZone`, `currency`, `numberFormat`). Don't look for a `@content/i18n`
+  alias; it does not exist.
+</Callout>
+
+## Key files
+
+| File                                             | Responsibility                                                                                                  |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `src/i18n/defaults/en.json`                      | Canonical base messages — the required fallback for every tenant                                                |
+| `src/i18n/<tenant>/en.json`                      | Per-tenant message overrides (optional; only the keys that differ)                                              |
+| `src/i18n/request.ts`                            | next-intl `getRequestConfig` — loads + `deepmerge`s defaults with the active tenant's messages                  |
+| `src/configs/<tenant>/i18n.ts` (`@configs/i18n`) | Locale **formatting** — `dateFormat`, `timeZone`, `currency`, `numberFormat`, `measurementSystem` (not strings) |
+| `src/app/layout.tsx`                             | Server root — `getLocale()` + `getMessages()`                                                                   |
+| `src/app/_providers.tsx`                         | Wraps the tree in `NextIntlClientProvider` (`locale`, `messages`, `timeZone`)                                   |
+| `next.config.js`                                 | `createNextIntlPlugin('./src/i18n/request.ts')`                                                                 |
+
+## How messages resolve
+
+1. **Merge (server).** `request.ts` imports `defaults/en.json` (required) and
+   `<tenant>/en.json` (optional, keyed off `NEXT_PUBLIC_APP_CONFIGURATION`) and merges them
+   with `deepmerge(fallback, instance)` — the tenant wins **key by key**, so a tenant file
+   only needs the strings it changes. It returns `{ locale: 'en', messages, timeZone }`
+   (the `timeZone` comes from `@configs/i18n`).
+2. **Provide.** `layout.tsx` reads `getLocale()` / `getMessages()` and passes them to
+   `Providers`, which puts `NextIntlClientProvider` at the top of the provider tree.
+3. **Consume.** Components read strings through a translator (below).
+
+## Using translations
+
+**Client components** — `useTranslations`:
+
+```tsx
+// Root translator, full key paths — preferred when a component spans namespaces
+const t = useTranslations()
+t('MapFilters.listingTypes.condo')
+
+// Scoped translator — fine for a single namespace
+const t = useTranslations('Forms')
+t('signInTitle')
+```
+
+The recent i18n refactor consolidated components off the old **dual `t` / `tForms`** pattern
+onto a single translator. Use one translator per component: the **root `t` with full paths**
+when you touch more than one namespace, or a scoped `useTranslations('Namespace')` otherwise.
+
+**Server components** — `getTranslations` from `next-intl/server` (must be `await`ed). CMS
+widgets, for example, render on the server:
+
+```tsx
+const t = await getTranslations('CmsWidgets')
+t('servicesBuyerTitle')
+```
+
+## Joi validation labels
+
+Validation schemas are plain data (configs stay data-only — see [Multi-tenant System](/technical-guide/multi-tenant)),
+so field labels are attached from i18n at runtime instead of being written into the schema. A
+client provider/hook re-labels the schema with `schema.fork()`:
+
+```tsx
+const t = useTranslations('Estimates.form.expenses')
+const localizedSchema = useMemo(
+  () =>
+    schema.fork('condominium.fees.maintenance', (f) =>
+      f.label(t('maintenanceFee'))
+    ),
+  [t]
+)
+```
+
+This keeps user-facing labels out of config and makes Joi's error messages localized. See
+`src/providers/EstimateProvider/EstimateProvider.tsx`.
+
+## Tenant overrides
+
+To change a string for one tenant, create `src/i18n/<tenant>/en.json` and include **only**
+the keys that differ — `deepmerge` fills the rest from `defaults/en.json`. The structure
+mirrors the namespace path:
+
+```json
+{
+  "MapFilters": {
+    "listingTypes": { "residential": "Detached", "townhome": "Townhouse" }
+  },
+  "Property": { "restrictedSignIn": "Sign in" }
+}
+```
+
+To **add** a new string, put it in `defaults/en.json` (the canonical source) and reference it
+via `t('Namespace.key')`; override per tenant only where the wording changes.
+
+## Gotchas & hints
+
+- **No path alias for messages.** `src/i18n/` is imported directly in `request.ts`, unlike
+  `@content/*` or `@configs/*`. There is no `@content/i18n`.
+- **`@configs/i18n` ≠ messages.** It is date/currency/timezone **formatting** config. Two
+  separate per-tenant surfaces — don't put strings there.
+- **Strings never live in config.** User-facing text (including Joi labels) belongs in i18n,
+  not in `content.ts` or any config object (configs are plain data).
+- **Server vs client.** Use `getTranslations` (awaited) in server components,
+  `useTranslations` in client components — mixing them up throws at render.
+- **Single locale.** `request.ts` hardcodes `locale = 'en'`; the app is not multi-locale yet,
+  so tenant files are `en.json` only.
+
+See also [Multi-tenant System](/technical-guide/multi-tenant) and [Data Mappers](/technical-guide/data-mappers).

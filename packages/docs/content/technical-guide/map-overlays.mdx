@@ -1,0 +1,218 @@
+import { Callout } from 'nextra/components'
+
+# Map Overlays
+
+> How the search map draws **overlay layers** — schools, neighborhoods, postal
+> codes, school districts — on top of the listings, and how selection/popups work.
+> For the broader map/search anatomy see [Property Search — How it works](/product-guide/search/technical).
+
+Overlays are extra, config-driven layers of geographic data (from the **LiveBy**
+source). Each overlay is a plain data object — an `OverlayLayerDefinition` — so a
+tenant enables, reorders, restyles, or hides overlays entirely through config,
+without touching the map code. The default set is defined in
+`src/configs/defaults/overlays/liveBy.ts` and gated on `features.liveBy`.
+
+![The search map with LiveBy overlays on — two selected neighborhoods (North Lamar, University Hills) as highlighted areas, plus a hovered school marker (Reilly Elementary) revealing its popup, over the listing price markers](/img/map-overlays.webp)
+
+## Key files
+
+| File                                                    | Role                                                                                                                                             |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/configs/defaults/overlays/liveBy.ts`               | The overlay definitions (`livebyNeighborhood`, `livebyPostalCode`, `livebySchoolDistrict`, `livebySchool`) + the exported `overlayLayers` array. |
+| `src/configs/defaults/overlays/parcels.ts`              | The public-record parcels overlay (`parcelsLayers`), gated on `features.publicRecord`.                                                           |
+| `src/configs/defaults/map.ts`                           | `OverlayLayerDefinition` type + the `overlays: { layers, persistSelection }` config block.                                                       |
+| `src/components/shared/Map/OverlayLayersController.tsx` | Leaf that runs the sync hooks (renders nothing).                                                                                                 |
+| `.../hooks/useOverlayLayers/useOverlayLayers.ts`        | The per-overlay sync engine: fetch → render polygons (GL) + markers (DOM).                                                                       |
+| `.../hooks/useOverlayLayers/layers.ts`                  | Add/update/remove an overlay's GL polygons through the shared renderer.                                                                          |
+| `src/utils/map/polygons.ts` + `resolvePolygonStyle.ts`  | The single polygon renderer (one GeoJSON source + **fill/line** layer pair per overlay, `setData` on re-sync) and its feature-state paint.       |
+| `.../hooks/useOverlayMarkers/renderMarkers.ts`          | Render overlay point features as **DOM** markers + client-side clustering.                                                                       |
+| `.../hooks/useOverlaySelectsLocation.ts`                | Wires marker/polygon clicks → location selection (search map only).                                                                              |
+| `.../Map/markerElement.ts`                              | Builds the marker DOM element (shared by listing + overlay markers).                                                                             |
+| `.../Map/OverlayMarkerPopup/`                           | Popup host + per-overlay tooltip cards (`tooltipRegistry.ts`).                                                                                   |
+| `src/utils/map/overlays.ts`                             | `fetchLocations` (direct) and `fetchDedupedLocations` (through the filtering route) — the two `fetchData` implementations.                       |
+| `src/app/api/overlay-locations/`                        | Server route that re-fetches and drops empty locations (`route.ts` + `filterLocationsByCounts` in `utils.ts`).                                   |
+
+## GL vs DOM
+
+Mapbox is used two ways on this map — know which is which:
+
+- **Listing markers → DOM.** Search-result markers are plain DOM nodes built by
+  `createMarkerElement` (`markerElement.ts`) and driven by `useListingMarkers`.
+  Cheap: ~100 markers created in well under a frame, no per-marker React root.
+- **Overlay point markers → DOM (current reality).** School, neighborhood, and
+  postal-code point/cluster markers are **also DOM markers**, rendered by
+  `renderOverlayMarkers` (`useOverlayMarkers/renderMarkers.ts`) via the same
+  `createMarkerElement` path. They were previously GL circle layers — that path
+  is gone. Clustering is done client-side in `cluster.ts` (not by a GL `cluster: true` source).
+- **Overlay polygons → GL.** Boundaries and catchments render as GL **fill + line**
+  layers (`addOverlayPolygons` → `addPolygonToMap`). Polygons must stay GL — DOM
+  can't draw arbitrary geometry.
+
+<Callout type="info">
+  A single overlay commonly renders **both**: DOM markers *and* a GL polygon
+  (e.g. a school marker with a `showOnMarkerHover` catchment polygon). Polygons
+  render **data-driven** — whenever the fetched data contains polygon features —
+  the `polygon` config only tunes *how* (colour/style/hover behaviour).
+</Callout>
+
+## How it works
+
+1. **Definition** — each overlay in `overlayLayers` declares its `label`, `color`,
+   `fetchData` (bounds → GeoJSON), `activationMinZoom`, and how it's `selectable`
+   (`'marker'` | `'polygon'` | none).
+2. **Toggle menu** — the search map's `MapLayersMenu` lists overlays where
+   `showOn.search` is truthy (and `showOn.menu !== false`); toggling one flips
+   `activeLayers` in `MapOptionsProvider`. Overlays whose `showOn.search` is
+   `{ active: true }` are seeded into `activeLayers` on first load — the search
+   page computes them with `defaultActiveLayerIds` (`utils/map/overlays`) and
+   passes them as the provider's `layers` prop; the PDP map does the same via
+   `NeighborhoodSection` for `showOn.listing`.
+3. **Sync** — `useOverlayLayers` reacts to `activeLayers` + viewport changes: for
+   each enabled layer it fetches data for the current bounds, adds the GL polygon
+   layer, and renders DOM markers. Layers below their `activationMinZoom` are
+   removed and re-fetched once zoomed back in.
+4. **Selection → popup** — on the search map, `useOverlaySelectsLocation` turns a
+   marker/polygon click into a location selection (`MapOptionsProvider.locations`
+   - the `locationId` filter). Hovering shows a popup: `OverlayMarkerPopup`
+     renders the React card looked up by overlay id in `tooltipRegistry`.
+
+## Configuration
+
+- **`@configs/overlays`** (`overlays/liveBy.ts`) — the overlay definitions. Add,
+  reorder, restyle, or drop layers here; tenants override the file.
+- **`@configs/map` → `overlays`** — `{ layers: overlayLayers, persistSelection }`.
+  `layers` is the ordered list; `persistSelection: false` (default) drops a
+  layer's selected locations when it's hidden.
+- **Per-layer availability & default-active** — `showOn` controls where an overlay
+  appears and whether it starts enabled. `search` (opt-in) lists it in the search
+  map's `MapLayersMenu`; `listing` (opt-out) shows it on the PDP map; `menu: false`
+  hides the row so a standalone `OverlayToggleButton` (wired in `MapControls`)
+  controls it instead. On either surface a value of `{ active: true }` also seeds
+  the overlay into the initial `activeLayers` set — enabled at map load. A bare
+  `true` shows the overlay but leaves it off: **default-active is explicit opt-in,
+  never implicit.**
+- **Location types** — `locationTypes` lists every `ApiLocation.type` a layer requests
+  and selects; selection, deselection on hide, the polygon guard and the neighbourhood
+  button (`includes('neighborhood')`) all read the whole list. SERHANT's neighbourhoods
+  ask for `['neighborhood', 'neighborhood-alternate']`, so LiveBy's micro-neighbourhoods
+  (Turtle Bay inside Midtown East) draw with them; nested polygons overlap.
+- **Tooltips** — register a card component per overlay id in
+  `OverlayMarkerPopup/tooltipRegistry.ts` (override via `_<tenant>/tooltipRegistry.tsx`).
+  `tooltipLayerId` points the polygon-hover tooltip at another layer's fill, so an overlay can
+  expose only a subset of its polygons to hover.
+- **Render floor** — `renderMinZoom` (defaults to `activationMinZoom`) is the zoom below which
+  an active layer stops drawing; set it lower to let the user zoom out a step without the layer
+  vanishing (bounded by the API's 300-per-page cap).
+- **Polygon paint** — `polygon.casing` draws a wider line under the outline so a pale outline
+  still reads over a pale basemap; `listingPolygon` is the heavier paint for the single polygon
+  the PDP address map draws.
+- **`publishData`** — publish the fetched FeatureCollection into `useMapLayers().layerData`
+  for React consumers. Opt-in: every pan would otherwise push hundreds of features through
+  context.
+- **`features.publicRecord`** — gates the parcels overlay (`overlays/parcels.ts`) the way
+  `features.liveBy` gates the LiveBy set. The Repliers `/locations` `source=PublicRecord`
+  is an account entitlement: an account without it gets a 400 on the source itself, so
+  the flag stays off until Repliers enables the dataset for that tenant's key.
+
+## Empty-location filtering (opt-in)
+
+MLS `/locations` data is dirty: a viewport often returns neighborhoods with no
+listings at all, frequently as **same-name duplicates under different parent
+cities**. Drawn as-is they give the map two "Fremont" polygons where one is empty.
+
+An overlay opts out of that by pointing its `fetchData` at `fetchDedupedLocations`
+instead of `fetchLocations` — one line, no other config:
+
+```ts
+// src/configs/urbn/overlays/neighborhoods.ts
+fetchData: (bounds, signal) =>
+  fetchDedupedLocations(bounds, signal, {
+    type: 'neighborhood',
+    source,
+    markers
+  })
+```
+
+That routes the fetch through **`/api/overlay-locations`**, which re-fetches the
+same viewport server-side and keeps only locations the tenant's
+`public/<tenant>/locations.json` knows with a positive count:
+
+```ts
+locations.filter((location) => (countsMap.get(location.locationId) ?? 0) > 0)
+```
+
+The generated tree is built with `hideTrash`, so it holds every location that had
+listings at generation time and none with a zero count — it **is** the allowlist.
+`loadCountsMap` parses that file once per process and retains only the counts map,
+so the tree is garbage-collected and **counts never reach the client**.
+
+Surviving locations keep their real Repliers `locationId` and are not flagged
+`external`, so selection, filtering and popups behave exactly as with a direct
+fetch — only the empties disappear.
+
+<Callout type="warning">
+  The allowlist is only as fresh as the cache. A location that gained its first
+  listings **after** the last `pnpm generate:locations <tenant>` is absent from the
+  file and stays hidden until the next run. For a tenant with a
+  `searchArea.boundary`, locations outside that polygon are clipped out of the
+  cache too — and therefore out of the overlay.
+</Callout>
+
+## Parcels mode
+
+With `features.publicRecord` on, switching the `parcels` overlay on (`overlays/parcels.ts`,
+`publishData: true`) **is** the mode — there is no second control. The overlay publishes its
+parcels into `useMapLayers().layerData`, and `useParcelGroups` matches every listing on screen
+to a parcel (`groupListingsByParcel`, `useParcelListings/grouping.ts`):
+
+- **By geometry** — the listing's pin falls inside the parcel.
+- **By address rescue** — the pin missed (fell on the road), but the listing's street address
+  names a parcel within 150 m. A condo tower's stacked records collapse onto one footprint.
+
+What renders:
+
+| Parcel                                                                                             | Hover                                                                                                                                                    | Click                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Holds listings — painted in its listing's marker colour on its own GL source (`useParcelListings`) | Hovers the listing's price marker, so the marker's own hover card shows (`markerHover`); a marker or grid-card hover lights the parcel back (`parcelOf`) | Same as clicking the price marker: the listing browser on a wide screen, the listing drawer on touch                                                     |
+| No listings                                                                                        | `ParcelCard` — the street address                                                                                                                        | `ParcelDialog` — the lot on a `HomeMap` + the assessor facts (`ParcelProvider` with a `target`); arrows step through the viewport's listing-less parcels |
+
+On the PDP, `ParcelProvider` finds the parcel under the listing with the same matcher, and
+`ListingParcelLayer` / `ParcelFacts` draw it and its public record.
+
+## Gotchas & hints
+
+- **On touch, a tap previews and the tooltip commits.** Touch has no hover, so tapping an
+  overlay marker opens its tooltip; the selection itself is the tooltip's
+  `OverlayLocationButton` ("Show listings here" / "Remove this location"). The button renders
+  only on a tap-opened tooltip of a selectable overlay, so the same card stays read-only on the
+  PDP.
+- **A phone or tablet search map selects through markers only.** `OverlayLayersController`
+  passes every overlay through `toMarkerSelect` below `md`: a `selectable: 'polygon'` overlay
+  gets name markers at its polygons' centres (clustered like the neighborhoods), its polygons
+  show only on a marker preview, and it keeps no polygon hover or click — which a tap on any
+  marker above it used to trigger. Below `md` a name marker may wrap to a second line within
+  70% of the screen.
+- **A search polygon switches selectable overlays off.** `useOverlayPolygonGuard` turns off
+  every active overlay with `locationTypes` the moment a drawn or URL-loaded polygon appears,
+  so a marker selection can't silently replace the polygon. Clearing the polygon does not bring
+  them back.
+- **Mapbox serializes feature properties as JSON strings.** Properties read off a
+  clicked/queried GL feature come back stringified — booleans become `'true'`,
+  arrays/objects become JSON text. Parse non-scalars before use (see
+  `LiveBySchoolCard.tsx`'s `asBool`, and parse array/object props with `JSON.parse`).
+- **Polygons must stay GL.** Never try to move polygon geometry onto the DOM path —
+  only points/clusters are DOM markers.
+- **Overlays are gated by data + config presence.** Nothing renders if
+  `features.liveBy` is off (empty `overlayLayers`), if the layer isn't in
+  `activeLayers`, or if the fetch returns no matching features. Polygon existence is
+  checked at runtime via `map.getSource(...)`, never by the `polygon` config field.
+- **DOM markers survive `setStyle`; GL layers don't.** A map-style switch wipes GL
+  sources/layers (polygons are re-added by the re-sync), while DOM markers persist
+  and are recoloured in place to avoid flicker.
+- **Polygon tooltips hover via a `window` `mousemove`, not layer-scoped Mapbox
+  events.** Once the popup sits over the canvas it intercepts the canvas events,
+  so `map.on('mouseleave', layerId)` would fire and the popup would flicker.
+  `useOverlayLayers` listens on `window` and hit-tests with
+  `map.queryRenderedFeatures`, coalesced to **one test per animation frame** at
+  the latest pointer position — a high-rate mouse fires several events between
+  frames, and each hit test walks the layer's geometry.

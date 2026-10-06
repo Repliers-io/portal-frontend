@@ -1,59 +1,92 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Portal Monorepo .gitignore
 
-# DO NOT ignore next.lock files
-# https://nextjs.org/docs/app/api-reference/next-config-js/urlImports#lockfile
+# Dependencies
+node_modules/
+packages/*/node_modules/
+.pnpm-store
 
-# lock files
-yarn.lock
+# Build outputs
+packages/*/.next/
+packages/*/out/
+packages/*/build/
+packages/*/dist/
+.next/
+.pnpm-store/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
+# Pagefind search index (generated on build)
+packages/*/public/_pagefind/
 
-# testing
-/coverage
-/eslint
-/src/i18n/__parsed__
-test-result.json
+# Static docs assembled by `build:documentation`
+packages/portal-frontend/public/documentation/
 
-# next.js
-/.next/
-/out/
+# Runtime data
+packages/*/logs
+packages/*/*.log
+packages/*/npm-debug.log*
+packages/*/yarn-debug.log*
+packages/*/yarn-error.log*
 
-# production
-/build
+# TypeScript
+packages/*/*.tsbuildinfo
+packages/*/tsconfig.tsbuildinfo
 
-# misc
-.DS_Store
-*.pem
+# Generated pre-build artifacts (rewrites, redirects)
+packages/*/*.generated.json
+!packages/portal-frontend/redirects-buildings.generated.json
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
+# Environment variables
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# vercel
-.vercel
+# Testing
+packages/*/coverage/
+packages/*/.nyc_output
+packages/*/test-result.json
+coverage/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# IDE
+.vscode
+.vscode/mcp.json
+packages/*/.vscode
+.idea/
+*.swp
+*.swo
 
-# ide
-.idea
+# OS
+.DS_Store
+Thumbs.db
 
-#cli-tools and scripts
+# Lock files (keep package-lock.json in root)
+packages/*/package-lock.json
+packages/*/yarn.lock
+
+# Tools and scripts
 .tools
 certificates
 
 # Million Lint
 .million
 
+# Playwright local artifacts
+.playwright/
+.playwright-cli/
+.playwright-mcp/
+packages/*/playwright-report/
+packages/*/test-results/
+
+# Claude Code MCP (contains API tokens)
+.mcp.json
+
+# History
 .history/*
+
+.vercel
+.env*
+
+# Intermediate input/output of the search-boundary generator (scripts/fetch-gta-areas.ts)
+gta-areas.json
+gta-areas-merged.json

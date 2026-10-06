@@ -1,0 +1,33 @@
+# Testing
+
+**mocha + supertest + nock**, configured in `package.json` (`mocha` key):
+
+- specs live in `test/**/*.test.ts` (recursive), with shared hooks in
+  `test/hooks.ts`;
+- TypeScript runs through `@poppinss/ts-exec` (same as dev — decorator metadata);
+- `supertest` drives the Koa app over HTTP; `nock` intercepts upstream calls
+  (Repliers, FUB) so tests never hit real APIs;
+- `NODE_ENV=testing` + `DOT_ENV_CONFIG=test.env` isolate test configuration.
+
+## Commands
+
+```bash
+npm run test                 # full suite (expects the test database)
+npm run test:local           # same, DB on port 5555 (the local convention)
+npm run test:local:watch     # watch mode
+npm run test:local:watch:grep -- "<pattern>"   # one spec in watch mode
+npm run test:coverage        # c8 text report (test:coverage:html for HTML)
+npm run test:ci              # JUnit reporter → test-results/ (Bitbucket UI)
+```
+
+The test database is migrated with `npm run db:migrate:test` — see
+[Database & Services](/getting-started/database#test-database).
+
+## Practical notes
+
+- **Isolate failures with `--grep`.** On Windows especially, one failing spec can
+  cascade into a wall of unrelated errors (a pino transport crash follows the first
+  failure) — re-run the single spec before believing the noise.
+- CI runs the suite against a fresh `postgres:16-alpine` service container on every
+  PR — see [CI/CD](/operations/ci-cd).
+- Coverage is advisory (`c8`), not a gate.

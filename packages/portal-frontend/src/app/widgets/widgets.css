@@ -1,0 +1,9 @@
+/* Remove default margins and set transparent background for iframe embedding */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  /* Embedded widgets never scroll — the host page sizes the iframe */
+  overflow: hidden;
+}

@@ -1,0 +1,243 @@
+# Integrations
+
+Portal integrates with various external services for data, maps, authentication, and analytics.
+
+## Integration Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         PORTAL                               │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+    ┌───────────────────────┼───────────────────────┐
+    │                       │                       │
+    ▼                       ▼                       ▼
+┌─────────┐           ┌─────────┐           ┌─────────┐
+│  DATA   │           │  MAPS   │           │  AUTH   │
+├─────────┤           ├─────────┤           ├─────────┤
+│Repliers │           │ Mapbox  │           │ Google  │
+│WordPress│           │ Google  │           │Facebook │
+│Ghost/MD │           │         │           │Email OTP│
+└─────────┘           └─────────┘           └─────────┘
+    │                       │                       │
+    ▼                       ▼                       ▼
+┌─────────┐           ┌─────────┐           ┌─────────┐
+│   CRM   │           │ANALYTICS│           │ OTHER   │
+├─────────┤           ├─────────┤           ├─────────┤
+│Follow Up│           │ Google  │           │ Email   │
+│  Boss   │           │Analytics│           │ SMS     │
+│         │           │  GTM    │           │         │
+└─────────┘           └─────────┘           └─────────┘
+```
+
+## Data Integrations
+
+### Repliers API
+
+The primary data source powering Portal. The frontend never calls Repliers directly — it talks to a proxy backend at `NEXT_PUBLIC_API_URL` (default `http://localhost:8080`, with an `/api` prefix), which forwards requests to Repliers. The endpoints below are reached through that proxy.
+
+| Endpoint         | Purpose                        |
+| ---------------- | ------------------------------ |
+| `/api/listings`  | Property search and details    |
+| `/api/locations` | Geography data (cities, areas) |
+| `/api/estimate`  | AVM property valuations        |
+| `/api/users`     | Authentication and profiles    |
+| `/api/favorites` | Saved properties               |
+| `/api/searches`  | Saved search queries           |
+
+### MLS Data
+
+Property data flows from MLS to Portal:
+
+```
+MLS (NWMLS, TRREB, etc.)
+        │
+        ▼
+┌───────────────┐
+│  Repliers     │  ← Normalizes data
+│  Data Layer   │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│  Repliers     │  ← Serves to Portal
+│  API          │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│   PORTAL      │
+└───────────────┘
+```
+
+### Content Management
+
+Portal supports multiple content sources via three CMS clients, with per-route resolution configured in `@configs/cms`:
+
+| Source    | Use Case                       |
+| --------- | ------------------------------ |
+| WordPress | Blog, dynamic pages            |
+| Ghost     | Blog, dynamic pages            |
+| Markdown  | CMS-served Markdown content    |
+| Local MDX | Static pages, forms (fallback) |
+
+> **Full documentation:** [Content Management Guide](/product-guide/content-management)
+
+## Map & Location
+
+### Mapbox GL
+
+Primary map provider for interactive maps.
+
+| Feature    | Usage                  |
+| ---------- | ---------------------- |
+| Map Tiles  | Base map rendering     |
+| Markers    | Property locations     |
+| Clusters   | Grouped markers        |
+| Geocoding  | Address to coordinates |
+| Draw Tools | Polygon search areas   |
+
+**Environment Variables:**
+
+```
+NEXT_PUBLIC_MAPBOX_KEY=pk.xxx
+```
+
+### Google Maps Services
+
+| Service     | Purpose               |
+| ----------- | --------------------- |
+| Street View | Property street views |
+| Places API  | Address autocomplete  |
+| Geocoding   | Fallback geocoding    |
+
+**Environment Variables:**
+
+```
+NEXT_PUBLIC_GMAPS_KEY=AIzaXxx
+```
+
+## Authentication
+
+### Supported Methods
+
+Authentication is a server/proxy redirect flow: the backend returns an `AuthResponse.url` that the client redirects to. The `AuthProvider` values are `google`, `facebook`, and `otp`.
+
+| Method                        | Provider   |
+| ----------------------------- | ---------- |
+| Email OTP (one-time passcode) | `otp`      |
+| Google OAuth                  | `google`   |
+| Facebook OAuth                | `facebook` |
+
+### Auth Flow
+
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│  User    │     │  Portal  │     │  Proxy   │
+│  Action  │────▶│  Auth    │────▶│ Backend  │
+└──────────┘     └──────────┘     └──────────┘
+                      │
+      ┌───────────────┼───────────────┐
+      │               │               │
+      ▼               ▼               ▼
+┌──────────┐   ┌──────────┐   ┌──────────┐
+│  Email   │   │  Google  │   │ Facebook │
+│   OTP    │   │  OAuth   │   │  OAuth   │
+└──────────┘   └──────────┘   └──────────┘
+```
+
+## CRM Integration
+
+### Follow Up Boss
+
+Lead management system integration for real estate teams.
+
+| Event            | Action                    |
+| ---------------- | ------------------------- |
+| Contact Form     | Create/update lead        |
+| Estimate Request | Create lead with property |
+| Showing Request  | Create lead with listing  |
+
+### Lead Data Flow
+
+```
+User submits form
+        │
+        ▼
+┌───────────────┐
+│  Portal API   │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│  Follow Up    │
+│    Boss       │
+└───────┬───────┘
+        │
+        ▼
+Agent receives lead notification
+```
+
+## Analytics & Tracking
+
+### Google Analytics 4
+
+| Event             | When Tracked       |
+| ----------------- | ------------------ |
+| `page_view`       | Page loads         |
+| `search`          | Search performed   |
+| `view_item`       | Property viewed    |
+| `add_to_wishlist` | Saved to favorites |
+| `generate_lead`   | Form submitted     |
+
+### Google Tag Manager
+
+Central tag management for:
+
+- Google Analytics
+- Facebook Pixel
+- Conversion tracking
+- Custom events
+
+**Environment Variables:**
+
+```
+NEXT_PUBLIC_GTM_KEY=GTM-XXXX
+```
+
+### Facebook Pixel
+
+Retargeting and conversion tracking:
+
+| Event       | Purpose          |
+| ----------- | ---------------- |
+| PageView    | General tracking |
+| ViewContent | Property views   |
+| Lead        | Form submissions |
+| Search      | Search activity  |
+
+## Email Services
+
+### Transactional Emails
+
+| Email Type         | Trigger               |
+| ------------------ | --------------------- |
+| Welcome            | New user registration |
+| Password Reset     | Reset request         |
+| Saved Search Alert | New matching listings |
+| Favorite Update    | Price change on saved |
+
+## Environment Variables Summary
+
+```bash
+# API — proxy backend that forwards to Repliers (never called directly)
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Maps
+NEXT_PUBLIC_MAPBOX_KEY=pk.xxx
+NEXT_PUBLIC_GMAPS_KEY=AIzaXxx
+
+# Analytics
+NEXT_PUBLIC_GTM_KEY=GTM-XXXX
+NEXT_PUBLIC_GTAG_KEY=G-XXXX
+```

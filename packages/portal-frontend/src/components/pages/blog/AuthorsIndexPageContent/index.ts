@@ -1,0 +1,1 @@
+export { AuthorsIndexPageContent } from './AuthorsIndexPageContent'

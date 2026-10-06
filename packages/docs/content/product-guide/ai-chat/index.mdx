@@ -1,0 +1,30 @@
+import { Callout } from 'nextra/components'
+
+# AI Chat
+
+A built-in conversational search: type a property request in plain language and the portal's
+AI turns it into MLS filters and results. It is a **first-party feature powered by
+Repliers-side NLP** — it works out of the box (the `aiChat` flag), with no external
+integration required.
+
+<Callout type="info">
+  Don't confuse this with the [AI Agent Integration](/product-guide/ai-agent) —
+  that is a **third-party** external AI connected over a message protocol. AI
+  Chat is the portal's own, Repliers-powered chat. See [How it
+  works](/product-guide/ai-chat/technical) for the flow.
+</Callout>
+
+![AI Chat — a natural-language query ("homes over 1 million in Austin with a pool") is answered with matching listings shown as a carousel of cards](/img/ai-chat.webp)
+
+## What it does
+
+- **Understands natural language** — e.g. "3 bedroom homes under 500k in Austin".
+- **Replies with a summary + an `Apply Filters` action** that runs the search and frames the
+  map on the results.
+- **Keeps the conversation** — a token lets follow-up messages refine the previous query.
+- **Lives in the search experience** — the `chat` layout (`/search/chat`), alongside the map.
+
+## Configuration
+
+Gated by the **`aiChat`** feature flag. The natural-language parsing runs **server-side**
+through the proxy backend (Repliers) — never in the browser.

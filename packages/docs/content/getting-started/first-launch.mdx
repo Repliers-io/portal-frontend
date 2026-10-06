@@ -1,0 +1,156 @@
+import { Callout, Steps } from 'nextra/components'
+
+# First Launch
+
+**Track A.** Get the frontend running locally, understand how a tenant is selected, and
+connect it to data.
+
+## Prerequisites
+
+Node.js 22+ (the frontend pins `engines.node` to 24.x), pnpm 10+, and Git. See the
+[Overview](/getting-started) for the full list.
+
+## Run it
+
+<Steps>
+
+### Clone and install
+
+```bash
+git clone https://bitbucket.org/repliers-client-work/smartmls-frontend.git
+cd smartmls-frontend
+pnpm install
+```
+
+The monorepo lives in a single repository; the checked-out folder is the same one referenced
+throughout these docs.
+
+### Start the default build
+
+```bash
+# from the repo root
+pnpm frontend:dev
+```
+
+This runs the frontend `dev` script, which first runs `prebuild` (see
+[What prebuild does](#what-prebuild-does)) and then `next dev`. It uses the local
+`.env` file (gitignored), whose tenant is `defaults`.
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Or start a specific tenant
+
+```bash
+pnpm frontend:dev:<tenant>
+# …one script per tenant
+```
+
+Each tenant script is `env-cmd -f .env.<tenant> pnpm run dev` — it loads that tenant's
+`.env.<tenant>` file, which sets `NEXT_PUBLIC_APP_CONFIGURATION=<tenant>` and the tenant's
+keys.
+
+</Steps>
+
+## The proxy backend
+
+The frontend is a **client of a proxy backend**, never of the Repliers MLS API directly.
+All listing, search, location, favorite, and estimate calls go to `NEXT_PUBLIC_API_URL`,
+which the proxy forwards to Repliers.
+
+<Callout type="warning">
+  Every tenant `.env.*` sets `NEXT_PUBLIC_API_URL=http://localhost:8080` (env
+  files are gitignored, provisioned locally). With no backend on port 8080, the
+  app renders but search and listings stay empty or error. To see data you must
+  either run a proxy backend locally on `:8080`, or set `NEXT_PUBLIC_API_URL` to
+  a hosted proxy you have access to.
+</Callout>
+
+```bash
+# point the app at a hosted proxy instead of localhost:8080
+NEXT_PUBLIC_API_URL=https://<your-proxy-host> pnpm frontend:dev
+```
+
+Some `.env` files keep a hosted proxy URL commented out for reference. Env files are
+**gitignored and provisioned locally** per developer — some `.env.<tenant>` files may be
+absent, so their `dev:*` scripts only work once you add the env file. Note a tenant's
+run-script/env name can differ from its config folder name and `NEXT_PUBLIC_APP_CONFIGURATION`
+value.
+
+## What prebuild does
+
+`pnpm frontend:dev` (and every build) runs `prebuild` first:
+
+| Step                     | Script                              | Purpose                                                                                                                                                                                          |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `generate:tsconfig`      | `scripts/generate-tsconfig.js`      | Regenerates `tsconfig.json` path aliases for the **active tenant** (`@configs/*` → `configs/<tenant>/*` first, then `configs/defaults/*`).                                                       |
+| `generate:features`      | `scripts/fetch-features.ts`         | Syncs the active tenant's `configs/<tenant>/features.ts` from GrowthBook (best-effort — skipped offline). See [Capabilities & Flags](/getting-started/capabilities-and-flags#how-flags-are-set). |
+| `generate:rewrites`      | `scripts/generate-rewrites.ts`      | Builds the generated rewrite/redirect maps.                                                                                                                                                      |
+| `generate:deployment-id` | `scripts/generate-deployment-id.js` | Stamps a build id.                                                                                                                                                                               |
+
+<Callout type="info">
+  Because `tsconfig.json` is regenerated per tenant at prebuild, **switching
+  tenants means restarting the dev server**. If a tenant override does not seem
+  to apply, restart and, if needed, clear the cache with `pnpm frontend:clean`.
+</Callout>
+
+## Environment variables
+
+Values live in `.env` (defaults) and `.env.<tenant>` (per tenant). Only the names are shown
+here — never copy secret values into docs or commits.
+
+**Required**
+
+| Variable                        | Purpose                                                        |
+| ------------------------------- | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_CONFIGURATION` | Active tenant; must match the `configs/<tenant>/` folder name. |
+| `NEXT_PUBLIC_API_URL`           | Proxy backend base URL.                                        |
+| `NEXT_PUBLIC_MAPBOX_KEY`        | Mapbox GL token (map rendering).                               |
+| `NEXT_PUBLIC_GMAPS_KEY`         | Google Maps key (autocomplete, geocoding).                     |
+
+**Common optional**
+
+| Variable                                                                | Purpose                                                                               |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_GTAG_KEY`                                                  | Google Analytics / gtag id.                                                           |
+| `NEXT_PUBLIC_GROWTHBOOK_*`                                              | Build-time feature-flag sync (`INIT`, `API_HOST`, `CLIENT_KEY`). Not read at runtime. |
+| `GOOGLE_PLACES_API_KEY`                                                 | Server-side Places lookups (never exposed to the client).                             |
+| `CMS_PAGES_CLIENT`, `CMS_BLOG_CLIENT`, `WORDPRESS_API_*`, `GHOST_API_*` | CMS wiring for tenants that use blog/pages.                                           |
+| `DISABLE_SSG`, `FORCE_HTTP`                                             | Local dev toggles.                                                                    |
+
+See [Regional & MLS Limits](/getting-started/regional-and-mls-limits) for the tenant-specific
+integration variables (neighborhood/enrichment data, boundary data, AI agent iframe, …).
+
+## Verify
+
+- [ ] Page loads at `http://localhost:3000`.
+- [ ] Header logo and brand colors match the tenant.
+- [ ] The map renders tiles (if not, check `NEXT_PUBLIC_MAPBOX_KEY`).
+- [ ] Search returns results (if empty, check `NEXT_PUBLIC_API_URL` and that the proxy is up).
+
+## Troubleshooting
+
+| Symptom                               | Likely cause & fix                                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Map area is blank/grey                | Missing/invalid `NEXT_PUBLIC_MAPBOX_KEY`.                                                                               |
+| No search results                     | Proxy backend not reachable at `NEXT_PUBLIC_API_URL`, or wrong board for the tenant.                                    |
+| Tenant override not applied           | `tsconfig.json` is generated at prebuild — restart the dev server; run `pnpm frontend:clean` to drop the `.next` cache. |
+| `env-cmd` cannot find `.env.<tenant>` | That tenant's env file is missing locally (env files are gitignored) — create it from another tenant's file.            |
+| Type errors                           | `pnpm frontend:type-check`.                                                                                             |
+
+## Command reference
+
+| Command                                                | Description                                             |
+| ------------------------------------------------------ | ------------------------------------------------------- |
+| `pnpm frontend:dev`                                    | Dev server, default (`defaults`) tenant.                |
+| `pnpm frontend:dev:<tenant>`                           | Dev server for a specific tenant.                       |
+| `pnpm frontend:build` / `pnpm frontend:build:<tenant>` | Production build.                                       |
+| `pnpm frontend:start`                                  | Serve a production build.                               |
+| `pnpm frontend:type-check`                             | TypeScript check.                                       |
+| `pnpm frontend:eslint` / `:fix`                        | Lint / autofix.                                         |
+| `pnpm frontend:test`                                   | Unit tests.                                             |
+| `pnpm generate:locations <tenant>`                     | Regenerate a tenant's `public/<tenant>/locations.json`. |
+
+## Next
+
+Head to [Configuration](/getting-started/configuration) to learn which config files to
+change, and how the override system resolves them.

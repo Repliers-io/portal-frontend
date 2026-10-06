@@ -1,0 +1,72 @@
+# Configuration Model
+
+Configuration has **two layers** with different rules. Understanding the split is the
+single most important thing about operating the backend.
+
+## Layer 1 — environment variables → `AppConfig`
+
+`src/config.ts` loads dotenv (from the file named by `DOT_ENV_CONFIG`, falling back
+to `.env`) and builds the `AppConfig` object. Rules:
+
+- **Every `AppConfig` value has a backing env var with a sensible default** — the app
+  always starts, even with an empty `.env`.
+- Complex values are `JSON.parse`d from JSON-string env vars (e.g.
+  `SETTINGS_FEATURED_LISTINGS`).
+- Secrets (API keys, DB credentials, JWT key paths) live **only** here — env files are
+  excluded from the repository and from the OSS export.
+
+The full list: [Environment Variables](/getting-started/environment-variables).
+
+## Layer 2 — settings presets
+
+`src/settings/` holds per-deployment presets:
+
+```
+src/settings/
+├── defaults.ts      # the preset used out of the box (sample data, board 110)
+├── index.ts         # preset registry
+└── instances/       # one file per deployment/market (excluded from the OSS export)
+```
+
+A preset is a `DeepPartial<AppConfig>` — it overrides only what differs:
+
+```ts
+// src/settings/defaults.ts (excerpt)
+export default {
+   app: { disable_persistence: true },
+   settings: {
+      scrubbing: { ref_board_id: 9997, board_ids: [110] },
+      defaults: { boardId: [110], locations_boardId: 110 },
+   },
+} as DeepPartial<AppConfig>;
+```
+
+The active preset is selected by `APP_SETTINGS_PRESET` (`env.example` sets
+`defaults`), merged over the config at startup, and is **immutable at runtime** —
+there is no per-request or runtime board switching. Restart to change settings.
+When the variable is unset, no preset is applied at all: the app runs on env-var
+defaults only and logs a `[SETTINGS] No preset specified` warning
+(`src/lib/settings.ts`).
+
+## Which layer does a value belong to?
+
+| Question | Layer |
+|---|---|
+| Is it a secret, or does it vary between dev/staging/prod of the *same* instance? | env var |
+| Does it define what the instance *is* (boards, scrubbing rules, feature toggles)? | settings preset |
+
+Presets cannot be overridden by env vars — this is deliberate, so an instance behaves
+identically in every environment.
+
+## Per-instance development
+
+Each instance pairs an env file with a preset:
+
+```bash
+npm run dev:<instance>
+# = DOT_ENV_CONFIG=.env.<instance> npm run dev
+# .env.<instance> selects the matching preset via APP_SETTINGS_PRESET
+```
+
+See [Instances](/operations/instances) for the full mechanism and the onboarding
+checklist.

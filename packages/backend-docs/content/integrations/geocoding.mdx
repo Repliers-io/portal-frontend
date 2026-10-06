@@ -1,0 +1,27 @@
+# Geocoding
+
+Address autosuggest needs a geocoder; listings themselves arrive geocoded from
+Repliers. The provider is selected by `REPLIERS_AUTOSUGGEST_PROVIDER`:
+
+## Mapbox (default)
+
+`services/mapbox.ts`, using the Search Box API (`MAPBOX_BASEURL`, default
+`https://api.mapbox.com/search/searchbox/v1`; token `MAPBOX_ACCESS_TOKEN`).
+
+Tuning lives in the settings preset (`mapbox.autosuggest`): `country`, `language`,
+`limit`, `region_code` (region filtering; off by default), `max_distance`, and a
+`jaro_winkler_distance` similarity threshold for result filtering — an example of a
+setting that exists **only** in presets, with no env var.
+
+## Google Maps (alternative)
+
+`services/google.ts` — `GOOGLE_MAPS_API_KEY`, `GOOGLE_MAPS_BASE_URL`,
+`GOOGLE_MAPS_TIMEOUT_MS`.
+
+## Proximity bias
+
+Both providers bias suggestions toward the instance's market:
+`PROXIMITY_SEARCH_LAT` / `PROXIMITY_SEARCH_LONG` / `PROXIMITY_SEARCH_RADIUS_METERS`
+(preset: `repliers.autosuggest.{lat,long,radius}`). The default preset centers on
+the middle of the US with an effectively unlimited radius; a real instance narrows
+this to its market.

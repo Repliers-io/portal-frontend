@@ -1,0 +1,311 @@
+# Multi-tenant System
+
+Portal uses a build-time multi-tenant architecture where a single codebase serves multiple branded client websites.
+
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+  Looking to add a new tenant? See the step-by-step [Adding a New
+  Tenant](/tutorials/adding-tenant) tutorial.
+</Callout>
+
+## How It Works
+
+The active tenant is determined by the `NEXT_PUBLIC_APP_CONFIGURATION` environment variable at build time.
+
+```bash
+# Run with specific tenant
+NEXT_PUBLIC_APP_CONFIGURATION=<tenant> pnpm frontend:dev
+
+# Or use predefined scripts
+pnpm frontend:dev:<tenant>
+```
+
+## Override Pattern
+
+### Configs Override
+
+Tenant-specific configurations override defaults:
+
+```
+/src/configs/
+│
+├── defaults/                    ← BASE CONFIG (fallback)
+│   ├── api.ts
+│   ├── location.ts
+│   ├── colors.ts
+│   ├── menu.ts
+│   ├── filters.ts
+│   └── theme/
+│       ├── components.ts
+│       ├── typography.ts
+│       └── palette.ts
+│
+├── <tenant>/                    ← TENANT OVERRIDE
+│   ├── location.ts                  Only files that differ
+│   ├── colors.ts
+│   └── theme/
+│       └── components.ts
+│
+├── <another-tenant>/
+└── ...
+```
+
+### Resolution Logic
+
+```typescript
+// tsconfig.json (generated dynamically)
+{
+  "paths": {
+    "@configs/*": [
+      "src/configs/<tenant>/*",    // ← First, look here
+      "src/configs/defaults/*"     // ← Then, fallback here
+    ]
+  }
+}
+
+// In code, simply import:
+import colors from '@configs/colors'
+
+// Webpack/TypeScript automatically resolves:
+// 1. Does src/configs/<tenant>/colors.ts exist? → Use it
+// 2. No? → Use src/configs/defaults/colors.ts
+```
+
+### Components Override
+
+Components can also be overridden per tenant:
+
+```
+/src/components/pages/home/
+│
+├── HomePageContent.tsx           ← Default
+├── _<tenant>/
+│   └── HomePageContent.tsx       ← tenant override
+└── components/
+    └── ...
+```
+
+The underscore prefix (`_<tenant>/`) indicates a tenant-specific folder.
+
+A `_<tenant>/` folder is strictly an **override** zone: it may only hold counterparts
+of default modules that the resolver swaps in. Tenant-only components that override
+nothing live under `content/<tenant>/`, owned as locally as their consumers allow:
+a component used by a single content page lives in that page's own
+`content/<tenant>/<page>/components/`; only components consumed by several pages or
+by fork subtrees live in the shared `content/<tenant>/components/`, imported through
+its barrel (`content/<tenant>/components`) from forks, or relatively from the
+tenant's MDX content. A folder there must bear the name of the component it exports.
+Import specifiers must never contain a `_<tenant>` segment —
+enforced by an ESLint `no-restricted-imports` pattern and `scripts/check-fork-imports.js`
+(which also covers `.mdx`, where ESLint does not look).
+
+### Normalized (Turbopack) deploys
+
+On remote build machines, setting `NORMALIZED_BUILD=true` switches the build to a
+"normalized" mode: `scripts/normalize-build.js` physically overlays the current
+tenant's `_<tenant>/` forks onto the default tree (merging directories file-by-file
+and rewriting the moved files' relative imports), deletes every other tenant's
+`_<instance>/` fork folders and `content/<instance>/` directories (nothing may
+reference them — see the import rules above), and strips the webpack
+`OverridePlugin` block from `next.config.js`; the build then runs on Turbopack
+(`next build` without `--webpack`). After a successful build the dispatcher prunes
+`.next/server/**/*.map` (Turbopack emits a sourcemap per server chunk with no off
+switch) and `.next/cache` (Turbopack's persistent cache, which would ship in the
+Heroku slug; normalized builds start cold, so it is never reused anyway) — together
+roughly 400MB of deploy weight that webpack builds never shipped. Without the flag the
+build is the legacy webpack one, byte-identical to before this mechanism existed.
+The step is destructive for the checkout and is meant for ephemeral build trees
+only (Heroku slug builds, Vercel build containers, throwaway git worktrees).
+
+### Icons Override
+
+All UI icons are imported from a single registry, `@configs/icons` — never from
+`@mui/icons-material` or `@icons/*` directly (enforced by ESLint). Every icon is
+exported with an `Icon` suffix (`CloseIcon`, `HeartIcon`, …); when a MUI icon and an
+in-house one share a base name, the collision is resolved with a usage-context prefix
+(e.g. `CloseIcon` vs `CloseThinIcon`).
+
+There are **two** ways to give a tenant a different icon — pick by _what_ you are changing:
+
+**1. Component choice → tenant config (preferred, visible).**
+To point a slot at a different icon _component_ (another MUI icon, or swap MUI ↔ in-house),
+override it in `configs/[tenant]/icons.ts`:
+
+```ts
+// configs/<tenant>/icons.ts
+export * from '@defaults/icons'
+export { default as PrevIcon } from '@mui/icons-material/ArrowBackIosNew'
+```
+
+The explicit export shadows the one from `export *`. This is the **only** way to override
+a slot whose default comes from MUI (the path alias cannot intercept `@mui/...`), and the
+**preferred** way for any component swap — the change is auditable in one place.
+
+**2. Custom artwork → file in the icons folder.**
+To ship a tenant's own hand-drawn glyph for a slot the default sources from `@icons/*`, add a
+same-named file under `assets/icons/[tenant]/` — no config needed; the `@icons/*` alias
+resolves tenant-first:
+
+```
+src/assets/icons/
+├── defaults/UserIcon.tsx        ← default glyph
+└── <tenant>/UserIcon.tsx        ← tenant's own drawing
+```
+
+> **Do not use this folder for a re-export** (e.g. `export default ArrowBackIosNewIcon`). A file
+> that merely re-exports another icon is a _component choice_ disguised as an asset — it **hides the
+> swap** outside the config and is **discouraged**. Re-exports belong in the tenant config (option 1);
+> reserve `assets/icons/[tenant]/` for real, hand-drawn SVG artwork.
+
+**Combining both — tenant artwork on a MUI-sourced slot.** Drop the drawing in
+`assets/icons/[tenant]/`, then point the slot at it from `configs/[tenant]/icons.ts` by its
+**concrete path**, not the `@icons/*` alias — that config file is type-checked under every
+tenant build, and the alias would resolve to the _active_ tenant's folder, where the artwork
+does not exist:
+
+```ts
+export { default as OpenInNewIcon } from 'assets/icons/<tenant>/ExternalLinkIcon'
+```
+
+**Resolution precedence:** explicit `configs/[tenant]/icons.ts` override → `assets/icons/[tenant]/[Name]Icon.tsx` (alias) → default.
+
+## Path Aliases
+
+| Alias         | Resolves To                                                   |
+| ------------- | ------------------------------------------------------------- |
+| `@configs/*`  | `src/configs/[tenant]/*` → `src/configs/defaults/*`           |
+| `@content/*`  | `src/content/[tenant]/*` → `src/content/defaults/*`           |
+| `@icons/*`    | `src/assets/icons/[tenant]/*` → `src/assets/icons/defaults/*` |
+| `@defaults/*` | `src/configs/defaults/*` (always defaults)                    |
+
+## Current Tenants
+
+| Tenant ID    | Client   | Region           | MLS      |
+| ------------ | -------- | ---------------- | -------- |
+| `<tenant-a>` | Tenant A | Seattle, WA      | NWMLS    |
+| `<tenant-b>` | Tenant B | Toronto, ON      | TRREB    |
+| `<tenant-c>` | Tenant C | US (multi-state) | —        |
+| `<tenant-d>` | Tenant D | Calgary, AB      | —        |
+| `<tenant-e>` | Tenant E | Boston, MA       | MLS PIN  |
+| `<tenant-f>` | Tenant F | Connecticut      | SmartMLS |
+
+## What Can Be Customized
+
+### Visual Branding
+
+| Config | Location                    | Description                        |
+| ------ | --------------------------- | ---------------------------------- |
+| Colors | `@configs/colors`           | Primary, secondary, marker colors  |
+| Logo   | `@configs/content`          | `siteLogo` and other brand assets  |
+| Fonts  | `@configs/theme/typography` | Typography settings                |
+| Theme  | `@configs/theme/*`          | MUI palette / components overrides |
+
+### Content
+
+| Config       | Location                    | Description                                    |
+| ------------ | --------------------------- | ---------------------------------------------- |
+| Translations | `src/i18n/<tenant>/en.json` | UI strings — see [i18n](/technical-guide/i18n) |
+| Legal Pages  | `@content/legal`            | Terms, privacy policy                          |
+| Footer Links | `@configs/footer`           | Navigation links                               |
+
+### Features
+
+| Config          | Location            | Description             |
+| --------------- | ------------------- | ----------------------- |
+| Feature Flags   | `@configs/features` | Enable/disable features |
+| Navigation      | `@configs/menu`     | Menu structure          |
+| Search Defaults | `@configs/search`   | Board routing, paging   |
+
+### Data & Geography
+
+| Config       | Location            | Description                           |
+| ------------ | ------------------- | ------------------------------------- |
+| MLS Boards   | `@configs/search`   | `defaultBoardId` / `distinctBoardIds` |
+| Regions      | `@configs/location` | Home region, areas, cities            |
+| Map Settings | `@configs/map`      | Center, zoom, search area             |
+
+## Feature Flags vs Domain Config
+
+`@configs/features` is **not** a catch-all for tenant-tunable values. It answers exactly one question:
+
+> **Does this tenant get capability X at all?** — where X is a whole user-facing capability: a page/route, a provider/subsystem, or an external integration.
+
+Everything that _presupposes the capability exists_ and only tunes it — how it looks, where elements sit, which variant or value it uses — is **configuration** and belongs in that capability's domain config (`@configs/search`, `@configs/map`, `@configs/listings`, …).
+
+> Mnemonic: **features are the on/off switch for a capability; domain config holds the dials for how it behaves.** Features say _whether_; configs say _how / where / which / what_.
+
+### The four tests
+
+Apply in order; the type test is a hard gate.
+
+1. **Type test (fast filter).** A non-boolean value (enum / string / number) is **always config** — a capability is binary by nature. (`searchPosition`, `addressMapProvider`, `aiAgentHeadlessIframeId` fail here immediately.)
+2. **Removal test.** With the flag off, does an _entire_ route / page / provider / integration disappear? → **feature**. Does the same page just render differently (a block missing, a different position)? → **config**.
+3. **Owner / granularity test.** Does it gate a top-level subsystem the whole app knows about, or an internal detail of one page/component? A single reading domain → that domain's config.
+4. **Governance test.** Is it something **product/ops** would flip to scope a client's package or A/B-test a rollout (→ **feature**), or a fixed per-tenant **engineering/design** decision (→ **config**)?
+
+**Decision:** it is a feature only if it is boolean **and** removal drops a capability **and** it is top-level **and** product governs it. Otherwise it is config, placed in a **cohesive domain** config. The tests usually agree; when they split, the case is genuinely borderline — default to leaving it where it is (lowest churn).
+
+### Worked examples
+
+| Flag                                               | Type       | Removal                | Owner        | Governance     | Verdict                          |
+| -------------------------------------------------- | ---------- | ---------------------- | ------------ | -------------- | -------------------------------- |
+| `favorites`, `blog`, `estimate`, `map`             | bool       | removes route/provider | whole app    | product        | **feature**                      |
+| `aiAgent`                                          | bool       | removes integration    | top-level    | product        | **feature**                      |
+| `searchPosition`, `rootPage`, `addressMapProvider` | **enum**   | page remains           | one domain   | design         | **config**                       |
+| `aiAgentHeadlessIframeId`                          | **string** | —                      | aiAgent      | —              | **config**                       |
+| `pdpSidebar` … `pdpSlideshow`                      | bool       | block gone, page stays | listing page | design         | **config** (`@configs/listings`) |
+| `blurRestrictedProperty`                           | bool       | page stays             | cards + map  | content policy | **borderline**                   |
+
+### Two correctives
+
+- **Boolean ≠ feature.** Don't let boolean-ness fool you: the `pdp*` flags are boolean yet they are config. The type test only _demotes_ non-booleans to config; it never _promotes_ a boolean to a feature.
+- **One feature often yields both.** Separate the existence gate (feature: `aiAgent`) from its parameters (config: `aiAgentHeadlessIframeId`). `@configs/features` is never a dumping ground for homeless config — if a value has no domain home, find or create a **domain** config for it, not a category bucket like `ui`.
+
+## Adding a New Tenant
+
+For a complete step-by-step tutorial, see [Adding a New Tenant](/tutorials/adding-tenant).
+
+**Quick summary:**
+
+1. Create config directory: `mkdir -p src/configs/newtenant/theme`
+2. Add configs: `colors.ts`, `content.ts`, `location.ts`, `search.ts`, `theme/palette.ts`
+3. Create `.env.newtenant` with `NEXT_PUBLIC_APP_CONFIGURATION=newtenant`
+4. Add assets to `public/newtenant/` and scripts
+5. Run: `pnpm frontend:dev:newtenant`
+
+## Adding a Component Override
+
+### Step 1: Create Override File
+
+```
+src/components/pages/home/
+├── HomePageContent.tsx           ← Existing default
+└── _newtenant/
+    └── HomePageContent.tsx       ← Your override
+```
+
+### Step 2: Implement Component
+
+```tsx
+// src/components/pages/home/_newtenant/HomePageContent.tsx
+
+export const HomePageContent = () => {
+  return <div>{/* newtenant-specific implementation */}</div>
+}
+```
+
+### Step 3: Export from Index
+
+```typescript
+// src/components/pages/home/_newtenant/index.ts
+export { HomePageContent } from './HomePageContent'
+```
+
+## Best Practices
+
+1. **Minimize Overrides** - Only create tenant files when they differ from defaults
+2. **Use Defaults** - Keep shared logic in `defaults/`
+3. **Document Changes** - Comment why a tenant needs custom config
+4. **Test All Tenants** - Changes to defaults affect all tenants
+5. **Keep Overrides Small** - Large overrides indicate missing abstraction

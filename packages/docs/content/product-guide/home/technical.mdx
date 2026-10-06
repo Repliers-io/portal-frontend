@@ -1,0 +1,46 @@
+# Home Page — How it works
+
+> Technical anatomy of the landing page. Overview: [Home Page](/product-guide/home).
+
+## Routes & entry
+
+| Route             | Page root                     |
+| ----------------- | ----------------------------- |
+| `/` (and `/root`) | `@pages/home/HomePageContent` |
+
+When `@configs/routes` `rootPage` is `'estimate'`, a generated rewrite sends `/` to
+`/estimate` at the routing layer — the home component itself doesn't branch.
+
+## Providers
+
+None scoped — the home page renders inside the global provider tree only. See
+[State Management](/technical-guide/state-management).
+
+## Component tree
+
+```
+HomePageContent
+├─ HomePageBanner        welcome title + subtitle (i18n)
+├─ FeaturedListings      featured/curated listings
+└─ StatsWidgets          @shared/Stats — only when features.dashboard is on;
+                         seeded with @configs/location defaultFilters + city
+```
+
+## Configuration
+
+| Config              | Drives                                                 |
+| ------------------- | ------------------------------------------------------ |
+| `@configs/location` | `city` and `defaultFilters` feeding the stats widgets. |
+| `@configs/features` | `dashboard` gate for the stats block.                  |
+| `@configs/routes`   | `rootPage` — `landing` vs `estimate` at `/`.           |
+| i18n (`HomePage`)   | Banner headline/subtitle.                              |
+
+## Gotchas & hints
+
+- **The home page is the main component-override point.** A tenant assembles its own home by
+  shipping `components/pages/home/_<tenant>/HomePageContent.tsx` — the default (banner +
+  featured + stats) is just the baseline; tenant forks add heroes, CTAs, testimonials, etc.
+- **Stats are dashboard-gated.** `StatsWidgets` render only when `features.dashboard` is on;
+  otherwise the home page is banner + featured listings.
+- **`rootPage` can replace the landing page** with the estimate flow — check it before
+  assuming `/` shows this content.

@@ -1,0 +1,77 @@
+import { Callout } from 'nextra/components'
+
+# Data Models
+
+The core types live in `src/services/API/types/` and `@configs/filters`. There are two layers:
+the **user-facing search model** (`Filters`) and the **raw API wire types** (`ApiQueryParams`,
+`ApiListing`). `Filters` is transformed into `ApiQueryParams` before a request (see
+[API Services](/technical-guide/api-services)).
+
+## `Filters` — the search model
+
+`src/services/Search/types.ts`. What the UI holds and mutates:
+
+| Field(s)                                                                                  | Notes                                                               |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `listingType`, `listingStatus`                                                            | UI values from `@configs/filters` (`ListingType`, `ListingStatus`). |
+| `state` / `area` / `city` / `neighborhood` / `location` / `locationId`                    | Geo scoping.                                                        |
+| `minPrice` / `maxPrice`, `minBedrooms`, `minBaths`, `minParkingSpaces`, `minGarageSpaces` | Numeric filters.                                                    |
+| `propertyType`, `class`, `style`, `basement`, `amenities`                                 | Property attributes.                                                |
+| `status`, `lastStatus`, `type` (`'sale' \| 'lease'`)                                      | Status axes (see below).                                            |
+| `minSqft`/`maxSqft`, `minYearBuilt`/`maxYearBuilt`, date & `*Range` fields                | Ranges.                                                             |
+| `*Quality` (`overallQuality`, `kitchenQuality`, …)                                        | AI photo-quality filters.                                           |
+| `openHouse`, `search`, `officeId`/`agentId`/`brokerage`                                   | Misc.                                                               |
+| `source` (`'listings' \| 'featured'`), `slug`                                             | Fake filters — stripped/rerouted before the API call.               |
+
+## Status model
+
+<Callout type="warning">
+  There is no `A/U/S/P/R` status code set. The raw `status` field is only **`A`
+  / `U`**; granular states live in **`lastStatus`**.
+</Callout>
+
+| Type                 | Values                                                               | Where                            |
+| -------------------- | -------------------------------------------------------------------- | -------------------------------- |
+| `ApiStatus`          | `'A'` (active/on-market), `'U'` (unavailable/off-market)             | `services/API/types/search.ts`   |
+| `ApiLastStatus`      | `Sus, Exp, Sld, Ter, Dft, Lsd, Sc, Sce, Lc, Lce, Pc, Ext, New, Cs`   | `services/API/types/listings.ts` |
+| `ListingStatusGroup` | `'sale' \| 'rent' \| 'sold' \| 'inactive'` (derived lifecycle group) | `services/API/types/listings.ts` |
+| `ListingStatus` (UI) | `'active' \| 'sold' \| 'all' \| 'rent'`                              | `@configs/filters`               |
+
+`lastStatus` codes map to display labels in `configs/defaults/listings.ts` (`statusLabels`),
+e.g. `Sld` → "Sold", `Sc` → "Sold Conditionally", `Pc` → "Price Change".
+
+## Sort — `ApiSortBy`
+
+`createdOnAsc`/`Desc`, `updatedOnAsc`/`Desc`, `listPriceAsc`/`Desc`, `soldDateAsc`/`Desc`,
+`soldPriceAsc`/`Desc`, `distanceAsc`/`Des`, `qualityAsc`/`Desc`, `random`
+(`services/API/types/search.ts`). The `Filters.sortBy` default is `createdOnDesc`.
+
+## `ApiListing` — the raw listing
+
+`src/services/API/types/listings.ts`. Key fields:
+
+- `mlsNumber`, `boardId`, `class`
+- `status` (`ApiStatus`), `lastStatus` (`ApiLastStatus`)
+- `listPrice`, `soldPrice`, `listDate`, `soldDate`
+- `daysOnMarket` (final MLS-feed DOM) and `simpleDaysOnMarket` (live `today − listDate`).
+  For the current listing, `createListingI18nUtils().getDaysOnMarket` shows the concrete
+  value — `daysOnMarket` for sold, `simpleDaysOnMarket` for active (URBN keeps its
+  `raw.CumulativeDaysOnMarket` override). `getDaysSinceListed` is for the status-history
+  timeline only, never for DOM display. Request `simpleDaysOnMarket` via `listingFields`.
+- `address`, `map` (coords)
+- `details` (`ApiListingDetails` — `numBedrooms`, `numBathrooms`, `sqft`, `style`,
+  `propertyType`, … all string-typed from the wire)
+- `condominium` (`ApiCondominium` — fees, amenities, exposure, …)
+- `images`, `permissions` (`displayPublic`, `displayAddressOnInternet`, … `YesNo`)
+
+## `ApiQueryResponse` — the search response
+
+`page`, `numPages`, `pageSize`, `count`, `statistics` (listPrice / soldPrice / daysOnMarket),
+`listings: ApiListing[]`, and optional `aggregates.map.clusters` (`ApiCluster[]`, with
+small clusters' `listings` inlined). See `services/API/types/search.ts`.
+
+## Normalization
+
+Raw `ApiListing` detail fields (strings, class-specific) are normalized into UI-ready
+sections by `src/utils/dataMapper/` resolvers (condo vs residential) — this is what feeds the
+listing-detail page. See [Data Mappers & Resolvers](/technical-guide/data-mappers).

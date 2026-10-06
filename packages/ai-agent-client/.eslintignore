@@ -1,0 +1,21 @@
+# Config files
+.eslintrc.cjs
+vite.config.ts
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Generated files
+*.d.ts
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Vite specific
+.vite/

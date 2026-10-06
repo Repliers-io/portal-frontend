@@ -1,0 +1,79 @@
+import { Callout } from 'nextra/components'
+
+# URL & State Synchronization
+
+On `/search`, the **URL is the source of truth** for a shareable view. Camera
+(center + zoom), the active filters, layout (map/grid), overlay layers, 3D
+orientation and the map style are all encoded into the query string, so a copied
+link reproduces the exact same search — server-side for metadata/OpenGraph and
+client-side for the live map.
+
+## Key files
+
+| File                                                      | Role                                                            |
+| --------------------------------------------------------- | --------------------------------------------------------------- |
+| `src/configs/defaults/params.ts`                          | Short query-param name registry (`@configs/params`)             |
+| `src/app/search/[layout]/page.tsx`                        | Server-side parse of filters/camera/point → provider props      |
+| `src/app/search/[layout]/_utils.ts`                       | `getFiltersFromParams`, `getCameraFromParams` (server)          |
+| `src/providers/MapOptionsProvider/MapOptionsProvider.tsx` | Client init of style / 3D / layers / camera from `searchParams` |
+| `src/components/pages/search/MapPageContent.tsx`          | The write-back effects (`pushUrl`)                              |
+| `src/utils/map/urls.ts`                                   | `getMapUrl`, `getOrientation`, `getCoords`, `getZoom`           |
+| `src/utils/urls.ts`                                       | `updateWindowHistory`, `parseLocationPath`                      |
+
+## What's encoded
+
+Param names live in `@configs/params` (`paramNames`) — kept short to keep URLs compact:
+
+- **Camera** — center is a bare `lat,lng` key (the URL's first key) plus `z` (zoom).
+- **Layout** — the `[layout]` route segment (`map` / `grid`).
+- **Overlay layers** — `layers` (repeatable — schools, etc.).
+- **3D orientation** — `3d` as `bearing,pitch`; a bare `?3d` activates 3D with the default pitch.
+- **Map style** — `ms` (only when it differs from the page default).
+- **Filters** — spread by their own short names (`pmin`, `pmax`, `bd`, `bt`, `ht`, `ls`, …), plus synthetic `q`/`page`/`point`/`polygon`/`locationId`.
+
+## How it works
+
+**Init (read).** Filters, camera and point are parsed **server-side** in
+`page.tsx` (`getFiltersFromParams`, `getCameraFromParams`) and passed as props to
+`MapOptionsProvider` / `SearchProvider`. On the client, `MapOptionsProvider`
+re-reads `searchParams` to seed the pieces the map itself owns: `mapStyle` (only
+if the `ms` value is in the tenant's `mapStyles` allowlist), `mode3D` (only when
+the tenant enables 3D), `activeLayers`, and the initial `center`/`zoom` via
+`getCoords` / `getZoom`.
+
+**Write-back.** `MapPageContent` never calls the router — it writes the URL
+through `updateWindowHistory` (a thin `window.history.replaceState` wrapper),
+building the string with `getMapUrl`. There are **two modes**:
+
+<Callout type="info">
+  **Filters / camera change → reset page to 1.** A change in `center`, `zoom`,
+  `filters` or `point` (tracked via a serialized `prevParams` ref) calls
+  `pushUrl(1)`.
+
+**Layout / layers / 3D / style change → keep the current page.** These fire a
+separate effect that calls `pushUrl(page)`, preserving pagination.
+
+</Callout>
+
+Both go through `window.history` directly rather than the Next.js router, so
+these updates don't retrigger a server navigation or a data refetch.
+
+## Gotchas & hints
+
+- **First fetch keys off `mapLoaded`, not `position`.** `position` is
+  value-deduped in `MapOptionsProvider` (`stablePosition` memoized on a
+  JSON key). When `moveend` sets the final camera before `load` fires, the
+  `mapLoaded` false→true transition is the only dep that re-runs the fetch
+  effect — so `mapLoaded` must stay in its dependency array.
+- **Param names must not collide with filter keys.** Filters are spread into the
+  same query namespace, so a param name equal to a filter field (e.g. `style`)
+  would clash — hence the short aliases like `ms` for map style (see the WARN in
+  `params.ts`).
+- **`window.history` vs the router.** State-sync writes use
+  `updateWindowHistory`; only real navigations (a new search route) go through
+  the router.
+
+---
+
+See also: [Property Search — How it works](/product-guide/search/technical) and
+[State Management](/technical-guide/state-management).

@@ -1,0 +1,1 @@
+export { RecentlyViewedPageContent } from './RecentlyViewedPageContent'

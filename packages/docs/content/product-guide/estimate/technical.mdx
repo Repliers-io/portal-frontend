@@ -1,0 +1,60 @@
+import { Callout } from 'nextra/components'
+
+# Home Estimate — How it works
+
+> Technical anatomy of the estimate flow. Overview: [Home Estimate](/product-guide/estimate).
+
+## Routes & entry
+
+| Route                                           | Notes                                                                  |
+| ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `/estimate`, `/estimate/[[...slugs]]`           | Form + result; gated by `features.estimate`. ISR (`revalidate` daily). |
+| `/estimate/embedded`, `/estimate/embedded/demo` | Standalone form for external iframe embedding.                         |
+| `/agent`, `/agent/client/[clientId]/estimate/*` | Agent portal reuse of the estimate flow.                               |
+
+Root: `EstimatePageTemplate` → `@pages/estimate/EstimateRouter`.
+
+## Providers
+
+Mounted in the route, outermost → innermost:
+
+```
+EstimatePageTemplate
+└─ SearchProvider
+   └─ SelectOptionsProvider     fetched select options (beds/baths/…)  → useSelectOptions
+      └─ EstimateProvider       multi-step form state (wraps RHF FormProvider), OTP  → useEstimate
+         └─ EstimateStepsProvider   resolves step components (user vs agent)  → useEstimateSteps
+            └─ EstimateRouter
+```
+
+See [State Management](/technical-guide/state-management).
+
+## Component tree
+
+```
+EstimateRouter                        branches on useEstimate().route + agentRole
+├─ ResultPageContent                  route === 'result' (LoadingView / Error40XView while pending)
+├─ AgentLandingPageContent            agent user
+└─ ClientLandingPageContent           regular user — the multi-step form
+```
+
+## Configuration
+
+| Config                        | Drives                                                                      |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `@configs/estimate`           | Steps, form fields, and the Joi validation schema.                          |
+| `@configs/features`           | `estimate` gate.                                                            |
+| `@configs/api`                | Google Places (address autocomplete) and Follow Up Boss (CRM lead routing). |
+| `content.pagesMeta.estimate*` | SEO metadata (address/location tokens on the result page).                  |
+
+## Gotchas & hints
+
+- **Agent vs client landing.** `EstimateRouter` renders `AgentLandingPageContent` for agents
+  and `ClientLandingPageContent` otherwise (`useUser().agentRole`).
+- **Result vs form is route state.** `useEstimate().route === 'result'` switches to
+  `ResultPageContent` (with loading/error views) instead of the form.
+- **`EstimateProvider` wraps `react-hook-form`'s `FormProvider`** — descendants read the form
+  via `useFormContext`; it also drives the OTP verification step.
+- **Embedded variant** (`/estimate/embedded`) is the same flow packaged for iframe embedding
+  on external sites.
+- **`SelectOptionsProvider` prefetches** the dropdown options so steps render without waiting.

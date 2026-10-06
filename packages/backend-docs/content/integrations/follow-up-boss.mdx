@@ -1,0 +1,56 @@
+# Follow Up Boss
+
+The CRM integration. Master switch: `BOSS_ENABLED`. Three independent paths connect
+the portal to FUB:
+
+## 1. Event reporting (portal → FUB)
+
+User interactions become FUB **events** and **notes** through the events-collection
+layer — the "respond first, report second" pattern described in
+[Events & Messaging](/architecture/events-and-messaging). Contact forms, property
+views, estimate requests, saved searches, and unsubscribes all flow this way,
+each through its own selector.
+
+Links inside events are built from templates:
+
+| Setting | Template |
+|---|---|
+| `BOSS_PROPERTY_URL` | `https://example.tld/listing/[MLS_NUMBER]?boardId=[BOARD_ID]` |
+| `BOSS_CLIENT_URL` | `https://example.tld/agent/client/[CLIENT_ID]` |
+| `BOSS_ESTIMATE_URL` | `https://example.tld/estimate/[ESTIMATE_ID]` |
+| `BOSS_SAVED_SEARCH_URL` | saved-search deep link |
+
+Lead attribution: `BOSS_DEFAULT_SOURCE`, `BOSS_DEFAULT_TAGS`,
+`BOSS_DEFAULT_ASSIGNED_TO` (used at person creation; the event path deliberately
+never reassigns an existing lead's agent). Per-form tags ride on the request or are
+derived server-side — see
+[Lead tags](/architecture/events-and-messaging#lead-tags).
+
+`BOSS_CUSTOM_AVM_FIELD` names a custom FUB person field to store the user's AVM
+(estimate) link; `BOSS_CUSTOM_FIELDS_STRATEGY` allows per-environment field logic.
+
+## 2. Tagging API (`POST /api/user/boss/tag`)
+
+The frontend can add tags to the current user's FUB profile directly — used for
+behavior-based segmentation. Strict-JWT; see
+[User & Favorites](/api-reference/user-and-favorites).
+
+## 3. People sync (FUB ⇄ portal, via NATS)
+
+Bidirectional person synchronization, running through the
+[worker process](/architecture/events-and-messaging#nats-streams--the-worker):
+
+- **Portal-initiated** (`<stream>.people.upsert`) — profile changes queue a sync job.
+- **FUB-initiated** (`/api/webhooks/boss/people` → `.people.create/.update/.delete`)
+  — FUB webhooks are signature-verified, recorded, published to NATS, and processed
+  asynchronously. See [Webhooks](/api-reference/webhooks).
+
+Sync state lives in the local database (`repository/people_sync.ts`,
+`repository/sync.ts`, `repository/webhooks.ts`) — this path requires
+[persistence](/architecture/persistence) and NATS.
+
+## FUB API access
+
+`BOSS_BASEURL`, `BOSS_USERNAME` (the API key; `BOSS_PASSWORD` kept for
+compatibility), `BOSS_SYSTEM` / `BOSS_SYSTEM_KEY` (system registration — also used
+to verify inbound webhook signatures), `BOSS_TIMEOUT_MS`.

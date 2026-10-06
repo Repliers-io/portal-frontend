@@ -1,0 +1,47 @@
+# Architecture Overview
+
+## Layers
+
+A request travels through fixed layers, each with one job:
+
+```
+routes/      → HTTP wiring: one Router per feature, mounted under /api
+validate/    → Joi schemas: one file per feature, raw body → DTO
+services/    → business logic; services/repliers/* is the upstream client family
+providers/   → DI registrations: middleware, db, cache, loggers, NATS, OAuth
+repository/  → knex query modules for portal-owned tables
+settings/    → per-deployment presets merged into AppConfig at startup
+streams/     → NATS stream workers (background processing)
+```
+
+Supporting directories: `lib/` (errors, decorators, middleware internals, utilities),
+`types/`, `migrations/`.
+
+## Dependency injection
+
+tsyringe with constructor injection. Services are `@injectable()`; named tokens exist
+for infrastructure: `@inject("config")`, `@inject("logger")`, `@inject("db")`. Other
+services resolve automatically by class reference.
+
+The important subtlety is **scope**: a per-request child container
+(`src/lib/middleware/container.ts`) is attached to `ctx.state.container`, and services
+resolved from it are **transient — a new instance per request**. Never put one-time
+startup logic in a service constructor; it would run on every request. Startup work
+belongs in `src/config.ts`, `src/lib/settings.ts`, or a provider factory
+(`instanceCachingFactory` gives singletons).
+
+## Entry points
+
+| File | Process | Notes |
+|---|---|---|
+| `src/index.ts` | HTTP server | Koa app from `src/app.ts` |
+| `src/worker.ts` | NATS consumer | Separate process; exits to a warning when `NATS_ENABLED=false` |
+
+## Adding a feature — the shape of the change
+
+1. `src/validate/<feature>.ts` — Joi schema(s).
+2. `src/services/<feature>.ts` — `@injectable()` service.
+3. `src/routes/<feature>.ts` — `new Router({ prefix: "/<feature>" })` + handlers.
+4. One `router.use(...)` line in `src/routes/index.ts`.
+5. If it talks to Repliers: a method in the matching `services/repliers/*` client.
+6. If it stores data: a migration + a `repository/` module.

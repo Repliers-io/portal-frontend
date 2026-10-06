@@ -1,0 +1,9 @@
+{
+  "title": "Widget Plugin System",
+  "excerpt": "Live catalogue of the portal's embeddable widgets and how to use them",
+  "publishedAt": "2026-01-08",
+  "meta": {
+    "title": "Widget Plugin System — Demo",
+    "description": "A live showcase of every available widget: base props, Markdown and iframe usage, and error handling"
+  }
+}

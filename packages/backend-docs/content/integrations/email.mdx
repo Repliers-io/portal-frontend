@@ -1,0 +1,28 @@
+# Email
+
+Outbound mail (OTP codes, login links, inquiry notifications, estimate emails) has
+two delivery paths:
+
+## Repliers Messages API (default)
+
+`services/repliers/messages.ts` — messages are sent through the upstream Messages
+API on behalf of the configured agent (`REPLIERS_AGENT_ID`). This is a **real
+delivery channel that reaches real people**; treat every code path that feeds it as
+security-sensitive (validate inputs, keep OTP contents server-controlled).
+
+OTP message shape is configured via `AUTH_OTP_MESSAGE` and `AUTH_OTP_MESSAGE_TYPE`
+(`link_and_code` by default; the default preset uses `code`).
+
+## Static SMTP (fallback / standalone)
+
+`SMTP_ENABLED=true` switches delivery to a Gmail account via nodemailer
+(`services/smtp.ts`): `GMAIL_USER` + `GMAIL_APP_PASSWORD`, with
+`REPLIERS_AGENT_EMAIL` as the sender identity. Useful for instances without Repliers
+messaging or for isolated environments.
+
+## Estimate emails
+
+`REPLIERS_ESTIMATES_SEND_EMAIL_NOW` sends the estimate to the user immediately after
+creation; `REPLIERS_ESTIMATES_SEND_EMAIL_MONTHLY` subscribes them to monthly
+re-estimates (both on in the default preset via
+`repliers.estimatesNotificationSettings`).

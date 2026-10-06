@@ -1,0 +1,16 @@
+# Integrations Overview
+
+Every integration follows one rule, enforced by the
+[OSS export](/operations/oss-export): **credentials come from env vars, and the
+feature degrades to a safe no-op when they are unset.** A fresh checkout with only a
+sample-data Repliers key runs everything.
+
+| Integration | Service layer | Off-switch / degraded mode |
+|---|---|---|
+| [Repliers API](/integrations/repliers-api) | `services/repliers/*` | the one hard dependency — sample-data keys are free |
+| [Follow Up Boss](/integrations/follow-up-boss) (CRM) | `services/boss*`, `services/eventsCollection/` | `BOSS_ENABLED=false`; event reporting is fire-and-forget either way |
+| [Mapbox / Google geocoding](/integrations/geocoding) | `services/mapbox.ts`, `services/google.ts` | address autosuggest requires a provider token |
+| [Email](/integrations/email) | `services/repliers/messages.ts`, `services/smtp.ts` | Repliers Messages by default; `SMTP_ENABLED=true` switches to Gmail |
+| NATS JetStream | `providers/nats.ts`, `streams/` | `NATS_ENABLED=false` swaps in a dummy (`lib/dummy.nats.ts`) |
+| OAuth providers | `providers/oauth/` | a provider is unusable without its `OAUTH_*` client-id/secret/redirect triplet |
+| Google Cloud Logging | `providers/logger*` | `APP_LOGGING_GCP_LOGGER_ENABLED=false` |

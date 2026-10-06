@@ -1,0 +1,75 @@
+/*
+ * Default-portal branding for the docs site (very basic): Poppins font + green
+ * accents matching the default instance's primary #32735F. Imported after the
+ * Nextra theme stylesheet so these rules win.
+ */
+
+:root {
+  /*
+   * Green accent (#32735F ≈ hsl(162, 39%, 32%)); a touch lighter for link
+   * legibility. `!important` is required because Nextra injects its default theme
+   * variables later in the cascade.
+   */
+  --nextra-primary-hue: 162deg !important;
+  --nextra-primary-saturation: 39% !important;
+  --nextra-primary-lightness: 38% !important;
+}
+
+html.dark {
+  /* Keep the green readable on dark backgrounds. */
+  --nextra-primary-lightness: 52% !important;
+}
+
+body {
+  font-family:
+    var(--font-primary), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
+}
+
+/*
+ * Heading scale aligned with the default portal (theme/typography.ts): all
+ * weight 600, sizes/line-heights in rem @16px root. Scoped to the MDX content
+ * body so the navbar/sidebar/TOC are untouched.
+ */
+main[data-pagefind-body] h1 {
+  font-size: 3.5rem;
+  line-height: 4.5rem;
+  font-weight: 600;
+}
+main[data-pagefind-body] h2 {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 600;
+}
+main[data-pagefind-body] h3 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+}
+main[data-pagefind-body] h4 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+}
+main[data-pagefind-body] h5 {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+}
+main[data-pagefind-body] h6 {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+}
+
+/*
+ * Content screenshots get the same 1px border as tables — nextra-theme-docs
+ * cells use `x:border-gray-300` (light) / `x:dark:border-gray-600` (dark), so we
+ * reuse those exact color tokens. Scoped to the MDX body; navbar/logo untouched.
+ */
+main[data-pagefind-body] img {
+  border: 1px solid var(--x-color-gray-300);
+}
+html.dark main[data-pagefind-body] img {
+  border-color: var(--x-color-gray-600);
+}

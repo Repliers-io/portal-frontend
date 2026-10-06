@@ -1,0 +1,45 @@
+# CI/CD
+
+Bitbucket Pipelines (`bitbucket-pipelines.yml`). Three reusable step definitions
+compose every pipeline:
+
+## The test step
+
+Runs on **every pull request** and before every deploy:
+
+- a `postgres:16-alpine` service container backs the suite;
+- `npm ci` → `npm run db:migrate` → `npm run test:ci` (mocha with a JUnit reporter
+  for Bitbucket's test UI) → `npm run build`.
+
+A branch cannot deploy without passing tests *and* compiling.
+
+## The deploy step
+
+Deploys are **git pushes to Heroku**, verified against the Heroku Releases API:
+
+1. Record the current release version (`GET /apps/<app>/releases`).
+2. `git push --force heroku <branch>:master` (credentials via `~/.netrc` from
+   pipeline secrets). "Everything up-to-date" short-circuits: nothing to verify.
+3. Poll the Releases API (up to 5 minutes) until a **new** release appears, then
+   pass/fail the pipeline on its status — this catches release-phase failures
+   (e.g. a broken migration) that a bare `git push` would report as success.
+
+The Heroku app name and API key come from per-deployment pipeline variables — the
+pipeline file defines the mechanism; the deployment matrix (which branch → which
+app) is environment configuration.
+
+The API key is a Heroku authorization issued with a 60-day expiry
+(`heroku authorizations:create --expires-in 5184000`; the recipe lives in
+`scripts/internal/`). Rotate it before it lapses — an expired key stops every deploy.
+
+## The tag step
+
+Production pipelines append a dated git tag (`<branch>-<YYYY-MM-DD>-<n>`) after a
+successful deploy — the `-<n>` suffix auto-increments for same-day deploys.
+
+## Branch model
+
+- `dev` — tests, then parallel deploys to the dev environments.
+- production branches (one per instance, `prod/<instance>` style) — tests → deploy
+  → tag.
+- `custom:` pipelines exist for one-off manual deploys of specific environments.

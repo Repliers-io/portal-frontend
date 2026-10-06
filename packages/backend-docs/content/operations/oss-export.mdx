@@ -1,0 +1,41 @@
+# OSS Export
+
+The backend is published as an open-source repository. The export is generated —
+never edited by hand:
+
+```bash
+npm run oss   # scripts/internal/oss-copy.ts . ../portal-backend-oss
+```
+
+## What stays behind
+
+The copy **excludes**: `node_modules`, `.git`, `.history`, `dist`, `.vscode`,
+`scripts/internal/`, `.env*`, `bitbucket-pipelines.yml`, `.profile`, `keys/`,
+`src/settings/instances/`, `README-extra.md`.
+
+Additionally, source regions wrapped in `@oss-remove` markers are stripped during
+the copy (the script parses each file with Babel and regenerates it):
+
+```ts
+// @oss-remove-start
+import some_instance from "./instances/some_instance.js";
+// @oss-remove-end
+```
+
+This is how `src/settings/index.ts` registers private instance presets while the
+exported registry contains only `defaults` and the test fixture.
+
+## The rule this enforces
+
+**Code ships to OSS; secrets and instance specifics do not.** Consequences for
+every new feature:
+
+- credentials must come from env vars (excluded) — never from committed files;
+- the feature must degrade to a safe no-op when its credentials are unset, because
+  OSS users won't have them;
+- anything naming a private instance belongs in `settings/instances/` or inside
+  `@oss-remove` markers.
+
+When adding a new import of an instance file or a new internal-only script, check
+it against this list — the export is only as clean as the markers and exclusions
+are.

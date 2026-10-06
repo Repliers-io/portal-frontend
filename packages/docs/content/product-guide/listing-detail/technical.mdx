@@ -1,0 +1,96 @@
+import { Callout } from 'nextra/components'
+
+# Listing Detail (PDP) — How it works
+
+> Technical anatomy of the property detail page. Overview: [Listing Detail](/product-guide/listing-detail).
+
+## Routes & entry
+
+| Route                         | Entry                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `/listing/[[...listingName]]` | `@templates/ListingPageTemplate` → `@pages/listing/ListingPageContent` |
+
+The route fetches the listing (and LiveBy demographics) server-side and passes them into the
+template.
+
+The demographics come from `APILocations.fetchLiveByDemographics`: of the LiveBy neighborhoods
+nearest the listing, the smallest one whose polygon contains it (the nearest one when none does).
+A neighborhood without `population` (a park) yields no demographics, so the section is hidden.
+
+## Providers
+
+Mounted by `ListingPageTemplate`, outermost → innermost:
+
+```
+SearchProvider                 local instance — powers "similar listings", NOT global search
+└─ ListingProvider             the listing + guest restriction/blur state    → useListing
+   └─ ListingDetailsProvider   detail sections resolved by property class     → useListingDetails
+      └─ LiveByDemographicsProvider  demographics for the location            → useLiveByDemographics
+         └─ ListingPageContent
+```
+
+The route also conditionally wraps the template in two enrichment providers, each gated by an
+env var: `ListingEnrichmentProvider` (when `MOVESMARTLY_API_URL` is set) and
+`PlansAndSurveysProvider` (when `PYB_API_URL` is set) — a neighborhood-enrichment source and a
+boundary-data source.
+
+## Component tree
+
+```
+ListingPageContent
+├─ ListingHeader                     address, price, status, share
+├─ Container
+│  ├─ ListingMainContent             gallery + the detail sections
+│  ├─ ListingSidebarContainer        if listings.components.sidebar && not an agent
+│  │  └─ ListingContactForm
+│  └─ GalleryDialog · SlideshowDialog · FullscreenRibbonDialog · FullscreenGalleryDialog
+│                                     each gated by listings.components.*
+└─ ListingFooter
+```
+
+`ListingMainContent` is a **tenant fork root** — tenant-specific sub-components live in its
+`_<tenant>/components/`; the default sections stay common.
+
+## Configuration
+
+| Config                   | Drives                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@configs/listings`      | `components` (which PDP blocks render), `navigationItems` (section order), `pricing`, `gallery`, `scrubbed`, `statusLabels`, `linksInNewTab` (open listings linked from a listing in a new tab), `addressFormat` (`us` vs `default` street ordering), `titleFormat` (`default` verbose vs `compact` SEO `<title>`), `extendedHistory` (read the history block from the property-level history endpoint instead of the listing detail). |
+| `@configs/filters`       | `soldDateSource` (`soldDate` vs `timestamps.closedDate` — the field every sold date, sold sort and sold statistics window reads).                                                                                                                                                                                                                                                                                                      |
+| `@configs/map`           | `provider` — `google` forces a static map on the PDP.                                                                                                                                                                                                                                                                                                                                                                                  |
+| `@configs/forms`         | Required fields of the enquiry (`requestInfo`) and tour (`tour`) forms, incl. `requiredAny` groups such as "email or phone". See [Shared Components → Forms](/technical-guide/shared-components#forms-sharedforms).                                                                                                                                                                                                                    |
+| `@configs/badgeSurfaces` | Which statuses badge a card per surface (`map`, `search`, `carousel`, `locations`, `favorites`, `recent`) and on the PDP `gallery` (none by default).                                                                                                                                                                                                                                                                                  |
+| `@configs/features`      | `blurRestrictedProperty` gate.                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+## Gotchas & hints
+
+- **PDP block visibility is config, not feature flags.** `listings.components.*`
+  (header/sidebar/gridGallery/slideshow/fullscreenGallery/…) own the former `pdp*` flags —
+  a hidden block still leaves the page intact, so it's config. See the
+  [features-vs-config rule](/technical-guide/multi-tenant#feature-flags-vs-domain-config).
+- **`SearchProvider` here is a second, local instance** — it drives similar-listings without
+  touching the global search state (the same provider is also mounted on the search page).
+- **Links to other listings from a listing open in a new tab** when `listings.linksInNewTab`
+  is on (the default): the Listing History MLS links and the similar-listings carousel here,
+  plus the estimate result comparables — so browsing a listing never navigates you away.
+  Modifier-clicks (Ctrl/Cmd/middle) always open a new tab regardless.
+- **SEO `<title>` has two shapes, picked by `listings.titleFormat`.** `default` is verbose
+  (type · status · location · beds · baths · sqft · address); `compact` is address-first —
+  `"3816 B Evanston Avenue N, Seattle, WA 98103"` (URBN). Both end with the MLS number
+  (`… | MLS# 2546317`) and are built in `getSeoTitle` (`utils/listings/seo.ts`); the title is
+  English-only (not run through i18n).
+- **`extendedHistory` changes where the history block comes from.** With the flag off, the
+  block renders `listing.history` embedded in the detail record, which only covers the
+  board that record was read from — a tenant reading several boards (movesmartly: 90, 91
+  and 2) sees part of a property's history. With it on, `APIListingDetails.fetchListing`
+  pairs the detail request with `GET /api/listings/history?mlsNumber=…` and the answer
+  replaces `listing.history`; an error or an empty answer keeps the embedded array. Both
+  the server-rendered PDP and the listing browser inherit this from that one method — no
+  component reads the endpoint directly.
+- **Sidebar is hidden for agents** (`!agentRole`) even when `components.sidebar` is on.
+- **Restricted listings** are blurred/limited for guests when `blurRestrictedProperty` is on —
+  see [Regional & MLS Limits](/getting-started/regional-and-mls-limits#restricted-listings-blurrestrictedproperty).
+- **Enrichment providers are env-gated** (in the route, around the template):
+  `ListingEnrichmentProvider` mounts when `MOVESMARTLY_API_URL` is set,
+  `PlansAndSurveysProvider` when `PYB_API_URL` is set — two independent gates (typically enabled
+  for the enrichment tenant).

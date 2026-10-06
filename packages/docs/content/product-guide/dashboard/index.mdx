@@ -1,0 +1,27 @@
+import { Callout } from 'nextra/components'
+
+# Market Dashboard
+
+Market insights by city — median prices, inventory, and trends — so users can gauge a market
+before searching. The landing view lists the tenant's key cities; each city has its own
+market report.
+
+![The full market dashboard — per-city stat cards (for sale, sold, price, days on market), a sale-price trend chart, and additional cities to expand](/img/dashboard.webp)
+
+<Callout type="info">
+  Technical details (page roots, providers, config) are in [How it
+  works](/product-guide/dashboard/technical).
+</Callout>
+
+## What you see
+
+| View               | URL                             | Content                                           |
+| ------------------ | ------------------------------- | ------------------------------------------------- |
+| Market insights    | `/dashboard`                    | Expandable cards for the tenant's default cities. |
+| City report        | `/dashboard/[city]`             | Market statistics for one city.                   |
+| Residential report | `/dashboard/[city]/residential` | Same, filtered to residential.                    |
+| Condo report       | `/dashboard/[city]/condos`      | Same, filtered to condos.                         |
+
+The cities on the landing view come from the tenant's config (`@configs/location`
+`defaultCities`), so each tenant highlights its own markets. Gated by the `dashboard`
+feature flag.

@@ -1,0 +1,38 @@
+import { Callout } from 'nextra/components'
+
+# Home Page
+
+The landing page (`/`). Out of the box it's a **composed page** — a welcome banner, featured
+listings, and market-stats widgets — driven by the tenant's config. It's also the **primary
+customization point**: a tenant assembles its own home from widgets via a component override.
+
+![The composed home — "Just Listed" and "Recently Sold" featured-listing carousels](/img/home.webp)
+
+<Callout type="info">
+  Technical details (component tree, config, the tenant override) are in [How it
+  works](/product-guide/home/technical).
+</Callout>
+
+## Default composition
+
+| Block             | Content                                                                   |
+| ----------------- | ------------------------------------------------------------------------- |
+| Banner            | Welcome headline + subtitle (from i18n).                                  |
+| Featured listings | A curated/featured set of listings.                                       |
+| Market stats      | City-level stats widgets — shown only when the `dashboard` feature is on. |
+
+The banner copy, the featured set, and the stats all derive from config
+(`@configs/location`, i18n, feature flags), so each tenant's home differs without code
+changes.
+
+## Tenant-assembled homes
+
+Because homes vary a lot between brands, the home page is the most common **component
+override**: a tenant ships `components/pages/home/_<tenant>/HomePageContent.tsx` that composes
+its own sections/widgets (hero, search CTA, testimonials, custom blocks). See
+[How it works](/product-guide/home/technical#gotchas--hints).
+
+<Callout type="info">
+  Some tenants make `/` render the **estimate** flow instead of the landing page
+  — controlled by `@configs/routes` `rootPage`.
+</Callout>

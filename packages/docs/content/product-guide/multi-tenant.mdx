@@ -1,0 +1,185 @@
+# Multi-tenant System
+
+Portal uses a multi-tenant architecture where a single codebase serves multiple client websites, each with unique branding, features, and data.
+
+## What is a Tenant?
+
+A **tenant** is a client configuration that defines everything unique about a specific Portal deployment:
+
+| Component     | What it Controls                 |
+| ------------- | -------------------------------- |
+| **Branding**  | Logo, colors, fonts, favicon     |
+| **Content**   | Texts, translations, legal pages |
+| **Geography** | Region, cities, neighborhoods    |
+| **Data**      | Which MLS feed to use            |
+| **Features**  | Which features are enabled       |
+
+## Current Tenants
+
+The build ships a `defaults` / demo tenant plus a number of client tenants across the US and
+Canada. Each has its own tenant id and `configs/<tenant>/` overrides, and maps to a region and an
+MLS feed — a representative shape (ids anonymized):
+
+| Tenant ID    | Region           | MLS feed |
+| ------------ | ---------------- | -------- |
+| `<tenant-a>` | Seattle, WA      | NWMLS    |
+| `<tenant-b>` | Toronto, ON      | TRREB    |
+| `<tenant-c>` | US (multi-state) | —        |
+| `<tenant-d>` | Calgary, AB      | CREB     |
+| `<tenant-e>` | Boston, MA       | MLS PIN  |
+| `<tenant-f>` | Connecticut      | SmartMLS |
+
+## How It Works
+
+### Build Time Configuration
+
+The active tenant is set via environment variable:
+
+```bash
+NEXT_PUBLIC_APP_CONFIGURATION=<tenant> pnpm dev
+```
+
+At build time, the system:
+
+1. Reads `NEXT_PUBLIC_APP_CONFIGURATION`
+2. Generates `tsconfig.json` with tenant-specific path aliases
+3. Resolves imports to tenant files, falling back to defaults
+
+### Path Resolution
+
+```
+@configs/colors  →  src/configs/<tenant>/colors.ts
+                    (if not found)
+                 →  src/configs/defaults/colors.ts
+```
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     PORTAL CODEBASE                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│   src/configs/                                               │
+│   ├── defaults/          ← Base configurations              │
+│   │   ├── colors.ts                                         │
+│   │   ├── features.ts                                       │
+│   │   └── ...                                                │
+│   ├── <tenant>/          ← Tenant overrides                 │
+│   │   ├── colors.ts      (only files that differ)           │
+│   │   └── content.ts     (siteLogo, brand assets)           │
+│   ├── <another-tenant>/                                      │
+│   │   └── colors.ts                                          │
+│   └── <another-tenant>/                                      │
+│       └── colors.ts                                          │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## What Can Be Customized?
+
+### Visual Branding
+
+| Config | Location                    | Example                            |
+| ------ | --------------------------- | ---------------------------------- |
+| Colors | `@configs/colors`           | Primary, secondary, marker colors  |
+| Logo   | `@configs/content`          | `siteLogo` and other brand assets  |
+| Fonts  | `@configs/theme/typography` | Typography settings                |
+| Theme  | `@configs/theme/*`          | MUI palette / components overrides |
+
+### Content
+
+| Config       | Location                    | Example                                    |
+| ------------ | --------------------------- | ------------------------------------------ |
+| Translations | `src/i18n/<tenant>/en.json` | UI strings — [i18n](/technical-guide/i18n) |
+| Legal Pages  | `@content/legal`            | Terms, privacy                             |
+
+### Features
+
+| Config          | Location            | Example                 |
+| --------------- | ------------------- | ----------------------- |
+| Feature Flags   | `@configs/features` | Enable/disable features |
+| Navigation      | `@configs/menu`     | Menu structure          |
+| Search Defaults | `@configs/search`   | Board routing, paging   |
+
+### Data & Geography
+
+| Config       | Location            | Example                               |
+| ------------ | ------------------- | ------------------------------------- |
+| MLS Boards   | `@configs/search`   | `defaultBoardId` / `distinctBoardIds` |
+| Regions      | `@configs/location` | Home region, areas, cities            |
+| Map Settings | `@configs/map`      | Center, zoom, bounds                  |
+
+## Path Aliases
+
+| Alias         | Resolves To                                                   |
+| ------------- | ------------------------------------------------------------- |
+| `@configs/*`  | `src/configs/[tenant]/*` → `src/configs/defaults/*`           |
+| `@content/*`  | `src/content/[tenant]/*` → `src/content/defaults/*`           |
+| `@icons/*`    | `src/assets/icons/[tenant]/*` → `src/assets/icons/defaults/*` |
+| `@defaults/*` | `src/configs/defaults/*` (always)                             |
+
+## Adding a New Tenant
+
+### Step 1: Create Tenant Directory
+
+```bash
+mkdir src/configs/newclient
+```
+
+### Step 2: Add Required Configs
+
+At minimum:
+
+- `colors.ts` - Brand colors
+- `content.ts` - `siteLogo` and other brand assets
+- `features.ts` - Feature flags
+
+### Step 3: Create Environment File
+
+```bash
+# .env.newclient
+NEXT_PUBLIC_APP_CONFIGURATION=newclient
+# Proxy backend that forwards to Repliers — the frontend never calls Repliers directly
+NEXT_PUBLIC_API_URL=http://localhost:8080
+# ... other env vars
+```
+
+### Step 4: Add Dev Script
+
+```json
+{
+  "scripts": {
+    "dev:newclient": "env-cmd -f .env.newclient pnpm run dev"
+  }
+}
+```
+
+## Feature Flags
+
+Each tenant can enable/disable features. Flags are **static per-tenant** — resolved from
+`@configs/features` at build time (the generated file header reads "Generated — do not edit
+by hand"), not from a runtime service:
+
+```typescript
+// src/configs/<tenant>/features.ts
+export default {
+  map: true,
+  estimate: true,
+  blog: true,
+  dashboard: true,
+  favorites: true,
+  saveSearch: true,
+  locations: true,
+  aiSearch: false,
+  aiChat: false,
+  aiAgent: false
+}
+```
+
+## Best Practices
+
+1. **Minimize Overrides** - Only create tenant files when they differ from defaults
+2. **Use Defaults** - Keep shared logic in `defaults/`
+3. **Document Changes** - Comment why a tenant needs custom config
+4. **Test All Tenants** - Changes to defaults affect everyone

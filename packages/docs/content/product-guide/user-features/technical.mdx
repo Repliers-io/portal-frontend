@@ -1,0 +1,62 @@
+# User Features — How it works
+
+> Technical anatomy of the authenticated user features. Overview:
+> [User Features](/product-guide/user-features).
+
+## Routes & entry
+
+| Route                      | Page root                                          |
+| -------------------------- | -------------------------------------------------- |
+| `/favorites`               | `@pages/favorites/FavoritesPageContent`            |
+| `/image-favorites`         | `@pages/image-favorites/ImageFavoritesPageContent` |
+| `/saved-searches`          | `@pages/saved-searches/SavedSearchesPageContent`   |
+| `/recently-viewed`         | `@pages/recently-viewed/RecentlyViewedPageContent` |
+| `/profile`, `/unsubscribe` | `@pages/profile/*`                                 |
+
+These render inside auth-gated templates (a user must be logged in).
+
+## Providers
+
+Unlike most sections, the state here lives in **global** providers, each mounted in
+`app/_providers.tsx` **only when its feature flag is on** (build-time):
+
+```
+UserProvider                    auth + profile (always)          → useUser
+├─ [FavoritesProvider]          features.favorites               → useFavorites
+├─ [SaveSearchProvider]         features.saveSearch              → useSaveSearch
+└─ [ImageFavoritesProvider]     features.imageFavorites          → useImageFavorites
+```
+
+The favorites / saved-searches / recently-viewed pages also mount a `SearchProvider` to
+render listing results. See [State Management](/technical-guide/state-management).
+
+## Configuration
+
+| Config              | Drives                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@configs/features` | `favorites`, `imageFavorites`, `saveSearch`, `recentlyViewed`, `profile` — each gates its page **and** its provider. |
+| `@configs/routes`   | The route paths above.                                                                                               |
+
+## Gotchas & hints
+
+- **Provider = flag.** A disabled feature doesn't just hide the page — its provider is never
+  mounted, so consuming `useFavorites()` etc. off a disabled build is a mistake. Gate on the
+  flag.
+- **Auth required.** All of these need a logged-in user (`UserProvider`); guests are prompted
+  to log in (the auth dialog) before an action completes.
+- **Alerts belong to saved searches.** There's no separate `alerts` flag — email alerts are a
+  property of a saved search under `saveSearch`.
+- **Recently viewed is written from the PDP** — viewing a listing calls `addRecent` (see the
+  [Listing Detail](/product-guide/listing-detail/technical) page).
+- **Saved-search `map` may hold several polygons.** Saving with locations selected merges
+  their boundaries into the wire `map` rings (`selectionToMapRings`; union semantics — each
+  ring is its own polygon). Locations without geometry are skipped, so a saved search can
+  match FEWER listings than the live locationId-based query showed at save time — accepted
+  until ids persist server-side (see repo-root `SAVED_SEARCH_LOCATIONS_RESEARCH.md`). On
+  load, a single-ring `map` becomes the editable drawn polygon; multi-ring loads as the
+  read-only `region` (`SearchProvider`), which is not URL-persisted — a deliberately
+  separate field from the drawn `polygon`; see "Two kinds of user-defined region" on the
+  [Search page](/product-guide/search/technical).
+- **The ≤100-listings save gate is a heuristic.** The button check uses the on-screen count
+  (locationId-based, viewport-clipped); the server matches the persisted geometry and rejects
+  with 406 — the snackbar surfaces its message.

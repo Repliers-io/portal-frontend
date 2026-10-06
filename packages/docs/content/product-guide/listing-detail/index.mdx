@@ -1,0 +1,41 @@
+import { Callout } from 'nextra/components'
+
+# Listing Detail (PDP)
+
+The property detail page (PDP) is the full view of a single listing — gallery, price and
+status, property details, neighborhood and demographics, price history, and an agent contact
+form. It's where users spend the most time after searching, opened from a marker or card in
+[search](/product-guide/search).
+
+![The full listing detail page — photo gallery, price/status header and agent contact, property details, features, and the enabled LiveBy neighborhood demographics](/img/listing-detail.webp)
+
+<Callout type="info">
+  Technical anatomy (providers, component tree, config, gotchas) is in [How it
+  works](/product-guide/listing-detail/technical).
+</Callout>
+
+## What's on the page
+
+| Block        | Content                                         |
+| ------------ | ----------------------------------------------- |
+| Header       | Address, price, status, key facts, share        |
+| Gallery      | Photos with grid / slideshow / fullscreen views |
+| Details      | Description, details, features, exterior, rooms |
+| Neighborhood | Location, nearby, LiveBy demographics           |
+| History      | Listing / price history                         |
+| Sidebar      | Agent contact form (hidden for agent accounts)  |
+| Similar      | Similar listings nearby                         |
+
+The **sections that appear** and **which gallery views are enabled** are tenant-configurable
+(`@configs/listings`) — a tenant can hide the sidebar, disable the slideshow, and so on.
+
+## Restricted listings
+
+For tenants under strict MLS privacy rules, guests (not logged in) may see a listing
+**blurred / limited** (address hidden, photos obscured). This is the `blurRestrictedProperty`
+behavior — see [Regional & MLS Limits](/getting-started/regional-and-mls-limits#restricted-listings-blurrestrictedproperty).
+
+## Route
+
+`/listing/[[...listingName]]` — the URL carries an SEO slug plus the listing id (and board id
+for multi-board tenants). Viewing a PDP also records it in the user's **recently viewed**.

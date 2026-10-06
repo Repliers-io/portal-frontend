@@ -1,0 +1,168 @@
+# Environment Variables
+
+Every `AppConfig` value is backed by an env var with a working default — the app
+starts with an empty `.env`. Grouped by prefix; defaults shown where they matter.
+The authoritative list lives in the repository README and `src/config.ts`.
+
+## Application (`APP_`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `APP_SETTINGS_PRESET` | — | Settings preset name (see [Configuration Model](/getting-started/configuration)) |
+| `APP_CORS_DOMAIN` | `http://localhost:3000` | Allowed CORS origins |
+| `APP_DEFAULTS_BOARDIDS` | `110` | Comma-separated default boardIds |
+| `APP_DISABLE_PERSISTENCE` | `false` | Disable Postgres-backed features |
+| `APP_LOCATIONS_BOARDID` | `110` | Default boardId for `/locations` |
+| `APP_ALLOWED_LISTINGS_STANDARD_STATUSES` | — | RESO Standard Statuses available to the frontend |
+| `APP_HIDE_UNAVAILABLE_LISTINGS_STATUSES` | — | Statuses hidden from the frontend |
+| `APP_HIDE_UNAVAILABLE_LISTINGS_STANDARD_STATUSES` | — | RESO variant of the above |
+| `APP_HIDE_UNAVAILABLE_LISTINGS_HTTP_CODE` | `410` | Status code served for hidden listings |
+| `APP_STATSTOP_LIMIT` | `100` | Top-N limit for stats/neighborhoods ranking |
+| `APP_USESWAGGER` | `false` | Serve the Swagger UI at `/swagger` |
+| `APP_LOGGING_GCP_LOGGER_ENABLED` | `false` | Google Cloud logging |
+
+## Authentication (`AUTH_`, `JWT_`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | — | Relative paths to the RSA key pair |
+| `JWT_EXPIRE` | `30d` | Token expiration (`exp`) |
+| `JWT_ISSUER` | `http://repliers-proxy` | Token issuer (`iss`) |
+| `AUTH_OTP_TTL_MS` | `600000` | OTP validity window |
+| `AUTH_OTP_RESEND_TTL_MS` | `60000` | OTP resend cooldown |
+| `AUTH_OTP_URI` | `http://localhost:3000/auth/otp/processing` | Frontend page the OTP link opens (`?code=` appended) |
+| `AUTH_OTP_MESSAGE` | *(login link text)* | Message sent with the OTP |
+| `AUTH_OTP_MESSAGE_TYPE` | `link_and_code` | OTP delivery shape |
+| `AUTH_OTP_MESSAGE_SUBJECT` | — | Subject of the OTP email; left out of the message when unset |
+| `AUTH_EMAILTOKEN_ENABLED` | `false` | Login with email token |
+| `AUTH_EMAILTOKEN_EXPIRE` | `30d` | Email-token lifetime |
+| `AUTH_EMAILTOKEN_AUTO_OTP` | `false` | Auto-send OTP when an expired email token is used |
+| `AUTH_AGENTS_SIGNATURE_SALT` | — | Signature salt for agent authentication |
+| `DEBUG_AUTH_OTP_EXPOSE_CODE` | `false` | ⚠️ Exposes OTP codes in responses — debug only |
+
+## Follow Up Boss (`BOSS_`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `BOSS_ENABLED` | `true` | Master switch for the FUB integration |
+| `BOSS_BASEURL` | `https://api.followupboss.com/v1` | API base URL |
+| `BOSS_USERNAME` / `BOSS_PASSWORD` | — | API credentials (password kept for compatibility) |
+| `BOSS_SYSTEM` / `BOSS_SYSTEM_KEY` | — | FUB system registration pair |
+| `BOSS_DEFAULT_ASSIGNED_TO` | `Default Agent` | Fallback agent for leads |
+| `BOSS_DEFAULT_SOURCE` | `example.tld` | Lead source |
+| `BOSS_DEFAULT_TAGS` | `APP_ENVIRONMENT` | Tags added to all leads |
+| `BOSS_PROPERTY_URL` | `https://example.tld/listing/[MLS_NUMBER]?boardId=[BOARD_ID]` | PDP link template |
+| `BOSS_CLIENT_URL` | `https://example.tld/agent/client/[CLIENT_ID]` | Client link template |
+| `BOSS_ESTIMATE_URL` | `https://example.tld/estimate/[ESTIMATE_ID]` | Estimate link template |
+| `BOSS_SAVED_SEARCH_URL` | — | Saved-search link template |
+| `BOSS_CUSTOM_AVM_FIELD` | — | FUB person field for the AVM link |
+| `BOSS_CUSTOM_FIELDS_STRATEGY` | — | Custom person-field logic per environment |
+| `BOSS_REPORT_CLIENT_VIEW_ESTIMATE` | — | Report `GET /estimate` by end users |
+| `BOSS_TIMEOUT_MS` | `30000` | API timeout |
+| `BOSS_WEBHOOK_ENABLED` | `false` | FUB → backend webhooks |
+| `BOSS_WEBHOOK_BASEURL` | `https://localhost:3000/webhook` | Webhook callback base |
+| `BOSS_WEBHOOK_CLIENT_TAGS_CSV` | — | Client tags for webhook processing |
+| `BOSS_WEBHOOK_USE_NGROK` | `false` | Tunnel webhooks locally (needs `NGROK_AUTHTOKEN`) |
+
+## Caching (`CACHE_`, `REDIS_`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `REDIS_KEYV_ENABLE` | `false` | Use Redis for the Keyv cache (in-memory otherwise) |
+| `REDIS_URL` | `redis://localhost:6379` | Redis server |
+| `REDISCLOUD_URL` | — | Overrides `REDIS_URL` when present |
+| `CACHE_LISTINGS_COUNT_TTL` | `86400000` | Listings count TTL (ms) |
+| `CACHE_LISTINGS_LAST_UPDATED_ON_TTL` | `1200000` | `/listings/lastUpdatedOn` TTL |
+| `CACHE_FEATURED_LISTINGS_TTL` | `3600000` | Featured listings TTL |
+| `CACHE_BUILDINGS_SEARCH_TTL` | `86400000` | Buildings search TTL |
+| `CACHE_BUILDINGS_SINGLE_TTL` | `3600000` | Single building TTL |
+| `CACHE_LOCATIONS_TTL` | `86400000` | Locations TTL |
+| `CACHE_NEIGHBORHOODSRANKING_TTL` | `86400000` | Neighborhoods ranking TTL |
+| `CACHE_STATSWIDGET_TTL` | `86400000` | Stats widget TTL |
+| `CACHE_AUTOSUGGEST_LOCATIONS_TTL` | `86400000` | Deprecated `/autosuggest/locations` TTL |
+
+## Database (`DB_`, `DATABASE_URL`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_URL` | — | Full connection URL; overrides the individual `DB_*` vars |
+| `DB_HOST` | `localhost` | Host |
+| `DB_NAME` | `repliers` | Database name |
+| `DB_USER` / `DB_PASSWORD` | `postgres` / `postgrespw` | Credentials |
+| `DB_USE_SSL` | `false` | Must be `true` on Heroku |
+
+## Repliers API (`REPLIERS_`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `REPLIERS_API_KEY` | — | **Required.** Free sample-data keys at login.repliers.com |
+| `REPLIERS_API_KEY_EXTRA` | — | Second key for the historical listings behind estimate property details |
+| `REPLIERS_BASE_URL` | `https://api.repliers.io` | Upstream base URL |
+| `REPLIERS_TIMEOUT` | `30000` | Response timeout |
+| `REPLIERS_API_LIMIT` / `REPLIERS_API_INTERVAL_MS` | `1` / `1000` | Request throttle (N per interval) |
+| `REPLIERS_CACHE_WARMUP_API_KEY` | — | Separate key for SSG traffic; off when unset (see [SSG cache-warmup key](/architecture/repliers-proxy#ssg-cache-warmup-key)) |
+| `REPLIERS_CACHE_WARMUP_API_LIMIT` / `REPLIERS_CACHE_WARMUP_API_INTERVAL_MS` | `REPLIERS_API_LIMIT` / `REPLIERS_API_INTERVAL_MS` | The warmup key's own throttle |
+| `REPLIERS_AGENT_ID` | `0` | agentId for Repliers calls |
+| `REPLIERS_AGENT_EMAIL` | — | Agent email for custom SMTP |
+| `REPLIERS_PROXY_XFF` | `false` | Forward client IPs to Repliers |
+| `XFF_SSR_TOKEN` | — | Shared secret identifying SSR requests (`X-Forwarded-For-Token`); legacy alias `REPLIERS_PROXY_XFF_SSR_TOKEN` |
+| `XFF_SSG_TOKEN` | — | Shared secret for requests with no user behind them (build, ISR, warm-up) — skips IP forwarding, selects the warmup key; legacy alias `REPLIERS_PROXY_XFF_SSG_TOKEN` |
+| `XFF_SSR_IPADDR_OFFSET` | `2` | Position of the real client IP in the `X-Forwarded-For` chain; legacy alias `REPLIERS_PROXY_XFF_SSR_IPADDR_OFFSET` |
+| `REPLIERS_ESTIMATES_SEND_EMAIL_NOW` | `false` | Send estimate email immediately |
+| `REPLIERS_ESTIMATES_SEND_EMAIL_MONTHLY` | `false` | Monthly estimate emails |
+| `REPLIERS_AUTOSUGGEST_*` | — | Autosuggest listing-search tuning: `PROVIDER` (`mapbox`/`googlemaps`), `MAX_RESULTS`, `MAX_RESULTS_DEFAULT`, `LISTING_STATUS`, `LISTING_LAST_STATUS`, `LISTING_STANDARD_STATUS` (RESO instances — replaces the two above), `LISTING_TYPE`, `SEARCH_FIELDS`, `DISPLAY_PUBLIC_VALUE` |
+
+## Scrubbing & listings policy (`SETTINGS_`)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SETTINGS_SCRUBBING_BOARDIDS` | `12` | Boards whose listings are scrubbed for guests |
+| `SETTINGS_SCRUBBING_SAFE_FIELDS` | `address, class, map, propertyType, …` | Fields never scrubbed |
+| `SETTINGS_SCRUBBING_ADDRESS_SAFE_FIELDS` | `area, city, streetName, …` | Address sub-fields never scrubbed |
+| `SETTINGS_SCRUBBING_DROP_FIELDS` | `history,agents,raw` | Fields dropped entirely for guests |
+| `SETTINGS_SCRUBBING_IMPORTANT_FIELDS` | `boardId` | Fields copied into nested listings so they can be scrubbed |
+| `SETTINGS_SCRUBBING_PROCESS_DUPLICATES_ENABLED` | `true` | Duplicates-based scrubbing |
+| `SETTINGS_SCRUBBING_FORCE_DISPLAY_PUBLIC_YES` | `false` | ⚠️ Board-regulation sensitive |
+| `DUPLICATES_REFERENCE_BOARD_RESOURCE_ID` | `9997` | Reference board for duplicates scrubbing |
+| `SETTINGS_RESTRICTED_LISTINGS` | — | Comma-separated MLS blocklist (see [Scrubbing](/architecture/scrubbing)) |
+| `SETTINGS_FEATURED_LISTINGS` | `[]` | JSON array of `{slug, clientId}` for `/listings/featured/:slug` |
+| `SETTINGS_EXTENDED_PROPERTY_DETAILS` | `false` | Approximate property details fallback |
+| `SETTINGS_NLP_VERSION` | `3` | NLP model version |
+| `SETTINGS_VALIDATION_VERSION` | — | Contact-form validation variant (see [Contact](/api-reference/contact-and-stats#contact--contact)) |
+| `SETTINGS_EVENTS_COLLECTOR_URL_HOST` | — | Host for event link templates |
+| `SETTINGS_EVENTS_COLLECTOR_DEFAULT_BOARD_ID` | `12` | Fallback boardId for event lookups |
+| `SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_SUBSCRIBE_NEWSLETTER` | — | Tags for newsletter events |
+| `SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_SCHEDULE_ESTIMATE` | — | Tags for estimate-scheduling events |
+| `SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_UNSUBSCRIBED` | — | Tags for unsubscribe events |
+
+## Messaging, NATS, geocoding, OAuth
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SMTP_ENABLED` | `false` | Static Gmail account instead of Repliers messaging |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | — | Gmail sender when SMTP is on |
+| `NATS_ENABLED` | `false` | Dummy NATS when off |
+| `NATS_SERVER` | `localhost:4222` | NATS server |
+| `NATS_NAME` | `dev-portal` | Connection name |
+| `NATS_CREDS` | `''` | Credentials file content (empty for local) |
+| `NATS_WORKER_CONSUMER_STREAM` / `NATS_WORKER_CONSUMER_NAME` | `boss-people` / `boss-people-worker` | Worker consumer binding |
+| `MAPBOX_ACCESS_TOKEN` | — | **Required** for address autosuggest |
+| `MAPBOX_BASEURL` | `https://api.mapbox.com/search/searchbox/v1` | Search API |
+| `MAPBOX_TIMEOUT` | `30000` | Timeout |
+| `GOOGLE_MAPS_API_KEY` / `GOOGLE_MAPS_BASE_URL` / `GOOGLE_MAPS_TIMEOUT_MS` | — | Google geocoding alternative |
+| `PROXIMITY_SEARCH_LAT` / `LONG` / `RADIUS_METERS` | — | Autosuggest proximity bias |
+| `OAUTH_GOOGLE_CLIENT_ID` / `SECRET` / `REDIRECT_URI` | — | Google sign-in |
+| `OAUTH_FACEBOOK_CLIENT_ID` / `SECRET` / `REDIRECT_URI` | — | Facebook sign-in |
+| `SOCIAL_PINTEREST_CLIENT_ID` / `SECRET` / `REDIRECT_URI` | — | Pinterest account linking |
+| `GOOGLE_CREDENTIALS` | — | GCP service-account JSON content (written to a file by `.profile` on Heroku) |
+
+## Runtime
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `8080` | HTTP port |
+| `NODE_ENV` | `production` | `development` under `npm run dev` |
+| `DOT_ENV_CONFIG` | `.env` | Which env file to load |
+| `LOGLEVEL` | `info` | pino log level |
+| `LOGTAIL_TOKEN` | — | Logtail log shipping |
+| `DEBUG` | — | `debug` package namespaces (`repliers:*`) |

@@ -1,6 +1,0 @@
-export { default as appliancesResolver } from './appliancesResolver'
-export { default as exteriorResolver } from './exteriorResolver'
-export { default as featuresResolver } from './featuresResolver'
-export { default as homeResolver } from './homeResolver'
-export { default as neighborhoodResolver } from './neighborhoodResolver'
-export { default as roomsResolver } from './roomsResolver'

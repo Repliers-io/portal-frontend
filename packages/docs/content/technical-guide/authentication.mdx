@@ -1,0 +1,80 @@
+import { Callout } from 'nextra/components'
+
+# Authentication & Authorization
+
+Portal auth is **server/proxy-driven** — there is no client-side OAuth SDK. The frontend
+never talks to Google/Facebook (or the Repliers MLS API) directly: it asks the backend proxy
+for a provider URL, redirects the browser to it, and receives an exchange `code` back on a
+callback route. The proxy performs the real OAuth handshake and returns a **JWT**. The token
+lives in a cookie and is attached as a `Bearer` header on every API call.
+
+## Key files
+
+| File                                                        | Responsibility                                                                                                        |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/providers/UserProvider.tsx`                            | Auth state, `roles` map, JWT decode, login methods, `refresh`, `removeTokenFromUrl`                                   |
+| `src/services/API/APIAuth.ts`                               | Auth endpoints — `auth` (get url), `authCallback`, `refresh`, `logout`, `signup`, `login`, `confirmOtp`, `tokenLogin` |
+| `src/services/API/types/auth.ts`                            | `AuthProvider` union, `AuthResponse`, `AuthCallbackResponse`, `ApiUserProfile`                                        |
+| `src/utils/tokens.ts`                                       | Cookie token get/set/clear, `expired`, `refreshNeeded`                                                                |
+| `src/services/API/APIBase.ts`                               | `getHeaders` attaches `Bearer` token; `fetchRaw` clears token on `401`                                                |
+| `src/app/auth/[provider]/processing/page.tsx`               | OAuth callback page — exchanges `?code=` for a token                                                                  |
+| `src/components/templates/components/TokenLoginHandler.tsx` | Silent email-link `?token=` login                                                                                     |
+
+## Providers & methods
+
+`AuthProvider = 'google' | 'facebook' | 'otp'` (`types/auth.ts`). There is **no Apple** and
+**no email/password** login.
+
+- **Google / Facebook** — OAuth redirect flow (`APIAuth.auth` → provider URL → `authCallback`).
+- **OTP** — passwordless email one-time passcode. `requestOtpLogin` calls `APIAuth.login`;
+  a `404` means the user does not exist yet, so it falls through to `APIAuth.signup` and
+  re-requests. `loginWithOtp` confirms the code via `APIAuth.confirmOtp` (`/auth/otp`).
+
+## Flow
+
+1. **Start** — `APIAuth.auth(provider)` hits `/auth/{provider}/url` with a `redirect_uri` of
+   `/auth/{provider}/processing` and returns `AuthResponse { url }`; the app redirects there.
+2. **Callback** — the provider returns to `/auth/[provider]/processing` with `?code=`. That
+   page calls `login(provider, code)` → `APIAuth.authCallback` → `/auth/{provider}/cb`.
+3. **Token** — `parseAuthResponse` reads `AuthCallbackResponse { profile, token }`,
+   `jwtDecode`s the JWT for `sub` (clientId) and `role`, then `processAuthResponse` persists
+   the profile (localStorage, `profileKey`) and the token via `setToken` (cookie, `tokenKey`,
+   30-day expiry). A hard `window.location.replace` returns the user to the saved callback URL.
+4. **Bearer** — every request routes through `APIBase.getHeaders`, which appends
+   `Authorization: Bearer <token>` when the token exists and is not `expired`.
+5. **Refresh** — on mount, `UserProvider` checks the token: `expired` → `logout`;
+   `refreshNeeded` (past 50% of lifespan) → `refresh`, which calls `APIAuth.refresh`
+   (`/auth/refresh`) and re-stores the new token. A failed refresh logs the user out.
+
+## Roles
+
+`UserProvider` maps the JWT `role` index to a name (default index `2` when absent):
+
+```ts
+export const roles = { 1: 'root', 2: 'user', 3: 'admin', 4: 'agent' } as const
+```
+
+Three boolean flags derived from `profile.role` gate the UI (used ~50 times app-wide):
+
+- `userRole` — `role === 'user'`
+- `agentRole` — `role === 'agent' || role === 'admin'`
+- `adminRole` — `role === 'admin'`
+
+`agentId` is set to the `sub` claim only for the `agent` role. Consume all of this through
+`useUser()` (see [State Management](/technical-guide/state-management)).
+
+## Gotchas & hints
+
+- **Tokens can arrive in the URL, then get stripped.** OAuth uses `?code=` on the processing
+  page; email links use `?token=` handled by `TokenLoginHandler` / `ClientSideGuard`
+  (`loginWithToken` → `/auth/repliers-token`). Both immediately call `removeTokenFromUrl`
+  (`history.replaceState`) so the secret never lingers in the address bar or history.
+- **`401` clears the token.** `APIBase.fetchRaw` calls `clearToken()` on any `401` response.
+- **Token lives in a cookie, profile in localStorage.** `getTokenSync` reads the `js-cookie`
+  value; client `logged` isn't reactive, which is why callbacks use hard navigation.
+- **OTP as a second factor.** A `412` from a `?token=` login means OTP is required — the
+  handler opens the `otp-auth` dialog.
+- **Proxy-driven, not Repliers-direct.** The frontend never performs OAuth itself and never
+  calls the MLS API directly — the backend proxy owns the handshake and issues the JWT.
+
+See also [User Features](/product-guide/user-features).

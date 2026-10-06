@@ -1,0 +1,53 @@
+# Contact, Stats & Tours
+
+## Contact — `/contact`
+
+`src/routes/contact.ts` — guest-allowed. Every endpoint responds `"OK"`; all but
+`schedule/estimate` report the interaction to the CRM as a fire-and-forget second
+handler (see [Events & Messaging](/architecture/events-and-messaging)).
+`schedule/estimate` reports from inside `ContactService` and awaits the CRM note
+before responding.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /contact/contactus` | General contact form; accepts optional `tags` (≤5 labels ≤50 chars) that land on the CRM person |
+| `POST /contact/requestinfo` | Property inquiry; the selector fetches the listing and derives sale/rent form tags |
+| `POST /contact/schedule` | Viewing-schedule request; an optional `message` (visitor note) is appended to the email as `note:` and becomes the CRM event message |
+| `POST /contact/schedule/estimate` | Estimate-appointment request (`SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_SCHEDULE_ESTIMATE` adds tags) |
+| `POST /contact/subscribe/newsletter` | Newsletter signup (`…_TAGS_SUBSCRIBE_NEWSLETTER` adds tags) |
+
+**Per-instance validation.** `SETTINGS_VALIDATION_VERSION` (preset:
+`settings.validationVersion`) selects an override module in `src/validate/overrides/`
+that may replace the `contactus` and `requestinfo` schemas; anything it leaves out
+uses the shared schema. One override, for example, requires a name plus an email
+**or** a phone, treating a blank string as missing. An absent email or phone never
+reaches the CRM as an empty entry (`contactEntries`), and the notification email
+shows `—` in its place.
+
+## Stats — `/stats`
+
+`src/routes/stats.ts` — guest-allowed; heavily cached (`CACHE_STATSWIDGET_TTL`,
+`CACHE_NEIGHBORHOODSRANKING_TTL`).
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /stats/widgets` | Market-stats widgets (median prices, days on market, …) |
+| `GET /stats/neighborhoodsranking` | Neighborhood rankings (top-N per `APP_STATSTOP_LIMIT`) |
+| `GET /stats/communities` | Communities information (`providers/data/communities.ts`) |
+
+Status filters follow the instance's vocabulary: `standardStatus` `Closed` / `Active`
+on a RESO instance (one with `APP_ALLOWED_LISTINGS_STANDARD_STATUSES`), `status` `U` /
+`A` otherwise — see
+[Repliers API](/integrations/repliers-api#query-semantics-worth-knowing).
+
+## Virtual tours — `/vtour`
+
+`src/routes/vtour.ts` — stored in the local database
+([persistence](/architecture/persistence) required).
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /vtour` | Admin/Root | Create a virtual tour |
+| `GET /vtour/:slug` | strict | Tour info |
+| `PUT /vtour/:slug` | Admin/Root | Update |
+| `DELETE /vtour/:slug` | Admin/Root | Delete |

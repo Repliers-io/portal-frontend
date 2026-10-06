@@ -1,0 +1,38 @@
+# Persistence
+
+PostgreSQL via **knex**. The connection is part of `AppConfig` (`config.db`) —
+`src/knexfile.ts` just re-exports it, so migrations and the app always share one
+configuration. `DATABASE_URL` overrides the individual `DB_*` vars; `DB_USE_SSL=true`
+is required on Heroku.
+
+## What lives in the database
+
+Portal-owned data only — all MLS data stays upstream. The repository layer
+(`src/repository/`) is the only place SQL/knex queries live:
+
+| Module | Purpose |
+|---|---|
+| `acl.ts` | User roles / access control |
+| `assets.ts` | User-uploaded assets |
+| `vtour.ts` | Virtual tours |
+| `social.ts` | Linked social accounts |
+| `people_sync.ts`, `sync.ts` | CRM people synchronization state |
+| `webhooks.ts` | Webhook bookkeeping |
+| `blocklist.ts` | Auth blocklist |
+
+Migrations live in `src/migrations/` (timestamped knex migrations), created with
+`npm run knex migrate:make <name>`.
+
+## Running without a database
+
+`APP_DISABLE_PERSISTENCE=true` (also the default preset's setting) turns every
+database-backed feature into a safe no-op. This is a first-class mode, not a
+degenerate one:
+
+- local development works with zero Docker containers;
+- the production `release` phase skips migrations when persistence is off
+  (`db:migrate:prod` checks the flag);
+- instances that only proxy and never store can run without a database add-on.
+
+When adding a persistence-backed feature, preserve this property: guard the feature
+on the flag and degrade gracefully rather than crashing on a missing connection.
