@@ -39,15 +39,12 @@
         "./configs/defaults/*"
       ],
       "@icons/*": [
-        "./assets/icons/serhant/*",
         "./assets/icons/defaults/*"
       ],
       "@configs/*": [
-        "./configs/serhant/*",
         "./configs/defaults/*"
       ],
       "@content/*": [
-        "./content/serhant/*",
         "./content/defaults/*"
       ],
       "@templates": [
