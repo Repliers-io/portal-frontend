@@ -8,14 +8,16 @@ This application provides a full-featured real estate portal with interactive ma
 
 **Live Demo:** [portal.repliers.com](https://portal.repliers.com/)
 
+**Documentation:** [portal.repliers.com/documentation](https://portal.repliers.com/documentation) — the full frontend and backend guides.
+
 The repository is a pnpm workspace:
 
-| Package                    | Contents                                                     |
-| -------------------------- | ------------------------------------------------------------ |
-| `packages/portal-frontend` | the portal app — Next.js (App Router)                        |
-| `packages/ai-agent-client` | the AI chat interface embedded in the portal — Vite + React  |
-| `packages/docs`            | frontend documentation site — Nextra                         |
-| `packages/backend-docs`    | backend documentation site — Nextra                          |
+| Package                    | Contents                                                          |
+| -------------------------- | ----------------------------------------------------------------- |
+| `packages/portal-frontend` | the portal app — Next.js 16.3 (App Router), React 19.2            |
+| `packages/ai-agent-client` | the AI chat interface embedded in the portal — Vite 7, React 19   |
+| `packages/docs`            | frontend documentation site — Nextra 4.6                          |
+| `packages/backend-docs`    | backend documentation site — Nextra 4.6                           |
 
 ## Getting Started
 
@@ -23,15 +25,15 @@ The repository is a pnpm workspace:
 
 Before you begin, ensure you have the following installed:
 
-- Node.js (min v22.x)
-- pnpm (min v10.x)
+- Node.js 24.x or 26.x
+- pnpm 12.6 (pinned in `package.json` → `packageManager`)
 - Git
 - fully operational Repliers API backend (see [portal-backend](https://github.com/Repliers-io/portal-backend) for instructions on how to get it running locally)
 
-**Required API Keys:**
+**API Keys:**
 
 - **Mapbox API Key** - Required for location and mapping features. Create a free account at [mapbox.com](https://www.mapbox.com/) to obtain your API key.
-- **Google Maps API Key** - Required for Street View functionality. Create a free account at [Google Cloud Console](https://cloud.google.com/) and enable the Street View Static API.
+- **Google Maps API Key** - Optional, for Street View functionality; without it, Street View images do not load and the rest of the portal works. Create a free account at [Google Cloud Console](https://cloud.google.com/) and enable the Street View Static API.
 
 ### Installation
 
@@ -60,7 +62,7 @@ Create `packages/portal-frontend/.env` with your values:
 
 - `NEXT_PUBLIC_MAPBOX_KEY` - Your Mapbox API key for location and mapping features. Get yours at [mapbox.com](https://www.mapbox.com/).
 
-**Google Maps Configuration:**
+**Google Maps Configuration (optional):**
 
 - `NEXT_PUBLIC_GMAPS_KEY` - Your Google Maps API key for Street View functionality. Create an account at [Google Cloud Console](https://cloud.google.com/) and enable the Street View Static API.
 
