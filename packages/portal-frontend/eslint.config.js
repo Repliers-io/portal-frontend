@@ -3,7 +3,6 @@ import nextPlugin from '@next/eslint-plugin-next'
 import prettierPlugin from 'eslint-config-prettier'
 import importPlugin from 'eslint-plugin-import'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
-import prettierPluginRecommended from 'eslint-plugin-prettier/recommended'
 import reactPlugin from 'eslint-plugin-react'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import simpleImportSortPlugin from 'eslint-plugin-simple-import-sort'
@@ -32,6 +31,7 @@ export default [
       'build/**',
       'node_modules/**',
       'coverage/**',
+      'public/**',
       '**/*.d.ts',
       '**/*.tsbuildinfo',
       '**/*.log',
@@ -58,7 +58,6 @@ export default [
     }
   },
   prettierPlugin,
-  prettierPluginRecommended,
 
   // Main configuration
   {
@@ -71,16 +70,13 @@ export default [
       parserOptions: {
         ecmaFeatures: {
           jsx: true
-        },
-        project: './tsconfig.json',
-        tsconfigRootDir: import.meta.dirname
+        }
       },
       globals: {
         ...globals.browser,
         ...globals.es2021,
         ...globals.node,
-        ...globals.jest,
-        NodeJS: 'readonly'
+        ...globals.jest
       }
     },
 
@@ -109,7 +105,6 @@ export default [
       // General rules
       quotes: ['error', 'single', { avoidEscape: true }],
       'no-shadow': 'off',
-      'no-undef': 'error',
       'no-bitwise': 'warn',
       'no-plusplus': 'off',
       'no-redeclare': 'off',

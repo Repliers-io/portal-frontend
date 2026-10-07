@@ -1,5 +1,3 @@
-import type React from 'react'
-
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 
 import { CmsContentRenderer } from '@shared/CmsContentRenderer'

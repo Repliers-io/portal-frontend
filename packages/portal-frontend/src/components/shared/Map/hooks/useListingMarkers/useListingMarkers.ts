@@ -11,7 +11,7 @@ import { useMapListener } from '@shared/Map/hooks/useMapListener'
 import { useParcelGroups } from '@shared/Map/hooks/useParcelListings'
 import { createMarkerElement, setMarkerHover } from '@shared/Map/markerElement'
 
-import { type ApiBounds, type ApiListing } from 'services/API'
+import { type ApiListing } from 'services/API'
 import { MAP_CONSTANTS } from 'services/Map/constants'
 import { useMapOptions, useMapPopupActions } from 'providers/MapOptionsProvider'
 import { useSearch } from 'providers/SearchProvider'
@@ -106,14 +106,12 @@ export const useListingMarkers = ({
     const wire = (el: HTMLElement, d: MarkerDescriptor): void => {
       if (d.kind === 'cluster') {
         el.addEventListener('click', () => {
-          const b = d.bounds!
-          const apiBounds: ApiBounds = {
-            top_left: { longitude: b.westLng, latitude: b.northLat },
-            bottom_right: { longitude: b.eastLng, latitude: b.southLat }
-          }
+          const bounds = d.bounds!
+          const { top_left, bottom_right } = bounds
           const buffer =
-            (b.eastLng - b.westLng) * MAP_CONSTANTS.ZOOM_TO_MARKER_BUFFER
-          map.fitBounds(toMapboxBounds(apiBounds, buffer))
+            (bottom_right.longitude - top_left.longitude) *
+            MAP_CONSTANTS.ZOOM_TO_MARKER_BUFFER
+          map.fitBounds(toMapboxBounds(bounds, buffer))
         })
         return
       }

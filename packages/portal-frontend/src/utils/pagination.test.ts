@@ -1,3 +1,4 @@
+/** @jest-environment @happy-dom/jest-environment */
 import { type ApiListing } from 'services/API'
 
 import {

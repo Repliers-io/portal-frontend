@@ -80,7 +80,7 @@ popups are shared: `src/components/shared/Map/` — see
 
 | Config                 | Drives                                                                                                                                                                                                                                                                                                                                       |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@configs/map`         | Initial camera (`mapboxDefaults`), controls (`position`, `mobilePosition`, `compass`, and the `colors` palette every `MapControlButton` paints from), `searchArea` boundary, overlays. An overlay with `external` (`resolveLocation` + `filterToken`) makes its markers selectable as external locations persisted via `externalLocationId`. |
+| `@configs/map`         | Initial camera (`mapboxDefaults`), controls (`position`, `mobilePosition`, `compass`, and the `colors` palette every `MapControlButton` paints from), `searchArea` boundary, overlays, `marker.clusterPosition` (cluster markers at the API centroid or the bounds center). An overlay with `external` (`resolveLocation` + `filterToken`) makes its markers selectable as external locations persisted via `externalLocationId`. |
 | `@configs/search`      | Paging, clustering, MLS board routing, `autosuggestPosition`, `extractLocationPolygons`.                                                                                                                                                                                                                                                     |
 | `@configs/filters`     | `defaultFilters`, the type-selector `listingTypes` list, which advanced-filter slots render, `priceInputs` (the price picker reads its range in two editable inputs instead of labels on the thumbs), and `soldPriceAndDate` (a sold range filtered by the sold price and "Newest to Oldest" ordered by sale date).                       |
 | `@configs/params`      | URL-param shorthand names for the shareable search state.                                                                                                                                                                                                                                                                                    |
@@ -117,6 +117,9 @@ popups are shared: `src/components/shared/Map/` — see
   (`dedupeListings`) because the API can return both; `boardId` is backfilled in the Search
   service so the inlined twin collapses onto the top-level key. Miss this and you get phantom
   duplicate markers / a hung listing browser.
+- **Cluster markers sit at the API centroid.** `cluster.location` is the mean of the cluster's
+  listings; `@configs/map` `marker.clusterPosition: 'boundsCenter'` moves the marker to the
+  middle of `cluster.bounds` instead. Either way a click fits `cluster.bounds`.
 - **Board routing is per-listing.** A listing whose board is in `@configs/search`
   `distinctBoardIds` is fetched and linked with that board, spelled out by `getSeoUrl` as a
   trailing `-{boardId}` suffix so a direct visit reads the record the link was built from;

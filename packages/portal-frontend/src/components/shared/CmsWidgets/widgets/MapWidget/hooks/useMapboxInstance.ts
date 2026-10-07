@@ -158,17 +158,15 @@ export const useMapboxInstance = ({
         })
 
         if (d.kind === 'cluster') {
-          const b = d.bounds!
-          const apiBounds = {
-            top_left: { longitude: b.westLng, latitude: b.northLat },
-            bottom_right: { longitude: b.eastLng, latitude: b.southLat }
-          }
+          const bounds = d.bounds!
+          const { top_left, bottom_right } = bounds
           const buffer =
-            (b.eastLng - b.westLng) * MAP_CONSTANTS.ZOOM_TO_MARKER_BUFFER
+            (bottom_right.longitude - top_left.longitude) *
+            MAP_CONSTANTS.ZOOM_TO_MARKER_BUFFER
           element.addEventListener('click', (e) => {
             e.preventDefault()
             e.stopPropagation()
-            map.fitBounds(toMapboxBounds(apiBounds, buffer))
+            map.fitBounds(toMapboxBounds(bounds, buffer))
           })
         } else {
           const listing = d.listing!

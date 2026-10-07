@@ -1,4 +1,3 @@
-/** @jest-environment node */
 const headersMock = jest.fn()
 const storeMock = jest.fn()
 

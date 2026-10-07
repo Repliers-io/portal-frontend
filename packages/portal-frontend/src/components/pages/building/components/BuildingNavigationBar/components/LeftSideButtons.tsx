@@ -1,5 +1,3 @@
-import type React from 'react'
-
 import listingsConfig from '@configs/listings'
 import { NavGalleryButton, ScrollToTopButton } from '@shared/NavigationBar'
 

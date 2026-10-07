@@ -1,7 +1,6 @@
-import {
-  SvgIcon as MuiSvgIcon,
+import MuiSvgIcon, {
   type SvgIconProps as MuiSvgIconProps
-} from '@mui/material'
+} from '@mui/material/SvgIcon'
 
 // Custom icons are built on MUI's SvgIcon so they share one prop contract with
 // @mui/icons-material and are interchangeable in the icon registry. `size` (px)

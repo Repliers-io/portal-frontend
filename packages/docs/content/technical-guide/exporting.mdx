@@ -2,9 +2,10 @@ import { Callout } from 'nextra/components'
 
 # Code Export
 
-The monorepo can emit two kinds of standalone artifacts: a full **open-source** copy of the
-codebase (defaults tenant, whole monorepo) and a **single-tenant frontend** promoted to its
-own repo. Both strip the internals that must not ship and produce an installable project.
+The monorepo can emit three kinds of standalone artifacts: a full **open-source** copy of the
+codebase (defaults tenant, whole monorepo), a **single-tenant monorepo** (the same copy with one
+tenant in it) and a **single-tenant frontend** promoted to its own repo. All strip the internals
+that must not ship and produce an installable project.
 
 <Callout type="info">
   Pair a tenant export with [Feature
@@ -14,15 +15,26 @@ own repo. Both strip the internals that must not ship and produce an installable
   resolve.
 </Callout>
 
-## Two products
+## Three products
 
-| Command                         | Output                          | Scope                                | Use case                  |
-| ------------------------------- | ------------------------------- | ------------------------------------ | ------------------------- |
-| `pnpm export:oss`               | `../portal-monorepo-oss` | Whole monorepo, `defaults` tenant    | Public OSS release        |
-| `pnpm export:frontend <tenant>` | `../<tenant>-frontend`          | Frontend only, one tenant, flat root | Standalone tenant handoff |
+| Command                                                | Output                          | Scope                                   | Use case                  |
+| ------------------------------------------------------ | ------------------------------- | --------------------------------------- | ------------------------- |
+| `pnpm export:oss`                                      | `../portal-monorepo-oss`        | Whole monorepo, `defaults` tenant       | Public OSS release        |
+| `pnpm export:tenant <tenant> [outputDir]`              | `../portal-monorepo-<tenant>`   | Whole monorepo, `defaults` + one tenant | Tenant handoff            |
+| `pnpm export:tenant <tenant> [outputDir] --standalone` | `../<tenant>-frontend`          | Frontend only, one tenant, flat root    | Frontend-only handoff     |
 
-Both share pure helpers in `scripts/oss-shared.ts` (exclusion globs, file scan, the
-`next.config` brace-matcher, package.json filtering, and the fork flattener).
+`export:tenant <tenant> [outputDir]` is the backend's command too (`npm run export:tenant`).
+`outputDir` replaces the default output folder.
+
+All share pure helpers in `scripts/oss-shared.ts` (exclusion globs, file scan, the
+`next.config` brace-matcher, package.json filtering, the fork flattener and the destination
+cleanup).
+
+<Callout type="info">
+  **Every export empties its output folder except `.git`.** Files deleted from the source do not
+  linger, and a clone of the published repo kept right in the output folder shows each export as
+  a diff to review and commit — no separate working copy to copy into.
+</Callout>
 
 ## Open-source monorepo export
 
@@ -48,7 +60,7 @@ Runs three scripts into `../portal-monorepo-oss`:
 3. **`copy-oss-configs.ts`** — copies the config whitelist, **strips the `webpack` and
    `turbopack` sections from `next.config.js`** (the `OverridePlugin` is internal — the export
    runs on **Turbopack**), copies a whitelist of `public/` assets plus the docs screenshots
-   (`packages/docs/public/img`), copies the root `pnpm-workspace.yaml` + `.npmrc` +
+   (`packages/docs/public/img`), copies the root `README.md` + `LICENSE` + `pnpm-workspace.yaml` + `.npmrc` +
    `.gitignore` + `pnpm-lock.yaml`, then prunes that lockfile to the exported packages
    (`pnpm install --lockfile-only`) — so the export installs the versions the monorepo tested.
 
@@ -62,11 +74,11 @@ the standalone docs builds omit those links.
 ## Standalone tenant export
 
 ```bash
-pnpm export:frontend <tenant>      # e.g. pnpm export:frontend justinhavre-avm
+pnpm export:tenant <tenant> --standalone      # e.g. pnpm export:tenant justinhavre-avm --standalone
 ```
 
 Produces `../<tenant>-frontend/` — the contents of `packages/portal-frontend` promoted to the
-repo root (no monorepo wrapper, no `ai-agent-client` / `docs` / backend). `scripts/export-frontend-tenant.ts`:
+repo root (no monorepo wrapper, no `ai-agent-client` / `docs` / backend). `scripts/export-tenant.ts`:
 
 1. **Mirror + filter** — copies the frontend as git sees it (gitignored files never ship), keeping **both** `defaults` and `<tenant>`
    configs/content/icons, filtering every other tenant.
@@ -92,8 +104,9 @@ The config **alias mechanism stays live** (tenant-first tsconfig paths), while t
 <Callout type="warning">
   **Exports install with pnpm and run on Turbopack.** Both exports ship a `pnpm-lock.yaml`
   (matching the monorepo and the Heroku deploy) — install with `pnpm install`, not npm. Because
-  the `webpack` block is stripped, the exports run on **Turbopack**; the `OverridePlugin` (and
-  `--webpack`) stay in the main repo only, where `_<tenant>/` forks still need the resolver. A
+  the `webpack` block is stripped, the exports run on **Turbopack** — `dev` and `build` alike
+  (`build-remote.js` picks Turbopack when `webpack-override.js` is not shipped); the
+  `OverridePlugin` (and `--webpack`) stay in the main repo only, where `_<tenant>/` forks still need the resolver. A
   side effect: deep type-imports into a package's `.d.ts` tree (e.g. `recharts/types/util/types`)
   that webpack tolerated will fail Turbopack resolution — import the type from the package's
   public entry instead.

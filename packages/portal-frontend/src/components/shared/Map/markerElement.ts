@@ -1,9 +1,9 @@
-import { alpha, darken, lighten } from '@mui/material'
-
 import mapConfig from '@configs/map'
 import typography from '@configs/theme/typography'
 
 import { type Primitive, toSafeNumber } from 'utils/formatters'
+
+import { alpha, darken, lighten } from '@mui/material/styles'
 
 // Builds a marker DOM element cheaply: plain nodes + one shared stylesheet, no
 // React root and no per-marker MUI `sx`. The previous React-root version spun up

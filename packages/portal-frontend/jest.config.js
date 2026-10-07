@@ -19,6 +19,20 @@ function pathsToModuleNameMapper(paths, options = {}) {
   return moduleNameMapper
 }
 
+const esmPackages = [
+  'd3-array',
+  'd3-geo',
+  'decode-uri-component',
+  'filter-obj',
+  'internmap',
+  'kdbush',
+  'marked',
+  'p-throttle',
+  'query-string',
+  'split-on-first',
+  'supercluster'
+]
+
 const config = {
   transform: {
     '^.+\\.(t|j)sx?$': [
@@ -49,8 +63,11 @@ const config = {
       prefix: '<rootDir>/src/'
     })
   },
-  transformIgnorePatterns: [],
-  testEnvironment: '@happy-dom/jest-environment',
+  // Only ESM-only packages go through SWC; the rest of node_modules is CJS
+  transformIgnorePatterns: [
+    `/node_modules/(?!\\.pnpm/|(${esmPackages.join('|')})/)`
+  ],
+  testEnvironment: 'node',
   roots: ['<rootDir>'],
   moduleDirectories: ['node_modules', '<rootDir>/src'],
   testPathIgnorePatterns: [

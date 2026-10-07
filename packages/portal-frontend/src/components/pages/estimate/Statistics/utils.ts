@@ -71,7 +71,7 @@ export const toWidgetsData = (response: ApiStatisticResponse): WidgetsData => {
 
   const volumeData = extractVolume(widgets)
 
-  return deepmerge(
+  return deepmerge<WidgetsData, object>(
     defaultWidgetData,
     {
       activeListings: {

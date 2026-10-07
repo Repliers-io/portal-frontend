@@ -1,8 +1,9 @@
 import { markerColors } from '@configs/colors'
+import mapConfig from '@configs/map'
 import { type MarkerSize } from '@shared/Map'
 import { type MarkerKind } from '@shared/Map/markerElement'
 
-import { type ApiCluster, type ApiListing } from 'services/API'
+import { type ApiBounds, type ApiCluster, type ApiListing } from 'services/API'
 import { formatPrice } from 'utils/formatters'
 import {
   displayOnMap,
@@ -12,6 +13,7 @@ import {
   resolveListingMarkerColor,
   scrubbed
 } from 'utils/listings'
+import { getCenter, toMapboxPoint } from 'utils/map'
 
 // A plain description of one marker to render. The manager diffs these by `key`
 // and only creates/removes the DOM markers that actually changed.
@@ -30,13 +32,8 @@ export type MarkerDescriptor = {
   // can highlight the whole group's grid cards at once
   mlsNumbers?: string[]
   multiUnit?: boolean
-  // cluster markers — corner scalars to fitBounds on click
-  bounds?: {
-    westLng: number
-    northLat: number
-    eastLng: number
-    southLat: number
-  }
+  // cluster markers — fitBounds target on click
+  bounds?: ApiBounds
 }
 
 // Commercial/Residential listings are never grouped — each shows its own marker
@@ -82,6 +79,7 @@ export const listingDescriptors = (
     }
 
     const { mlsNumber, listPrice, map } = listing
+    const { lng, lat } = toMapboxPoint(map)
     const label = multiUnit
       ? `${group!.mlsNumbers.length} units`
       : !scrubbed(listPrice)
@@ -94,8 +92,8 @@ export const listingDescriptors = (
       // size in the key so crossing the point/tag zoom rebuilds the markers.
       key: `${size}:${mlsNumber}`,
       kind,
-      lng: Number(map.longitude),
-      lat: Number(map.latitude),
+      lng,
+      lat,
       label,
       color,
       hoverColor,
@@ -115,28 +113,24 @@ export const listingDescriptors = (
 const clusterKey = (cluster: ApiCluster): string =>
   `c-${cluster.count}-lat-${cluster.location.latitude}-lng-${cluster.location.longitude}`
 
-const clusterBounds = (cluster: ApiCluster) => ({
-  // top_left = north-west corner, bottom_right = south-east corner
-  westLng: Number(cluster.bounds.top_left.longitude),
-  northLat: Number(cluster.bounds.top_left.latitude),
-  eastLng: Number(cluster.bounds.bottom_right.longitude),
-  southLat: Number(cluster.bounds.bottom_right.latitude)
-})
-
 const clusterDescriptor = (
   cluster: ApiCluster,
   colors: ListingMarkerColor = markerColors.default
 ): MarkerDescriptor => {
-  const { location, count } = cluster
+  const { location, count, bounds } = cluster
+  const { lng, lat } =
+    mapConfig.marker.clusterPosition === 'boundsCenter'
+      ? getCenter(bounds)
+      : toMapboxPoint(location)
   return {
     key: clusterKey(cluster),
     kind: 'cluster',
-    lng: Number(location.longitude),
-    lat: Number(location.latitude),
+    lng,
+    lat,
     label: String(count),
     color: colors.color,
     hoverColor: colors.hoverColor,
-    bounds: clusterBounds(cluster)
+    bounds
   }
 }
 

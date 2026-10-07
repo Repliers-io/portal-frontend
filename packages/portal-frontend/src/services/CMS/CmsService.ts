@@ -4,6 +4,8 @@
  * them via createClient, and delegates local-vs-remote routing to CmsResolver.
  * Anatomy: docs → product-guide/cms-content/technical
  */
+import { notFound } from 'next/navigation'
+
 import features from '@configs/features'
 
 import { GhostClient, MarkdownClient, WordPressClient } from './clients'
@@ -132,14 +134,8 @@ export const CmsService = {
    */
   getPagesClient: () => pagesClientInstance,
 
-  getBlogClient: () => {
-    if (!blogClientInstance) {
-      throw new Error(
-        'Blog client is not configured. Ensure blog feature is enabled and CMS_BLOG_CLIENT is set.'
-      )
-    }
-    return blogClientInstance
-  }
+  /** Blog routes 404 until the blog feature is on and CMS_BLOG_CLIENT points at a CMS. */
+  getBlogClient: () => blogClientInstance ?? notFound()
 }
 
 export default CmsService

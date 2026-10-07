@@ -1,4 +1,3 @@
-/** @jest-environment node */
 import listingsConfig from '@configs/listings'
 
 import { APISearch } from 'services/API'
