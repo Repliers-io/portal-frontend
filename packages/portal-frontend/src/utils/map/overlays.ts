@@ -2,8 +2,6 @@ import type { FeatureCollection } from 'geojson'
 import type { LngLatBounds } from 'mapbox-gl'
 import queryString from 'query-string'
 
-import { lighten } from '@mui/material'
-
 import { info } from '@configs/colors'
 import mapConfig from '@configs/map'
 import {
@@ -15,6 +13,8 @@ import type { Category } from 'app/api/mapbox/pois/_lib'
 
 import type { LocationType } from 'services/API'
 import { locationsToGeoJson } from 'services/API/locationsToGeoJson'
+
+import { lighten } from '@mui/material/styles'
 
 import { boundsToCenterRadius, toRectangle } from './converters'
 

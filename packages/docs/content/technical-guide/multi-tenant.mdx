@@ -113,8 +113,10 @@ reference them — see the import rules above), and strips the webpack
 `.next/server/**/*.map` (Turbopack emits a sourcemap per server chunk with no off
 switch) and `.next/cache` (Turbopack's persistent cache, which would ship in the
 Heroku slug; normalized builds start cold, so it is never reused anyway) — together
-roughly 400MB of deploy weight that webpack builds never shipped. Without the flag the
-build is the legacy webpack one, byte-identical to before this mechanism existed.
+roughly 400MB of deploy weight that webpack builds never shipped. Without the flag, a
+tree that ships no `scripts/webpack-override.js` — an export, normalized at export time —
+skips normalization and builds on Turbopack the same way; otherwise the build is the
+legacy webpack one, byte-identical to before this mechanism existed.
 The step is destructive for the checkout and is meant for ephemeral build trees
 only (Heroku slug builds, Vercel build containers, throwaway git worktrees).
 

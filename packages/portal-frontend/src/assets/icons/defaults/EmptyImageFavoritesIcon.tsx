@@ -1,10 +1,10 @@
-import { darken } from '@mui/material'
-
 import {
   background as backgroundColor,
   divider as strokeColor
 } from '@configs/colors'
 import SvgIcon, { type SvgColorIconProps } from '@icons/SvgIcon'
+
+import { darken } from '@mui/material/styles'
 
 const EmptyImageFavoritesIcon = ({
   color = '#FFCB63',

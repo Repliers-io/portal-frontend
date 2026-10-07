@@ -1,3 +1,4 @@
+/** @jest-environment @happy-dom/jest-environment */
 import { createMarkerElement } from './markerElement'
 
 describe('createMarkerElement — name-tag kind', () => {

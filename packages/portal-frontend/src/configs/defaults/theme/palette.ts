@@ -1,5 +1,3 @@
-import { darken, lighten } from '@mui/material'
-
 import {
   background,
   black,
@@ -16,6 +14,8 @@ import {
   warning,
   white
 } from '@configs/colors'
+
+import { darken, lighten } from '@mui/material/styles'
 
 /**
  * MUI theme palette. Maps the raw brand colors from `@configs/colors` onto the

@@ -1,4 +1,3 @@
-/** @jest-environment node */
 import { getForwardedFrom } from 'utils/xff'
 
 import { APIBase } from './APIBase'

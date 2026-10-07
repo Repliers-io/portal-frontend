@@ -4,9 +4,9 @@
  * palette. A tenant overrides by shipping its own `configs/<tenant>/colors.ts` that
  * re-exports the same names with new values.
  */
-import { darken, lighten } from '@mui/material'
-
 import { type ListingMarkerColor } from 'utils/listings'
+
+import { darken, lighten } from '@mui/material/styles'
 
 /** Pure white surface color. */
 export const white = '#FFFFFF'

@@ -38,7 +38,7 @@ export const ButtonsBar = ({
       href: estimateUrl
     },
     edit: {
-      icon: <EstimateEditIcon size={16} />,
+      icon: <EstimateEditIcon />,
       label: 'Edit',
       href: editEstimateUrl
     },

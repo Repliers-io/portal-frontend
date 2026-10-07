@@ -1,3 +1,4 @@
+/** @jest-environment @happy-dom/jest-environment */
 import type { FeatureCollection } from 'geojson'
 
 import type { OverlayLayerDefinition } from '@defaults/map'

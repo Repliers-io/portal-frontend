@@ -2,11 +2,11 @@ import type { FeatureCollection, Position } from 'geojson'
 import { type LngLat, type LngLatBounds, type MapOptions } from 'mapbox-gl'
 import type { ComponentType } from 'react'
 
-import { alpha, lighten } from '@mui/material'
-
 import type { Features } from '@configs/features'
 
 import type { ApiLocation, LocationType } from 'services/API'
+
+import { alpha, lighten } from '@mui/material/styles'
 
 export type OverlayLayerClusterConfig = {
   /** Zoom level above which clustering is disabled. Default: 14 */
@@ -482,7 +482,9 @@ const config = {
     },
     // Colour of the single address (radius-less) point marker. Tenants override
     // with their brand colour; defaults to the palette `info` blue.
-    pointColor: info
+    pointColor: info,
+    // Where a cluster marker sits: the API centroid or its bounds center.
+    clusterPosition: 'centroid' as 'centroid' | 'boundsCenter'
   },
   /**
    * Zoom-level thresholds used across the map. Integers on the Mapbox 0–22 scale;

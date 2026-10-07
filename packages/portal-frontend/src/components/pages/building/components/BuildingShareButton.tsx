@@ -1,5 +1,3 @@
-import type React from 'react'
-
 import { ShareButton } from '@shared/Buttons'
 
 import { useBuilding } from 'providers/BuildingProvider'

@@ -1,11 +1,11 @@
-import { darken } from '@mui/material'
-
 import {
   background as backgroundColor,
   divider as strokeColor,
   primary as color
 } from '@configs/colors'
 import SvgIcon, { type SvgColorIconProps } from '@icons/SvgIcon'
+
+import { darken } from '@mui/material/styles'
 
 const EmptyListingsIcon = ({ size = 90 }: SvgColorIconProps) => {
   return (
