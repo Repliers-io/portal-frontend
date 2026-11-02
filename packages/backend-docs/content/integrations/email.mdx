@@ -1,28 +1,41 @@
 # Email
 
-Outbound mail (OTP codes, login links, inquiry notifications, estimate emails) has
-two delivery paths:
+Outbound mail has two delivery paths, and which one a message takes depends on the feature,
+not only on configuration.
+
+| Message                                           | Path                                                                                          | Source                                                                       |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| OTP codes and login links                         | Repliers Messages API, always                                                                 | `src/services/auth.ts` (`AuthService.sendOtp`)                               |
+| Agent-to-client messages                          | Repliers Messages API, always                                                                 | `src/services/agent.ts` (`createMessage`)                                    |
+| Contact, tour-schedule and info-request inquiries | SMTP when `SMTP_ENABLED` and `REPLIERS_AGENT_EMAIL` are both set, else Repliers Messages      | `src/services/contact.ts` (`sendEmail`)                                      |
+| Estimate-meeting inquiry (`schedule/estimate`)    | Repliers Messages API, always                                                                 | `src/services/contact.ts` (`scheduleEstimate`)                               |
+| Estimate emails (immediate and monthly)           | Sent by Repliers after the backend sets flags on the estimate; neither path below is involved | `src/services/estimate.ts` (`add`), `src/services/agent.ts` (`sendEstimate`) |
 
 ## Repliers Messages API (default)
 
-`services/repliers/messages.ts` — messages are sent through the upstream Messages
-API on behalf of the configured agent (`REPLIERS_AGENT_ID`). This is a **real
-delivery channel that reaches real people**; treat every code path that feeds it as
-security-sensitive (validate inputs, keep OTP contents server-controlled).
+`src/services/repliers/messages.ts` (`RepliersMessages.send`) posts to the upstream Messages
+API as an agent or client pair. OTP messages go out as the agent `REPLIERS_AGENT_ID` unless a
+caller passes another. This is a **real delivery channel that reaches real people**; treat every
+code path that feeds it as security-sensitive (validate inputs, keep OTP contents
+server-controlled).
 
 OTP message shape is configured via `AUTH_OTP_MESSAGE` and `AUTH_OTP_MESSAGE_TYPE`
-(`link_and_code` by default; the default preset uses `code`).
+(`link_and_code` when unset or unrecognised; the default preset sets `code`).
 
 ## Static SMTP (fallback / standalone)
 
-`SMTP_ENABLED=true` switches delivery to a Gmail account via nodemailer
-(`services/smtp.ts`): `GMAIL_USER` + `GMAIL_APP_PASSWORD`, with
-`REPLIERS_AGENT_EMAIL` as the sender identity. Useful for instances without Repliers
-messaging or for isolated environments.
+`SMTP_ENABLED=true` creates a nodemailer Gmail transport (`GMAIL_USER`, `GMAIL_APP_PASSWORD`) in
+`src/services/smtp.ts` (`SmtpService`). Its only caller is `ContactService.sendEmail`, which
+uses it when `SMTP_ENABLED` is on **and** `REPLIERS_AGENT_EMAIL` is set. The mail is sent
+from `GMAIL_USER` **to** `REPLIERS_AGENT_EMAIL`, carrying only the content's subject (default
+"New message from client") and message text; the `listings` array of the Messages payload is not
+part of it. With `SMTP_ENABLED` false, `SmtpService.send` rejects.
 
 ## Estimate emails
 
-`REPLIERS_ESTIMATES_SEND_EMAIL_NOW` sends the estimate to the user immediately after
-creation; `REPLIERS_ESTIMATES_SEND_EMAIL_MONTHLY` subscribes them to monthly
-re-estimates (both on in the default preset via
-`repliers.estimatesNotificationSettings`).
+The backend does not send estimate emails. It sets `sendEmailNow` and `sendEmailMonthly` on the
+estimate it stores in Repliers, and Repliers delivers. On `POST /api/estimate` a user's flags
+come from the request or, when falsy, from `repliers.estimatesNotificationSettings`
+(`REPLIERS_ESTIMATES_SEND_EMAIL_NOW` / `_MONTHLY`; both on in the default preset). An agent's
+send sets `sendEmailNow: true` on the estimate. The rules, with the cases where the preset does
+not apply, are on [Estimate pipeline](/api-reference/estimate/pipeline#notifications).

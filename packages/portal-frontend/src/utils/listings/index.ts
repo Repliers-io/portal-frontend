@@ -83,7 +83,12 @@ export {
   type TourMedia,
   type TourMediaType
 } from './tours'
-export { displayPublic, restricted, restrictedToGuest } from './visibility'
+export {
+  displayPublic,
+  hiddenPrice,
+  restricted,
+  restrictedToGuest
+} from './visibility'
 
 const {
   pricing: { premiumCondo, premiumResidential }

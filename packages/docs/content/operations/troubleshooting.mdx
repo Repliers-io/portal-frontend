@@ -1,0 +1,35 @@
+# Troubleshooting
+
+Source review: `e30dd9b47`, 2026-11-02. Diagnose the responsible layer before
+changing config. Capture the command, revision, tenant, backend origin and one
+sanitized record; never include tokens or environment-file contents in a report.
+
+| Symptom | Evidence to collect | Owning code / next action |
+| --- | --- | --- |
+| Empty map despite a working backend | Actual browser search query, viewport, board/property type and one backend record | Compare active tenant filters with dataset in Search adapter/API; a 200 with zero results is not a network failure |
+| Search remains loading | Request cancellation versus non-OK response; prior results | `SearchProvider.search`, `SearchService.fetch`; current catch can leave loading/prior data unchanged |
+| Reopened URL differs | Compare full filter keys, geometry, layout and saved `searchId` | URL codecs and saved-search loader; multi-ring region is not the ordinary editable URL polygon |
+| Wrong listing opens | MLS id, suffix/query board, selected record | Listing route parser; query board must be allowed; default-board fallback is intentional |
+| Auth UI and API disagree | Cookie expiry, provider hydration, status 401/412 without token values | UserProvider, TokenLoginHandler, APIBase; cookie clearing is not a complete reactive logout |
+| Favorite disappears locally but reappears | Delete HTTP status and next collection fetch | APIFavorites uses raw delete response; resolved call alone is insufficient evidence |
+| Saved search rejected | Backend info message, persisted rings versus live location ids | SaveSearchProvider conversion/count boundary; UI count limit is heuristic |
+| Form says success but delivery absent | Endpoint, HTTP status, raw versus JSON service method | APIContact and caller; do not resend to a real destination repeatedly to debug |
+| CMS body/title appears mixed | Resolver strategy, local metadata, selected client | CmsResolver intentionally merges local metadata over remote pages |
+| Widget appears unknown or invalid | Exact widget name, parsed props, registry schema | Widget parser/transform/registry; quotes, arrays and nested fields must match parser rules |
+| Locations are empty/stale | Feature flag, generated file metadata, process lifecycle | LocationsTree static loader and generator; page ISR does not rebuild the file |
+| Building group/detail mismatches | CMS CPT/category identity and assembled API record | CMS/building assembly; WordPress names are inverted |
+| Overlay missing | Active layer ids, zoom, showOn surface, request result, geometry types | MapOptionsProvider and overlay hooks; points and polygons have different rendering paths |
+| Tenant change still shows old UI | Active process command and generated aliases/fork resolution | Generation and webpack cache; do not regenerate another running tenant's shared config |
+| Production content stale | Route interval, cache namespace, revalidation response, actual rendered body | Cache handler / generated rewrites / hosting cache; refresh each owning layer deliberately |
+| Build passes but types fail | Separate type-check output | Next config ignores build TypeScript errors; build success is not type-check success |
+| Docs checker reports many missing pages | Build manifest basePath and chosen output | Rebuild/check the matching standalone or static mode |
+| Docs page loads without assets/search | Base path, copied `_next`/Pagefind files and portal rewrites | Docs bundler and deployment artifact, not MDX prose |
+| Google font build fetch fails | Build error and network availability | Docs Next/font build dependency; do not change typography merely to mask an infrastructure failure |
+
+## Minimal incident record
+
+Record the trigger, expected versus observed outcome, sanitized request/response,
+owning source symbol, the observation that disproved the first hypothesis, and the
+verification after correction. Separate a source-derived explanation from a
+runtime observation. Application changes discovered during documentation work
+need their own agreed scope.

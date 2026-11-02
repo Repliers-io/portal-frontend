@@ -59,6 +59,8 @@ export interface HomeMapProps {
   /** Marker configuration with price, status and symbol; none draws no marker. */
   marker?: {
     price?: Primitive
+    /** Tag text in place of the formatted price */
+    label?: string
     status?: string
     symbol?: string
     size?: MarkerSize
@@ -150,7 +152,7 @@ export const HomeMap = ({
         const element = createMarkerElement({
           kind: markerKind(marker.size, marker.price),
           color: markerColors.default.color,
-          label: formatPrice(marker.price)
+          label: marker.label ?? formatPrice(marker.price)
         })
         new MapboxMarker(element).setLngLat(center).addTo(map)
       }

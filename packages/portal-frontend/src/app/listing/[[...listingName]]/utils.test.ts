@@ -15,6 +15,15 @@ const parse = (listingName: string, searchParams = {}) =>
   parseParams({ listingName: [listingName] }, searchParams)
 
 describe('parseParams', () => {
+  it('resolves old and labelled-unit URBN slugs to the same listing', () => {
+    for (const slug of [
+      '3603-2510-6th-avenue-seattle-98121-2597026',
+      '2510-6th-ave-unit-3603-seattle-98121-2597026'
+    ]) {
+      expect(parse(slug)).toMatchObject({ listingId: '2597026', boardId: 90 })
+    }
+  })
+
   it('reads the board from the url suffix', () => {
     expect(parse('25-bedford-road-toronto-C13766232-91')).toMatchObject({
       listingId: 'C13766232',

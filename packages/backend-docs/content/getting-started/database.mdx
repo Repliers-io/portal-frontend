@@ -10,11 +10,11 @@ you work on needs it.
 
 `docker-compose.yml` defines the three backing services:
 
-| Service | Image | Ports |
-|---|---|---|
-| `postgres` | `postgres:16-alpine` | `${DB_PORT:-5432}:5432` |
-| `redis` | `redis:8-alpine` | `6379` |
-| `nats` | `nats:2-alpine` (JetStream via `-js`) | `4222`, `6222`, `8222` |
+| Service    | Image                                 | Ports                   |
+| ---------- | ------------------------------------- | ----------------------- |
+| `postgres` | `postgres:16-alpine`                  | `${DB_PORT:-5432}:5432` |
+| `redis`    | `redis:8-alpine`                      | `6379`                  |
+| `nats`     | `nats:2-alpine` (JetStream via `-js`) | `4222`, `6222`, `8222`  |
 
 ```bash
 docker-compose up -d
@@ -42,8 +42,10 @@ docker-compose --env-file .env.<instance> up -d
    ```
 
 Features that need persistence: user roles/ACL, uploaded assets, virtual tours,
-social-account links, people sync, webhooks. With persistence disabled these degrade
-to safe no-ops.
+social-account links, people sync, webhooks. The flag does not turn them into no-ops:
+`APP_DISABLE_PERSISTENCE` only skips the ACL lookup at token generation and the release
+migration, and every other repository call fails at run time without a database — see
+[Running without a database](/architecture/persistence#running-without-a-database).
 
 ## Migrations
 
@@ -57,9 +59,11 @@ npm run db:migrate                 # apply latest (dev)
 npm run db:migrate:test            # apply to the test database (port 5555)
 ```
 
-In production the `release` phase of the Heroku Procfile runs `db:migrate:prod`,
-which skips silently when `APP_DISABLE_PERSISTENCE=true` — see
-[Deployment](/operations/deployment).
+In production the `release` process of the `Procfile` runs `db:migrate:prod`, which
+compiles pending migrations if needed and applies them against `dist/`. It skips
+silently when the environment variable `APP_DISABLE_PERSISTENCE=true` and fails on any
+value other than `true`, `false` or unset — see [Deployment](/operations/deployment).
+Managed Postgres services that require TLS need `DB_USE_SSL=true`.
 
 ## Test database
 

@@ -19,6 +19,7 @@ import filtersConfig from '@configs/filters'
 import listingsConfig from '@configs/listings'
 
 import { APISearch, transient } from 'services/API'
+import { excludedArea } from 'utils/indexing'
 import { getSeoUrl } from 'utils/listings'
 import { logError } from 'utils/log'
 import { createRateLimit } from 'utils/throttle'
@@ -121,17 +122,19 @@ export async function GET(
   )
 
   const urls = [first, ...rest].flatMap((result) =>
-    (result?.listings ?? []).map((listing) => {
-      const loc = `${baseUrl}${getSeoUrl(listing)}`.replace(/&/g, '%26')
-      const { updatedOn } = listing
-      // No lastmod when the date is unknown (missing or the MLS scrubbed
-      // sentinel) — a fabricated one makes crawlers distrust ALL our lastmods.
-      const lastmod =
-        updatedOn && updatedOn !== scrubbed.date
-          ? `<lastmod>${new Date(updatedOn).toISOString()}</lastmod>`
-          : ''
-      return `  <url><loc>${loc}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.5</priority></url>`
-    })
+    (result?.listings ?? [])
+      .filter((listing) => !excludedArea(listing.address?.area))
+      .map((listing) => {
+        const loc = `${baseUrl}${getSeoUrl(listing)}`.replace(/&/g, '%26')
+        const { updatedOn } = listing
+        // No lastmod when the date is unknown (missing or the MLS scrubbed
+        // sentinel) — a fabricated one makes crawlers distrust ALL our lastmods.
+        const lastmod =
+          updatedOn && updatedOn !== scrubbed.date
+            ? `<lastmod>${new Date(updatedOn).toISOString()}</lastmod>`
+            : ''
+        return `  <url><loc>${loc}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.5</priority></url>`
+      })
   )
 
   const xml = [

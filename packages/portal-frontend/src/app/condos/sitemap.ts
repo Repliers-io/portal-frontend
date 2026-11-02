@@ -5,7 +5,8 @@ import locationConfig from '@configs/location'
 import routes from '@configs/routes'
 
 import { transient } from 'services/API'
-import { loadStaticTree } from 'services/LocationsTree'
+import { loadStaticTree, resolveLocation } from 'services/LocationsTree'
+import { excludedArea } from 'utils/indexing'
 import { logError } from 'utils/log'
 import { sanitizeUrl } from 'utils/urls'
 
@@ -61,6 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const area of tree.areas) {
       for (const city of area.cities || []) {
         if (!citiesWithBuildings.has(city.name)) continue
+        const { parentArea } = resolveLocation(tree, { city: city.name })
+        if (excludedArea(parentArea?.name)) continue
 
         entries.push({
           url: `${baseUrl}${routes.condos}/${sanitizeUrl(city.name)}`,

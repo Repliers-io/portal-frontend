@@ -1,0 +1,63 @@
+# Adding a Search Filter
+
+Source review: `e30dd9b47`, 2026-11-02. Start with the existing filter mechanism;
+adding a control is not the same as adding a new backend field.
+
+## Prerequisites
+
+Confirm the active tenant and dataset, read its effective default/override filter
+config, and identify the backend field with one actual record. The main extension
+points are `configs/defaults/filters.ts`, `services/Search/types.ts`,
+`services/Search/declarations.ts`, `transformers.ts`, `adapter.ts`, the search
+route's `_utils.ts` and `utils/map/urls.ts`.
+
+## Small example: an existing numeric filter
+
+`minBedrooms` already exists in `defaultAdvancedFilters`, the transformer table
+and URL model. A control should update `SearchProvider` using the real field name.
+This complete example handler can live inside an existing filter component that
+already consumes the provider; the value 2 is a synthetic user selection:
+
+```ts
+const applyBedrooms = () => {
+  setFilters({ ...filters, minBedrooms: 2 })
+}
+```
+
+Here `filters` and `setFilters` come from the component's existing `useSearch()`
+call. Use the existing field/control and translated labels, rather than creating
+a second state store or writing directly to `window.location`.
+
+Trace the value at each boundary:
+
+| Boundary | Expected value / verification |
+| --- | --- |
+| Provider | `minBedrooms: 2` |
+| URL | `minBedrooms=2`, not `bmin=2` |
+| Reopen | `getFiltersFromParams` reconstructs the numeric advanced field |
+| Adapter | `processParams` includes its transformed API field |
+| Request | Browser search request carries the field with the current geography |
+| Results | Count and cards reflect the response; a copied URL preserves the filter |
+
+Reset uses the configured baseline (`minBedrooms: 0`), whose handling belongs to
+the existing transformer. Do not invent one generic “falsy means absent” rule:
+`minPrice: 0` transforms to 1, whereas a zero maximum price is omitted.
+
+## When the field is new
+
+1. Add the owned type/default and supported control/config slot. Check existing
+   shared filters before writing a new control; add user-facing copy through i18n.
+2. Add parsing/serialization to the existing mechanism. Full filter names share
+   the namespace with camera/presentation params, so check collisions first.
+3. Extend the adapter/transformer only where backend semantics require it. Listing
+   type declarations, user style, date/status ownership and OR queries already have
+   precedence rules; preserve them.
+4. Test the meaningful transformation and reset/reopen case with the existing
+   adapter/URL suites, then inspect the actual tenant's browser request.
+
+Do not add a new short alias just because `params.ts` contains historical filter
+names. Do not infer valid property types from a different tenant. Existing tests
+ran during this audit. An isolated fixture extracted this handler from the page
+and verified that selecting two bedrooms retains the existing minimum price.
+No new filter control was installed or browser-tested by this recipe. See
+[Search workflows](/technical-guide/workflows/search).

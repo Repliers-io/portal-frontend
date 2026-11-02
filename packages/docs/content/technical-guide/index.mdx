@@ -1,7 +1,7 @@
 # Portal Technical Guide
 
-**Version:** 1.1
-**Last Updated:** July 2026
+**Source review:** `e30dd9b47`, 2026-11-02. See [Coverage](/coverage) for evidence
+and the limits of this edition.
 **Audience:** Frontend Developers
 
 ## Overview
@@ -20,8 +20,8 @@ Portal is a Next.js frontend application that provides property search websites 
 | **Forms**           | React Hook Form + Joi validation             |
 | **i18n**            | next-intl                                    |
 | **State**           | React Context (Providers)                    |
-| **Node**            | 22+ (the frontend pins engines.node to 24.x) |
-| **Package Manager** | pnpm 10+                                     |
+| **Node**            | Frontend engines: 24.x or 26.x |
+| **Package Manager** | Root pnpm 12.6.0; frontend package pin 10.34.4 |
 
 ## Key Concepts
 
@@ -34,6 +34,12 @@ Portal is a Next.js frontend application that provides property search websites 
 | **Feature Flags**    | Toggle features per tenant                        |
 
 ## Quick Links
+
+For a complete transaction, start with [F01–F12 Workflows](/technical-guide/workflows).
+For an ownership question, use [Rendering](/technical-guide/rendering-and-lifecycle),
+[Data Ownership](/technical-guide/data-ownership), [Route Handlers](/technical-guide/api-routes),
+[Caching](/technical-guide/caching-and-revalidation), [SEO](/technical-guide/seo),
+[Forms](/technical-guide/forms-and-validation) or [Failures](/technical-guide/failure-and-degradation).
 
 | Topic                                                     | Description                            |
 | --------------------------------------------------------- | -------------------------------------- |

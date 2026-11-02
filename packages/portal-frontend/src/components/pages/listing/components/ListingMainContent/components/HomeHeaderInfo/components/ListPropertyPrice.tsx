@@ -6,7 +6,7 @@ import { ScrubbedPrice } from 'components/atoms'
 
 import { type ApiListing } from 'services/API'
 import { formatEnglishPrice, toSafeNumber } from 'utils/formatters'
-import { createListingI18nUtils } from 'utils/listings'
+import { createListingI18nUtils, hiddenPrice } from 'utils/listings'
 
 import { PriceDifference } from '.'
 
@@ -18,9 +18,12 @@ export const ListPropertyPrice = ({ listing }: { listing: ApiListing }) => {
   const days = getDaysOnMarket(listing)
   const listPriceNumber = toSafeNumber(listPrice)
   const originalPriceNumber = toSafeNumber(originalPrice)
+  const hidden = hiddenPrice(listing)
 
   const showOriginal =
-    originalPriceNumber > 0 && listPriceNumber !== originalPriceNumber
+    !hidden &&
+    originalPriceNumber > 0 &&
+    listPriceNumber !== originalPriceNumber
 
   return (
     <Stack>
@@ -31,7 +34,8 @@ export const ListPropertyPrice = ({ listing }: { listing: ApiListing }) => {
         sx={{ maxHeight: 36 }}
       >
         <Typography noWrap variant="h2" lineHeight={1}>
-          <ScrubbedPrice value={listPrice} />
+          {/* a withheld price leaves its slot empty, so the days label stays below it */}
+          {hidden ? ' ' : <ScrubbedPrice value={listPrice} />}
         </Typography>
         {showOriginal && (
           <Typography variant="h4" sx={{ textDecoration: 'line-through' }}>

@@ -1,0 +1,161 @@
+import { Callout } from 'nextra/components'
+
+# Autosuggest
+
+`GET /api/autosuggest` answers the search box with three blocks from one request: `mapbox`
+(street, postcode and address suggestions), `listings` (a Repliers listings search) and
+`locations` (a Repliers locations autocomplete). `AutosuggestService.search` starts every
+branch at once and waits for all of them; the response is
+`{ mapbox, listings, locations }`. The other two routes in the router answer one question each:
+`GET /api/autosuggest/address` returns address parts from the configured provider, and the
+deprecated `GET /api/autosuggest/locations` returns the locations hierarchy. Terms are in the
+[Glossary](/glossary).
+
+[Endpoints](/api-reference/search-and-locations) ·
+[Locations & Buildings](/api-reference/search-and-locations/locations-and-buildings) ·
+[Geocoding providers](/integrations/geocoding) ·
+[MLS-number prefix](/architecture/mls-number-prefix) ·
+[Scrubbing](/architecture/scrubbing) ·
+[W3 worked trace](/architecture/flows#w3--autosuggest-with-the-mls-number-leg)
+
+## Request
+
+Validated by `autosuggestSchema` (`src/validate/autosuggest.ts`) with Joi defaults
+([Validation](/api-reference#validation)); `app_state: { user }` is added by the handler and
+decides listing scrubbing.
+
+| Parameter                               | Rule                                                                                                                                      | Default                                                                                           | Used by                                           |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `searchSession` / `mapboxSearchSession` | UUID; **at least one is required** (`.or(...)`); `mapboxSearchSession` is the deprecated name and `searchSession` wins when both are sent | none                                                                                              | Mapbox `session_token`, Google `sessiontoken`     |
+| `q`                                     | string, at least 3 characters; not marked required                                                                                        | none                                                                                              | all branches                                      |
+| `lat`, `long`                           | decimal strings                                                                                                                           | `PROXIMITY_SEARCH_LAT`, `PROXIMITY_SEARCH_LONG`                                                   | Mapbox `proximity`, listings and locations centre |
+| `radius`                                | positive integer                                                                                                                          | `PROXIMITY_SEARCH_RADIUS_METERS`                                                                  | locations branch only                             |
+| `resultsPerPage`                        | positive number, at most `REPLIERS_AUTOSUGGEST_MAX_RESULTS` (10)                                                                          | `REPLIERS_AUTOSUGGEST_MAX_RESULTS_DEFAULT` (3 from the environment; the `defaults` preset sets 5) | listings and locations page size, the Mapbox cut  |
+| `type`                                  | `sale` / `lease` array                                                                                                                    | `REPLIERS_AUTOSUGGEST_LISTING_TYPE` (`sale`)                                                      | listings branches only                            |
+| `boundary`, `hasBoundary`               | booleans, sent upstream as `"true"` / `"false"`; `hasBoundary` is omitted when absent                                                     | `false` / absent                                                                                  | locations branch only                             |
+| `source`                                | string array (`.single()`); not restricted to known values                                                                                | absent: all sources                                                                               | locations branch only                             |
+
+## Branch register
+
+| Branch             | Runs when                                                                       | Upstream call                                                                                                                                                                                                                                                                                                            | Failure                                                                                 | Source                                                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mapbox suggestions | always, whichever provider `REPLIERS_AUTOSUGGEST_PROVIDER` selects              | `GET {MAPBOX_BASEURL}/suggest` with `q`, `country`, `language`, `limit`, `types` (`street,postcode,address`), `proximity=long,lat`, `session_token`, then the filters under [Mapbox ranking](#mapbox-ranking)                                                                                                            | rejects the whole request                                                               | `src/services/autosuggest.ts` (`AutosuggestService.search`); `src/services/mapbox.ts` (`MapboxService.suggest`)                                       |
+| Listings           | always                                                                          | `POST /listings` through `ListingsService.search` (scrubbed): `search=q`, the configured `searchFields`, `boardId` = `settings.defaults.boardId`, the proximity centre and `radius`, the status filter, `class` residential and condo, `sortBy=distanceAsc`, `displayInternetEntireListing=Y`, an explicit `fields` list | rejects the whole request                                                               | `src/services/autosuggest.ts` (`AutosuggestService.search`)                                                                                           |
+| MLS-number         | `settings.mlsNumberPrefix` is set and `q` is digits only (`mlsNumberCandidate`) | a second `ListingsService.search` with the listings parameters, `searchFields="mlsNumber"` and `search` widened to `"<q> <prefix><q>"` under `searchOperator=OR` ([why](/architecture/mls-number-prefix#autosuggest-mls-leg))                                                                                            | caught and logged; the branch yields `null` and the primary listings are returned alone | `src/services/autosuggest.ts` (`AutosuggestService.search`); `src/services/listings/mlsNumberPrefix.ts` (`addMlsSearchVariant`, `mlsNumberCandidate`) |
+| Locations          | always                                                                          | `GET /locations/autocomplete` through `RepliersLocations.autocomplete` with `search=q`, `boundary`, `hasBoundary`, `resultsPerPage`, the centre, `radius`, and `source` when sent                                                                                                                                        | rejects the whole request                                                               | `src/services/autosuggest.ts` (`AutosuggestService.search`); `src/services/repliers/locations.ts` (`RepliersLocations.autocomplete`)                  |
+
+The branches are joined with `Promise.all` in the order Mapbox, listings, locations, MLS-number.
+Only the MLS-number branch has a `.catch`; a rejection of any other branch fails the request with
+that branch's error, while the other branches' calls already in flight still complete upstream.
+There is no partial response and no per-branch timeout beyond the HTTP client timeouts
+(`MAPBOX_TIMEOUT` for Mapbox, the Repliers client timeout for the rest).
+
+## Listing filters
+
+The listings branch takes its filters from `config.repliers.autosuggest`
+(`src/config.ts`), not from the request, apart from `type` and the page size.
+
+| Setting (env)                                                                     | Default                                                         | Effect                                                                                                                                           |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `REPLIERS_AUTOSUGGEST_LISTING_STATUS`, `REPLIERS_AUTOSUGGEST_LISTING_LAST_STATUS` | `A`; `New`, `Ext`, `Pc`                                         | sent as `status` and `lastStatus`                                                                                                                |
+| `REPLIERS_AUTOSUGGEST_LISTING_STANDARD_STATUS`                                    | unset                                                           | when set, sent as `standardStatus` **instead of** the `status` / `lastStatus` pair, because Repliers rejects the two vocabularies in one request |
+| `REPLIERS_AUTOSUGGEST_DISPLAY_PUBLIC_VALUE`                                       | unset                                                           | `displayPublic` is sent only when set                                                                                                            |
+| `REPLIERS_AUTOSUGGEST_SEARCH_FIELDS`                                              | `address.streetName,mlsNumber,address.zip,address.streetNumber` | `searchFields` of the primary request; never widened                                                                                             |
+| `REPLIERS_AUTOSUGGEST_LISTING_TYPE`                                               | `sale`                                                          | `type` unless the request sends one                                                                                                              |
+| `PROXIMITY_SEARCH_RADIUS_METERS`                                                  | `150000`                                                        | `radius` of the listings request; the request's own `radius` is **not** used here                                                                |
+
+The explicit `fields` list (`mlsNumber`, `status`, `class`, prices and dates, `address`, `map`,
+`images[0]`, the bedroom, bathroom, lot and style fields, `permissions`, `raw`, `type` and a few
+others) is extended by `ListingsService.ensureRequiredFields` with `duplicates`. Because the call
+goes through `ListingsService.search`, the listing results are
+[scrubbed](/architecture/scrubbing) for guests and
+[restricted listings](/architecture/restricted-listings) are removed.
+
+## Mapbox ranking
+
+The Mapbox block is the only one the proxy filters and de-duplicates itself. Steps run in this
+order on the provider's list (`src/services/autosuggest.ts`: `AutosuggestService.search`,
+`locationsFilter`, `normalizedLocationName`):
+
+1. **Region filter.** When `mapbox.autosuggest.region_code` is set (`PROXIMITY_SEARCH_REGION_CODE`,
+   unset by default), a suggestion is kept only if its `context.region.region_code` equals it.
+2. **Distance filter.** A suggestion is kept only if Mapbox's `distance` is at most
+   `mapbox.autosuggest.max_distance`, which equals the proximity radius in metres.
+3. **Near-duplicate filter.** Each remaining suggestion is reduced to a normalized name (lower-cased
+   `name`, plus the lower-cased place name and the region code when present) and compared with
+   **every** earlier normalized name using Jaro-Winkler similarity. It is dropped when any
+   similarity is at or above `mapbox.autosuggest.jaro_winkler_distance`. The name is added to the
+   comparison list before the decision, so a dropped suggestion still counts as a reference for
+   the ones after it.
+4. **Cut.** The list is cut to `resultsPerPage`.
+5. **Reshape.** Each item becomes `name`, `mapbox_id`, `feature_type` and four context objects
+   (`region.region_code`, `postcode.name`, `place.name`, `neighborhood.name`).
+
+The output order is the provider's order. The threshold is `0.9` in the environment-built
+configuration, with no environment variable behind it; the `defaults` preset sets `0.95`, and a
+preset can set any value ([Geocoding](/integrations/geocoding#mapbox-default)).
+
+## Merge order
+
+The listings block is the primary listings result with the MLS-number branch appended:
+`mergeMlsNumberListings` concatenates the primary listings then the MLS-number listings,
+de-duplicates by `mlsNumber` (the first occurrence wins), cuts to `resultsPerPage`, and sets
+`count` to the sum of both counts. A `null` or empty MLS-number branch returns the primary block
+unchanged. Primary-first keeps short digit queries (street numbers, zips) behaving as without
+the branch, while a full MLS number, which matches no address field, surfaces from the second
+branch. The `locations` block is the upstream response as returned. The three blocks are never
+merged with each other.
+
+## Address endpoint
+
+`GET /api/autosuggest/address` has no JWT middleware. `autosuggestAddressSchema` is the shared
+base (session UUID required, `lat`, `long`, `radius`) with `q` of at least 1 character.
+`AutosuggestService.address` picks the provider from `REPLIERS_AUTOSUGGEST_PROVIDER`: `googlemaps`
+selects Google, anything else Mapbox.
+
+| Provider         | Request                                                                                                                                                                                                             | Filtering                                                                           | Output                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mapbox (default) | `GET /suggest` with `types=address`, `country`, `language`, `proximity=long,lat`; no `limit`                                                                                                                        | region and distance filters as above; no Jaro-Winkler step, no `resultsPerPage` cut | `country`, `region`, `zip`, `city`, `streetNumber`, `streetName`, `streetSuffix`, `streetSuffixFull`, `streetDirection`, `fullAddress`, `address`, `mapbox_id` |
+| Google           | `GET /place/autocomplete/json` with `types=address`, `components=country:<c>`, `location`, `radius`, `strictbounds=true`, `locationrestriction=circle:<radius>@<lat>,<long>`, `includedRegionCodes`, `sessiontoken` | none of the Mapbox filters; the circle restriction is applied by Google             | the same address parts parsed from the prediction text with `addresser`, plus `google_place_id`; a prediction that cannot be parsed is dropped                 |
+
+The suffix is normalised by `mapStreetSuffix`: a known long suffix maps to its short form (`Street`
+to `ST`), an unknown suffix is upper-cased, a missing one is read from the last word of the street
+name, and `ST` is the final default. For Mapbox, a `fullAddress` the parser rejects leaves the
+parsed parts empty and the street name comes from the Mapbox context. For Google, a status of
+`ZERO_RESULTS` gives `[]`; any status other than `OK` throws.
+
+## Deprecated locations endpoint
+
+`GET /api/autosuggest/locations` reads no request parameters. It builds a
+`ListingsService.locations` call from `settings.locations` (`class` residential and condo,
+`boardId`, `dropCoordinates`, `activeCountLimit`) and writes the result with `sendCached`. The
+cache namespace `listings:autosuggest:locations` uses `CACHE_STATSWIDGET_TTL`;
+`CACHE_AUTOSUGGEST_LOCATIONS_TTL` is defined in `src/config.ts` but never read. The namespace is the
+same as `GET /api/listings/locations`; keys are the call arguments, so an entry is reused only when the arguments are identical.
+See the [namespace row](/architecture/caching#cache-state) and
+[Locations](/api-reference/listings/nlp-featured-locations#locations). New work uses
+[`GET /api/locations`](/api-reference/search-and-locations/locations-and-buildings#get-locations).
+
+## Gotchas
+
+1. **The combined endpoint always calls Mapbox.** `search` calls
+   `MapboxService` for every provider value; `REPLIERS_AUTOSUGGEST_PROVIDER` only changes `/autosuggest/address`
+   (`src/services/autosuggest.ts`: `AutosuggestService.search` vs `address`).
+2. **`radius` reaches only the locations branch.** The listings and MLS-number requests send the configured
+   `PROXIMITY_SEARCH_RADIUS_METERS`; the request's `radius` is used by the locations branch
+   (`src/services/autosuggest.ts`, `AutosuggestService.search`).
+3. **`type` and the status filter apply to listings only.** The Mapbox and locations blocks ignore
+   them (`src/services/autosuggest.ts`, `AutosuggestService.search`).
+4. **`count` is an upper bound** once the MLS-number branch contributes
+   (`src/services/autosuggest.ts`, `mergeMlsNumberListings`).
+5. **Mapbox `limit` and `resultsPerPage` are independent.** Mapbox is asked for
+   `REPLIERS_AUTOSUGGEST_MAX_RESULTS` items regardless of the page size, and the page size cuts
+   the list after filtering (`src/config.ts`, `mapbox.autosuggest.limit`).
+
+<Callout type="info">
+  Worked values for a digit query with the MLS-number branch, the Mapbox filters
+  and the merge are in
+  [W3](/architecture/flows#w3--autosuggest-with-the-mls-number-leg).
+</Callout>
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

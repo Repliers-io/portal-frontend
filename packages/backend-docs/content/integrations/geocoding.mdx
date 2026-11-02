@@ -1,27 +1,85 @@
 # Geocoding
 
-Address autosuggest needs a geocoder; listings themselves arrive geocoded from
-Repliers. The provider is selected by `REPLIERS_AUTOSUGGEST_PROVIDER`:
+Address autosuggest needs a geocoder; listings themselves arrive geocoded from Repliers. Two
+providers exist, each a small axios client with a single GET call and no retry
+(`src/services/mapbox.ts`, `src/services/google.ts`). Where each provider is used:
+
+| Endpoint                       | Mapbox                                                            | Google                  |
+| ------------------------------ | ----------------------------------------------------------------- | ----------------------- |
+| `GET /api/autosuggest`         | always (the `mapbox` block)                                       | never                   |
+| `GET /api/autosuggest/address` | when `REPLIERS_AUTOSUGGEST_PROVIDER` is anything but `googlemaps` | when it is `googlemaps` |
+
+The branches, ranking and failure behaviour are on
+[Autosuggest](/api-reference/search-and-locations/autosuggest). Because the combined endpoint
+always calls Mapbox, `MAPBOX_ACCESS_TOKEN` is needed whichever provider is selected: the server
+asserts it at start-up (`src/config.ts`).
 
 ## Mapbox (default)
 
-`services/mapbox.ts`, using the Search Box API (`MAPBOX_BASEURL`, default
-`https://api.mapbox.com/search/searchbox/v1`; token `MAPBOX_ACCESS_TOKEN`).
+`MapboxService` (`src/services/mapbox.ts`) calls the Search Box API at `MAPBOX_BASEURL`
+(default `https://api.mapbox.com/search/searchbox/v1`) with `access_token` from
+`MAPBOX_ACCESS_TOKEN` on every request and a timeout of `MAPBOX_TIMEOUT` ms (30 s). Only
+`GET /suggest` is used; the `session_token` is the request's `searchSession` (or the deprecated
+`mapboxSearchSession`), with a random UUID as a fallback.
 
-Tuning lives in the settings preset (`mapbox.autosuggest`): `country`, `language`,
-`limit`, `region_code` (region filtering; off by default), `max_distance`, and a
-`jaro_winkler_distance` similarity threshold for result filtering — an example of a
-setting that exists **only** in presets, with no env var.
+| Parameter sent | Value                                                                       | Set by                                                                                        |
+| -------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `q`            | the request's `q`                                                           | request                                                                                       |
+| `proximity`    | `long,lat` (request values, defaulting to the proximity settings)           | request, `PROXIMITY_SEARCH_LAT`, `PROXIMITY_SEARCH_LONG`                                      |
+| `country`      | `ca`                                                                        | `PROXIMITY_SEARCH_COUNTRY`, preset `mapbox.autosuggest.country` (the `defaults` preset: `us`) |
+| `language`     | `en`                                                                        | `PROXIMITY_SEARCH_LANGUAGE`, preset `mapbox.autosuggest.language`                             |
+| `limit`        | `10` (combined endpoint only)                                               | `REPLIERS_AUTOSUGGEST_MAX_RESULTS`, preset `mapbox.autosuggest.limit`                         |
+| `types`        | `street,postcode,address` on the combined endpoint, `address` on `/address` | `mapbox.autosuggest.types` (no environment variable; the `/address` value is fixed in code)   |
+
+Settings applied by the proxy after the response, none of which is sent to Mapbox:
+
+| Setting                                    | Default                                                                       | Effect                                                                                     |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `mapbox.autosuggest.max_distance`          | the proximity radius in metres                                                | drops suggestions whose `distance` is larger                                               |
+| `mapbox.autosuggest.region_code`           | unset (`PROXIMITY_SEARCH_REGION_CODE`)                                        | keeps only suggestions in that region                                                      |
+| `mapbox.autosuggest.jaro_winkler_distance` | `0.9` in the environment-built configuration; `0.95` in the `defaults` preset | similarity at or above which a combined-endpoint suggestion is dropped as a near duplicate |
+
+`jaro_winkler_distance` and `types` have no environment variable: they can be changed only in a
+settings preset, which is merged over the environment-built configuration at start-up
+([Configuration resolution](/architecture/configuration-resolution)). The filtering steps are
+described under [Mapbox ranking](/api-reference/search-and-locations/autosuggest#mapbox-ranking).
+
+A Mapbox failure is rethrown as `ApiError("Mapbox API error")` carrying the upstream status and
+body. Both clients read `e.response.status` in the handler, so a failure with no HTTP response (a
+timeout or network error) surfaces as a `TypeError`, not an `ApiError`.
 
 ## Google Maps (alternative)
 
-`services/google.ts` — `GOOGLE_MAPS_API_KEY`, `GOOGLE_MAPS_BASE_URL`,
-`GOOGLE_MAPS_TIMEOUT_MS`.
+`GoogledService` (`src/services/google.ts`) calls `GET /place/autocomplete/json` at
+`GOOGLE_MAPS_BASE_URL` (default `https://maps.googleapis.com/maps/api`) with `key` from
+`GOOGLE_MAPS_API_KEY` and a timeout of `GOOGLE_MAPS_TIMEOUT_MS` (30 s). It is reached only from
+`/autosuggest/address` when `REPLIERS_AUTOSUGGEST_PROVIDER=googlemaps`.
+
+| Parameter sent                                              | Value                                                                                                  |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `input`                                                     | the request's `q`                                                                                      |
+| `types`                                                     | `address`                                                                                              |
+| `language`, `components`, `includedRegionCodes`             | `PROXIMITY_SEARCH_LANGUAGE`; `country:` and the country from `PROXIMITY_SEARCH_COUNTRY` (default `ca`) |
+| `location`, `radius`, `locationrestriction`, `strictbounds` | the request's `lat,long` and `radius`; `circle:<radius>@<lat>,<long>`; `true`                          |
+| `sessiontoken`                                              | the request's session UUID                                                                             |
+| `includePureServiceAreaBusinesses`                          | `false`                                                                                                |
+
+`status` `ZERO_RESULTS` returns an empty list; a `status` other than `OK` throws. The response
+text is parsed into address parts with the `addresser` library, and the country falls back to
+`Canada` when a prediction has no terms. None of the Mapbox filters applies.
 
 ## Proximity bias
 
 Both providers bias suggestions toward the instance's market:
 `PROXIMITY_SEARCH_LAT` / `PROXIMITY_SEARCH_LONG` / `PROXIMITY_SEARCH_RADIUS_METERS`
-(preset: `repliers.autosuggest.{lat,long,radius}`). The default preset centers on
-the middle of the US with an effectively unlimited radius; a real instance narrows
-this to its market.
+(preset: `repliers.autosuggest.{lat,long,radius}`). The values are also the defaults of the
+`lat`, `long` and `radius` request parameters, so a client that sends none is centred on the
+instance. The environment defaults are a point in eastern Canada with a radius of 150 000 m; the
+`defaults` preset centres on the middle of the United States with an effectively unlimited radius
+(`150000000`); a real instance narrows this to its market.
+
+The radius has three roles that do not all follow the request: Mapbox gets only the centre
+(`proximity`) and the proxy filters by `max_distance`; Google gets the request's `radius` as a
+strict circle; the listings branch of the combined endpoint always uses the configured radius.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

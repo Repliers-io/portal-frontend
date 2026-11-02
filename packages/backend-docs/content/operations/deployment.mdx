@@ -1,6 +1,8 @@
 # Deployment
 
-Deployed to **Heroku** — one app per instance, all built from the same codebase.
+One build serves every instance: the same compiled output runs as an HTTP server, an
+optional worker, and a release task. The repository ships the process definitions; where
+they run is your choice.
 
 ## Procfile
 
@@ -10,30 +12,65 @@ worker: node dist/worker.js
 release: npm run db:migrate:prod
 ```
 
-- `web` — the Koa HTTP server.
-- `worker` — the NATS consumer; scale it to 0 for instances without NATS
-  (`NATS_ENABLED=false` makes it exit-with-warning anyway).
-- `release` — runs on **every deploy before the new code goes live**: knex
-  migrations against the compiled `dist/knexfile.js`. The script exits early when
-  `APP_DISABLE_PERSISTENCE=true`, so database-less instances deploy without a
-  Postgres add-on.
+Process-file platforms (Heroku and compatible buildpack hosts are one example) read this
+file directly; elsewhere map the three lines to your own process definitions.
+
+- `web` — the Koa HTTP server (`src/index.ts`).
+- `worker` — the NATS consumer (`src/worker.ts`). Run it only when `NATS_ENABLED=true`:
+  with NATS off, the worker gets the dummy client, skips its consume loop and the process
+  ends. Scale it to 0 (or leave it out) for instances without NATS.
+- `release` — run once per deploy, **before the new code takes traffic**: knex migrations
+  against the compiled `dist/knexfile.js`.
+
+Startup order, the failures that stop each process and what `SIGINT` / `SIGTERM` do are on
+[Process lifecycle](/architecture/process-lifecycle).
+
+### The release step
+
+`db:migrate:prod` (`package.json`) is a shell one-liner with three outcomes, decided by the
+**shell environment variable** `APP_DISABLE_PERSISTENCE`, not by the merged settings:
+
+| `APP_DISABLE_PERSISTENCE` | Result                                                                                        |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `true`                    | prints "Skipping migration" and exits 0 — a database-less instance deploys without a database |
+| unset, empty or `false`   | runs `db:jsts_check`, then `knex migrate:latest`                                              |
+| any other value           | runs nothing and exits non-zero, which fails the release                                      |
+
+Two consequences:
+
+- A preset that sets `disable_persistence: true` does not, by itself, skip the release
+  migration. Set the env var as well for instances without a database
+  (see [Configuration Resolution](/architecture/configuration-resolution)).
+- `db:jsts_check` (`scripts/jsts_check.sh`) compares the file counts of `src/migrations`
+  and `dist/migrations`; when they differ and no terminal is attached it runs
+  `npm run build` first, so a new migration is compiled before it is applied.
 
 ## Build
 
-`npm run build` = `tsc` into `dist/`. The runtime is plain Node (no ts-node in
-production).
+`npm run build` = clean, then `tsc` into `dist/`. The runtime is plain Node (no ts-node in
+production); the process commands above run `dist/` output.
 
 ## Environment specifics
 
-- `DB_USE_SSL=true` is required for Heroku Postgres.
-- `REDISCLOUD_URL` (the Redis add-on's variable) overrides `REDIS_URL`
-  automatically.
-- GCP logging credentials arrive as env content (`GOOGLE_CREDENTIALS`); a `.profile`
-  script writes them to the file that `GOOGLE_APPLICATION_CREDENTIALS` points to at
-  dyno boot.
-- JWT keys are provided via config (`JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` paths) —
-  the `keys/` directory is never in git.
+- **Secrets are environment-only.** API keys, database and CRM credentials, XFF tokens
+  and OAuth secrets come from the process environment; nothing secret is committed. Env
+  files (`.env.<instance>`) are for local runs.
+- **TLS to the database.** Set `DB_USE_SSL=true` for managed Postgres services that
+  require TLS (Heroku Postgres is one example); the connection option is in `src/config.ts`
+  (`db.connection.ssl`).
+- **Redis.** `REDIS_URL` is read first and `REDISCLOUD_URL` is only the fallback, so an
+  add-on that injects `REDISCLOUD_URL` is ignored while `REDIS_URL` is set. Redis is used
+  only when `REDIS_KEYV_ENABLE=true`.
+- **Cloud logging credentials.** Unless `APP_ENVIRONMENT` is the literal `localhost` (unset counts as not localhost) the server refuses to
+  start without `GOOGLE_CREDENTIALS` (`src/config.ts`). Platforms that hand secrets over as
+  environment content need a startup step that writes it to a file where the logging
+  client expects one (a process-start hook such as a `.profile` script, where the platform
+  runs one).
+- **JWT keys** are files named by `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY`; the `keys/`
+  directory is never in git, so the deploy must put the key files on disk.
+- **Required at start:** `REPLIERS_API_KEY`, `MAPBOX_ACCESS_TOKEN`, `JWT_PRIVATE_KEY`,
+  `JWT_PUBLIC_KEY` — the process asserts them at import.
 
 Per-instance configuration (which env vars, which preset) is covered in
-[Instances](/operations/instances); how a deploy is triggered is covered in
-[CI/CD](/operations/ci-cd).
+[Instances](/operations/instances); what a pipeline should do before and after a deploy is
+in [CI/CD](/operations/ci-cd).

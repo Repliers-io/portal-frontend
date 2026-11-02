@@ -12,7 +12,7 @@ import {
   APILocations
 } from 'services/API'
 import { type MapboxAddress, MapSearch } from 'services/Map'
-import { type TransactionType } from 'services/Search'
+import { type Filters, type TransactionType } from 'services/Search'
 import {
   type MapPosition,
   useMapLocations,
@@ -41,6 +41,7 @@ interface UseOptionClickHandlersProps {
   setOpen: (open: boolean) => void
   setSearchString: (value: string) => void
   type?: TransactionType
+  filters?: Filters
 }
 
 export const useOptionClickHandlers = ({
@@ -48,7 +49,8 @@ export const useOptionClickHandlers = ({
   inputRef,
   setOpen,
   setSearchString,
-  type
+  type,
+  filters
 }: UseOptionClickHandlersProps) => {
   const router = useRouter()
   const { setPoint, clearPoint } = useSearchActions()
@@ -152,13 +154,13 @@ export const useOptionClickHandlers = ({
             query,
             location,
             layers: overlay ? [overlay.id] : undefined,
-            filters: type ? { type } : undefined
+            filters: { ...filters, ...(type && { type }) }
           })
         )
       }
       setLocationLoading(false)
     },
-    [map, router, getLocationBounds, type, clearPoint]
+    [map, router, getLocationBounds, type, filters, clearPoint]
   )
 
   const handleAddLocationClick = useCallback(
@@ -300,14 +302,14 @@ export const useOptionClickHandlers = ({
             zoom,
             query,
             point: { center: [point.latitude, point.longitude] },
-            ...(type && { filters: { type } })
+            filters: { ...filters, ...(type && { type }) }
           })
         )
       }
 
       setLocationLoading(false)
     },
-    [map, router, type, setPoint, clearLocations, clearLocationFilters]
+    [map, router, type, filters, setPoint, clearLocations, clearLocationFilters]
   )
 
   const handleListingClick = useCallback(

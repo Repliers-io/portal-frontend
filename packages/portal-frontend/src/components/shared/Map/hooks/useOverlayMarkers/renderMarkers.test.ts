@@ -89,7 +89,7 @@ const pointerEvent = (type: string, pointerType: string): MouseEvent => {
 // A full gesture: the pointerdown that records the pointer type, then the click.
 const gesture = (element: HTMLElement, pointerType: string): void => {
   element.dispatchEvent(pointerEvent('pointerdown', pointerType))
-  element.dispatchEvent(pointerEvent('click', pointerType))
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 }
 
 const overlayWith = (
@@ -328,19 +328,21 @@ describe('renderOverlayMarkers — selected state at render time', () => {
   })
 })
 
-describe('renderOverlayMarkers — touch taps preview, never select', () => {
-  const setup = () => {
+describe('renderOverlayMarkers — touch marker actions', () => {
+  const setup = (overrides: Partial<OverlayLayerDefinition> = {}) => {
     markerInstances.length = 0
     let selected = false
+    const onMarkerClick = jest.fn(() => {
+      selected = !selected
+      return true
+    })
     const overlay = {
       id: 'schools',
       tooltip: true,
       selectable: 'marker',
-      onMarkerClick: () => {
-        selected = true
-        return true
-      },
-      polygon: { showOnMarkerHover: true }
+      onMarkerClick,
+      polygon: { showOnMarkerHover: true },
+      ...overrides
     } as unknown as OverlayLayerDefinition
     const { map, setFeatureState } = mapWith(() => ({}))
     const popup = {
@@ -365,6 +367,7 @@ describe('renderOverlayMarkers — touch taps preview, never select', () => {
       element: markerInstances.filter((m) => !m.removed)[0].element,
       setOverlayPopup: popup.setOverlayPopup,
       setFeatureState,
+      onMarkerClick,
       wasSelected: () => selected
     }
   }
@@ -395,5 +398,26 @@ describe('renderOverlayMarkers — touch taps preview, never select', () => {
 
     expect(setOverlayPopup).not.toHaveBeenCalled()
     expect(setFeatureState).not.toHaveBeenCalled()
+  })
+
+  it('selects and deselects a neighbourhood without a tooltip on touch', () => {
+    const { element, onMarkerClick, setFeatureState, wasSelected } = setup({
+      id: 'neighborhoods',
+      marker: { type: 'name', selectedState: true },
+      tooltip: undefined
+    })
+
+    gesture(element, 'touch')
+
+    expect(wasSelected()).toBe(true)
+    expect(onMarkerClick).toHaveBeenCalledWith(
+      expect.objectContaining({ locationId: 'X' })
+    )
+    expect(setFeatureState).not.toHaveBeenCalled()
+
+    gesture(element, 'touch')
+
+    expect(wasSelected()).toBe(false)
+    expect(onMarkerClick).toHaveBeenCalledTimes(2)
   })
 })

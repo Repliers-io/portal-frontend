@@ -67,6 +67,26 @@ const tree = {
 } as unknown as Tree
 
 describe('resolveLocation', () => {
+  it('returns the parent of the selected city without treating it as an area page', () => {
+    const lowerCount = { ...tree.areas[0].cities[0], activeCount: 1 }
+    const higherCount = { ...lowerCount, activeCount: 2 }
+    const branches = {
+      areas: [
+        { name: 'Outside', cities: [lowerCount] },
+        { name: 'King', cities: [higherCount] }
+      ]
+    } as Tree
+    const { parentArea, areaNode } = resolveLocation(branches, {
+      city: 'Seattle',
+      hood: 'Arborheights'
+    })
+    expect(parentArea?.name).toBe('King')
+    expect(areaNode).toBeUndefined()
+    expect(
+      resolveLocation(branches, { city: 'Seattle', hood: 'Unknown' }).parentArea
+    ).toBeUndefined()
+  })
+
   it('maps a space-stripped slug back to the spelling the API knows', () => {
     // `/condo-buildings/seattle/arborheights` parses to city Seattle, hood Arborheights
     const { cityNode, hoodNode } = resolveLocation(tree, {

@@ -1,15 +1,23 @@
 # Configuration Model
 
 Configuration has **two layers** with different rules. Understanding the split is the
-single most important thing about operating the backend.
+single most important thing about operating the backend. The exact order in which they
+are combined, the startup checks and the per-feature requirements are on
+[Configuration resolution](/architecture/configuration-resolution).
 
 ## Layer 1 — environment variables → `AppConfig`
 
 `src/config.ts` loads dotenv (from the file named by `DOT_ENV_CONFIG`, falling back
 to `.env`) and builds the `AppConfig` object. Rules:
 
-- **Every `AppConfig` value has a backing env var with a sensible default** — the app
-  always starts, even with an empty `.env`.
+- **Most `AppConfig` values have a backing env var with a default.** A few have none and
+  can be changed only in a preset (for example `mapbox.autosuggest.jaro_winkler_distance`,
+  `eventsCollection.formTags`, the OAuth `scopes`).
+- **Four variables have no default and are checked at startup**: `MAPBOX_ACCESS_TOKEN`,
+  `REPLIERS_API_KEY`, `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY`. With an empty `.env` the
+  process stops on the first missing one. Other checks depend on settings (the warmup key,
+  FUB webhooks, `APP_ENVIRONMENT`); see
+  [Startup prerequisites](/architecture/configuration-resolution#startup-prerequisites).
 - Complex values are `JSON.parse`d from JSON-string env vars (e.g.
   `SETTINGS_FEATURED_LISTINGS`).
 - Secrets (API keys, DB credentials, JWT key paths) live **only** here — env files are
@@ -33,30 +41,32 @@ A preset is a `DeepPartial<AppConfig>` — it overrides only what differs:
 ```ts
 // src/settings/defaults.ts (excerpt)
 export default {
-   app: { disable_persistence: true },
-   settings: {
-      scrubbing: { ref_board_id: 9997, board_ids: [110] },
-      defaults: { boardId: [110], locations_boardId: 110 },
-   },
-} as DeepPartial<AppConfig>;
+  app: { disable_persistence: true },
+  settings: {
+    scrubbing: { ref_board_id: 9997, board_ids: [110] },
+    defaults: { boardId: [110], locations_boardId: 110 }
+  }
+} as DeepPartial<AppConfig>
 ```
 
 The active preset is selected by `APP_SETTINGS_PRESET` (`env.example` sets
 `defaults`), merged over the config at startup, and is **immutable at runtime** —
 there is no per-request or runtime board switching. Restart to change settings.
-When the variable is unset, no preset is applied at all: the app runs on env-var
+The checks above run on the env-built values before the preset is merged, so a preset
+cannot satisfy them. When the variable is unset, no preset is applied at all: the app runs on env-var
 defaults only and logs a `[SETTINGS] No preset specified` warning
 (`src/lib/settings.ts`).
 
 ## Which layer does a value belong to?
 
-| Question | Layer |
-|---|---|
-| Is it a secret, or does it vary between dev/staging/prod of the *same* instance? | env var |
-| Does it define what the instance *is* (boards, scrubbing rules, feature toggles)? | settings preset |
+| Question                                                                          | Layer           |
+| --------------------------------------------------------------------------------- | --------------- |
+| Is it a secret, or does it vary between dev/staging/prod of the _same_ instance?  | env var         |
+| Does it define what the instance _is_ (boards, scrubbing rules, feature toggles)? | settings preset |
 
-Presets cannot be overridden by env vars — this is deliberate, so an instance behaves
-identically in every environment.
+Presets cannot be overridden by env vars: the preset is merged over the env-built config, so a
+value the preset sets is the same in every environment. Arrays in a preset replace the env-built array whole;
+how values merge is in [Merge semantics](/architecture/configuration-resolution#merge-semantics).
 
 ## Per-instance development
 

@@ -7,16 +7,15 @@ import { Autocomplete, Box, Button, Stack } from '@mui/material'
 
 import { SearchIcon } from '@configs/icons'
 import mapConfig from '@configs/map'
-import routes from '@configs/routes'
 import searchConfig from '@configs/search'
 
 import { type ApiListing, type ApiLocation } from 'services/API'
 import { type MapboxAddress } from 'services/Map'
-import { type TransactionType } from 'services/Search'
+import { type Filters, type TransactionType } from 'services/Search'
 import { type MapPosition, useMapOptions } from 'providers/MapOptionsProvider'
 import useClientSide from 'hooks/useClientSide'
 import useDebouncedEffect from 'hooks/useDebouncedEffect'
-import { fitBounds, getCoords, getZoom } from 'utils/map'
+import { fitBounds, getCoords, getMapUrl, getZoom } from 'utils/map'
 
 import { useOptionClickHandlers } from './hooks/useOptionClickHandlers'
 import { AutosuggestInput, AutosuggestOption, OptionGroup } from './components'
@@ -48,7 +47,8 @@ export const Autosuggestion = ({
   endAdornment,
   searchIcon,
   searchIconPosition = 'end',
-  type
+  type,
+  filters
 }: {
   showButton?: boolean
   buttonTitle?: string | React.ReactNode
@@ -61,6 +61,8 @@ export const Autosuggestion = ({
   searchIconPosition?: 'start' | 'end'
   // Set only by the home hero toggle; when absent no `type` is sent, so other surfaces/tenants are unchanged.
   type?: TransactionType
+  // Filters the off-map search carries to the map (a home hero's draft); absent, the map URL is unchanged.
+  filters?: Filters
 }) => {
   const router = useRouter()
   const clientSide = useClientSide()
@@ -113,7 +115,8 @@ export const Autosuggestion = ({
     inputRef,
     setOpen,
     setSearchString,
-    type
+    type,
+    filters
   })
 
   const clearOptions = useCallback(() => {
@@ -169,9 +172,9 @@ export const Autosuggestion = ({
     } else if (center && map) {
       map.flyTo({ center, zoom, ...mapFlyCurve })
     } else {
-      router.push(routes.map)
+      router.push(getMapUrl({ filters }))
     }
-  }, [map, router])
+  }, [map, router, filters])
 
   useDebouncedEffect(
     () => {

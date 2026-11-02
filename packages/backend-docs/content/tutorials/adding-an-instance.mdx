@@ -1,0 +1,180 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Adding an instance
+
+Stand up a new deployment ("instance") of the backend for a new market: its own boards, rules and
+credentials, from the same code. The example instance is called `acme_realty`. This recipe expands
+the [onboarding checklist](/operations/instances#onboarding-checklist) into steps with the shape of
+each file. It stops where your own delivery pipeline starts: how branches map to hosts, where
+secrets are kept and how a deploy is triggered are not part of this repository's contract
+([Deployment](/operations/deployment) lists what the process needs from its host).
+
+## Prerequisites
+
+- The backend runs locally with the `defaults` preset ([Setup](/getting-started)).
+- You know the layering: the environment builds `AppConfig`, then the preset is merged over it and
+  wins for every key it sets ([Configuration resolution](/architecture/configuration-resolution)).
+- From the client: the Repliers API key, the MLS board ids and what each board's regulations allow
+  to be shown.
+
+<Steps>
+
+### Write the settings preset
+
+Create `src/settings/instances/acme_realty.ts`. A preset is a `DeepPartial<AppConfig>`: write only
+what differs from the defaults, and start by copying the preset of the most similar market. The
+skeleton below names the groups a new market almost always changes; the values are placeholders:
+
+```ts
+import { DeepPartial } from '../../lib/settings.ts'
+import { AppConfig } from '../../config.ts'
+
+const boardId = 42 // the client's board
+
+export default {
+  settings: {
+    defaults: { boardId: [boardId], locations_boardId: boardId },
+    locations: {
+      boardId,
+      allowed_areas: ['Example Area'],
+      allow_all_areas: false
+    },
+    scrubbing: { board_ids: [boardId], ref_board_id: 9997 }
+  },
+  eventsCollection: { defaultBoardId: `${boardId}` },
+  repliers: { autosuggest: { lat: '0', long: '0', radius: 100_000 } },
+  mapbox: { autosuggest: { country: 'xx', region_code: 'xx' } }
+} as DeepPartial<AppConfig>
+```
+
+Rules that cause most mistakes:
+
+- **Arrays replace, they do not merge.** The preset's `board_ids` is exactly what the instance gets.
+- **A value in the preset beats the same environment variable.** Use the preset for what is a
+  property of the market and the environment for what differs per deployment or is secret.
+- **Several settings name the board.** The search boards, the location board, the scrubbing boards
+  and the events-collection default board are separate keys (the first four lines above); setting one
+  does not set the others.
+- **Other keys you will meet:** the MLS-number prefix ([MLS-number prefix](/architecture/mls-number-prefix)),
+  restricted listings ([Restricted listings](/architecture/restricted-listings)), the allowed
+  status vocabulary, the contact-form validation variant, event and form tags. The full list with the
+  environment variable behind each is the
+  [effective configuration register](/architecture/configuration-resolution#effective-configuration).
+
+### Register the preset
+
+In `src/settings/index.ts` import it and add it to the `presets` record under the same name, between
+the `@oss-remove-start` and `@oss-remove-end` markers that already wrap the other instances, so the
+open-source export drops it:
+
+```ts
+// @oss-remove-start
+import acme_realty from "./instances/acme_realty.ts";
+// ...
+   acme_realty: acme_realty,
+// @oss-remove-end
+```
+
+The lookup is by name: `APP_SETTINGS_PRESET=acme_realty` selects it. A name that is not in the record
+does **not** stop the process; it logs `[SETTINGS] Preset not found: <name>` and starts with the
+environment only. Check the log after the first start.
+
+### Create the env file
+
+Copy `env.example` to `.env.acme_realty` (never committed) and set at least:
+
+| Variable                                  | Value                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `APP_SETTINGS_PRESET`                     | `acme_realty`                                                                               |
+| `APP_ENVIRONMENT`                         | `localhost` for a local run; anything else also requires `GOOGLE_CREDENTIALS`               |
+| `REPLIERS_API_KEY`, `MAPBOX_ACCESS_TOKEN` | The instance's keys                                                                         |
+| `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`       | Key paths relative to the repository root, or the PEM text                                  |
+| `SETTINGS_EVENTS_COLLECTOR_URL_HOST`      | The instance's frontend origin, if the preset's link templates are relative                 |
+| CORS, CRM, database, cache, queue         | As the instance needs them: [Environment variables](/getting-started/environment-variables) |
+
+The checks that stop the process at import are listed on
+[Startup prerequisites](/architecture/configuration-resolution#startup-prerequisites).
+
+### Add the run scripts
+
+In `package.json`, next to the existing instance scripts:
+
+```jsonc
+"dev:acme_realty": "npm run clean && cross-env DOT_ENV_CONFIG=.env.acme_realty npm run dev",
+"db:migrate:acme_realty": "cross-env DOT_ENV_CONFIG=.env.acme_realty npm run db:migrate"
+```
+
+The second line only if the instance has a database. `DOT_ENV_CONFIG` names the file that supplies
+the environment, falling back to `.env`.
+
+### Run it and read the log
+
+```bash
+npm run dev:acme_realty
+```
+
+Expect, in order, `[SETTINGS] Trying preset: acme_realty` and `[SETTINGS] Preset loaded: acme_realty`,
+then the three resolved events-collection URLs. Then send the requests on
+[First requests](/getting-started/first-requests) against it: a guest search must return the
+client's board, not the sample board.
+
+### Provision the runtime
+
+What the host must provide, independent of any pipeline: a Node 24 process for `src/index.ts`
+(compiled: `npm run build`, `npm start`), the environment variables, the JWT key files or PEM values,
+and, only if the instance enables them, PostgreSQL (`app.disable_persistence = false` and
+migrations), Redis (`REDIS_KEYV_ENABLE`) and NATS with the worker process. See
+[Deployment](/operations/deployment) and [Database & Services](/getting-started/database). Wire the
+instance into your CI/CD system (branch, target, secrets) as [CI/CD](/operations/ci-cd) describes the
+contract; the specifics are yours.
+
+### Review visibility before going live
+
+<Callout type="warning">
+  The `SETTINGS_SCRUBBING_*` defaults and the `defaults` preset's rules are
+  written for the sample board. Read [Scrubbing](/architecture/scrubbing)
+  against the client's MLS rules (which permission fields the board sends,
+  whether address and map display are allowed) and set `scrubbing.board_ids` to
+  the instance's boards. The scrubber acts only on listings of the boards in
+  that list.
+</Callout>
+
+### Record it
+
+A site page does not list instances: preset names can reveal markets and business rules, and the
+public documentation is checked for them. Record the instance where your team keeps its own
+inventory, and keep the preset file under `src/settings/instances/` so the export tooling excludes
+it. The site pages that do change when the **mechanism** changes are
+[Configuration resolution](/architecture/configuration-resolution) (a new `AppConfig` key) and
+[Instances](/operations/instances).
+
+</Steps>
+
+## Checklist
+
+| Done                                                     | Where                                  |
+| -------------------------------------------------------- | -------------------------------------- |
+| Preset file, only the differences                        | `src/settings/instances/<instance>.ts` |
+| Registered inside the `@oss-remove` markers              | `src/settings/index.ts`                |
+| Env file with the preset name and the required variables | `.env.<instance>` (not committed)      |
+| `dev:` and, if persistent, `db:migrate:` scripts         | `package.json`                         |
+| Log shows the preset loaded and the resolved URLs        | first start                            |
+| Visibility rules reviewed against the client's MLS rules | [Scrubbing](/architecture/scrubbing)   |
+| Runtime, secrets and pipeline                            | your delivery system                   |
+
+## Troubleshooting
+
+| Symptom                                                                                       | Likely cause                                                                                         |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| The sample board comes back                                                                   | `Preset not found` in the log: the name in `APP_SETTINGS_PRESET` does not match the key in `presets` |
+| Throws "eventsCollection URLs are relative but SETTINGS_EVENTS_COLLECTOR_URL_HOST is not set" | The preset or `defaults` sets relative link templates and no host is set                             |
+| Throws "full URLs found while urlHost is set"                                                 | The host variable is set while a template is absolute; make the templates relative or unset the host |
+| `No GOOGLE_CREDENTIALS env variable`                                                          | `APP_ENVIRONMENT` is unset or not `localhost`                                                        |
+| An array setting has the wrong members                                                        | Arrays in a preset replace the default; list every member                                            |
+| Env var seems ignored                                                                         | The preset sets the same key and wins                                                                |
+
+## Next
+
+- [Instances](/operations/instances) — the three-part mechanism
+- [Configuration resolution](/architecture/configuration-resolution) — the order everything is combined in
+- [Deployment](/operations/deployment) and [CI/CD](/operations/ci-cd)

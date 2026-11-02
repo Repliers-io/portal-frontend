@@ -1,0 +1,179 @@
+import { Callout } from 'nextra/components'
+
+# First requests
+
+Send a guest search, sign in with a one-time code and repeat the search as a user, against a
+backend started as in [Setup](/getting-started). This page was written from the
+source and the other pages of this site; the backend was **not** started for it, so every response
+below is **synthetic**: the shape is read from the code, the values are made up. Terms are in the
+[Glossary](/glossary).
+
+<Callout type="info">
+  All requests go to `http://localhost:8080` (port `PORT`, default 8080).
+  Everything else is `curl`; no token is needed until step 3.
+</Callout>
+
+## 1. Start only the server
+
+```bash
+npm run dev:server
+```
+
+`npm run dev` also starts the worker, which does nothing unless `NATS_ENABLED=true`
+(`src/worker.ts`); the requests below do not need it.
+
+## 2. A guest search
+
+```bash
+curl -s "http://localhost:8080/api/listings/search?resultsPerPage=2&fields=mlsNumber,listPrice,status"
+```
+
+No `Authorization` header: `middleware.jwt.passthrough` lets the request through as a
+[guest](/glossary#guest). `boardId` defaults to the preset's board (110, the sample-data board, with
+the `defaults` preset). Synthetic response:
+
+```json
+{
+  "page": 1,
+  "numPages": 14,
+  "pageSize": 2,
+  "count": 27,
+  "listings": [
+    {
+      "mlsNumber": "1000001",
+      "listPrice": "!scrubbed!",
+      "status": "A",
+      "permissions": { "displayPublic": "N" },
+      "boardId": 110
+    },
+    {
+      "mlsNumber": "1000002",
+      "listPrice": "750000",
+      "status": "A",
+      "permissions": { "displayPublic": "Y" },
+      "boardId": 110
+    }
+  ]
+}
+```
+
+What to look at:
+
+- `status`, `permissions`, `address`, `duplicates` and `boardId` are present although only three
+  fields were requested: the service appends them because the scrubber needs them.
+- A listing the MLS does not allow on the public internet (`displayPublic = N`) comes back with its
+  values replaced by the string `!scrubbed!` (numbers too, never `0`) or, for a date-time, `1900-06-21T01:39:00.000Z`. `listPrice` is declared as a string in the listing type (`src/services/repliers/listings.ts`), so the `"750000"` below is a string as well. Whether any listing in
+  your key's data does is a property of the data; the sample board's behaviour was not checked here.
+  The rules are on [Scrubbing](/architecture/scrubbing).
+- The request is a single Repliers `POST /listings` whichever verb you used. The transformations
+  in between are traced in
+  [W1](/architecture/flows#w1--guest-and-authenticated-search) and described in
+  [Search & count](/api-reference/listings/search).
+
+## 3. Sign in with a one-time code
+
+Sign-in is a code, not a password. The code is held by the backend and delivered by Repliers as a
+message to the client; for a local run the backend can also return it in the response.
+
+Add this line to `.env`, on its own line, and restart:
+
+```ini
+DEBUG_AUTH_OTP_EXPOSE_CODE=true
+```
+
+Startup refuses it when `APP_ENVIRONMENT` contains `prod`
+([Startup prerequisites](/architecture/configuration-resolution#startup-prerequisites)).
+
+Request a code for an existing client. `login` answers `404` for an email or phone no Repliers
+client has:
+
+```bash
+curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jane@example.com"}'
+```
+
+```json
+{ "result": true, "code": "482913" }
+```
+
+To create the client first, call `POST /api/auth/signup` with
+`{"fname":"Jane","lname":"Doe","email":"jane@example.com"}`. It creates a client under the default
+agent (`REPLIERS_AGENT_ID`; set it to an agent id of your Repliers account) and then behaves as
+`login`. It answers with the same body. If the client exists the upstream `409` is relayed. Whether the
+sample-data key may create clients was not checked; a refusal is relayed with Repliers' status.
+
+A second `login` inside `AUTH_OTP_RESEND_TTL_MS` (one minute with the `defaults` preset) is a `403`
+with a `Retry-After` header. Exchange the code for a token:
+
+```bash
+curl -s -X POST http://localhost:8080/api/auth/otp \
+  -H "Content-Type: application/json" \
+  -d '{"code":"482913"}'
+```
+
+```json
+{
+  "token": "eyJhbGciOiJSUzI1NiIs...",
+  "profile": {
+    "fname": "Jane",
+    "lname": "Doe",
+    "phone": null,
+    "email": "jane@example.com",
+    "status": "active",
+    "preferences": { "email": true, "unsubscribe": false },
+    "tags": []
+  }
+}
+```
+
+The token is RS256, signed with the private key from Setup, with `sub` = the client's
+[`clientId`](/glossary#clientid). Mechanics, statuses and the cooldown are on
+[OTP login](/architecture/authentication#otp-login) and in
+[W9](/architecture/flows#w9--otp-login-cooldown-refresh-logout-and-revocation).
+
+## 4. An authenticated request
+
+```bash
+TOKEN="eyJhbGciOiJSUzI1NiIs..."   # the token from step 3
+
+curl -s http://localhost:8080/api/user/me -H "Authorization: Bearer $TOKEN"
+```
+
+`GET /api/user/me` is strict (`middleware.jwt`): without the header it is a `401`. It returns
+the Repliers client record of the token's `sub` plus a `communities` array split from its tags (`UserService.info`). Repeat the step 2 search with the header and
+the same fields come back in the clear for a [user](/glossary#user): the `displayPublic = N` rule
+applies to guests only
+([scrubbing rules](/architecture/scrubbing)).
+
+```bash
+curl -s "http://localhost:8080/api/listings/search?resultsPerPage=2&fields=mlsNumber,listPrice,status" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+A token that is present but invalid or revoked is a `401` even on a passthrough route; it is
+not downgraded to a guest ([Verifying](/architecture/authentication#verifying)).
+
+## What needs what
+
+With the `defaults` preset the backend needs nothing except the Repliers and Mapbox keys at
+startup ([Database & Services](/getting-started/database)):
+
+| You use                                                             | Needs                                                                                           | Without it                                                                                                                                       |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Guest and user search, listing detail, autosuggest, stats           | Repliers key; for autosuggest the Mapbox token (or Google, per `REPLIERS_AUTOSUGGEST_PROVIDER`) | Nothing else                                                                                                                                     |
+| `login`, `signup`, `otp`, `refresh`, `logout`                       | Repliers clients and messages on your key                                                       | The codes and the revocation list live in the process: they are lost on restart and not shared between processes unless `REDIS_KEYV_ENABLE=true` |
+| `/api/user/me`, favorites, saved searches, estimates                | Repliers (these records live there)                                                             | Nothing else                                                                                                                                     |
+| Roles beyond User, assets, virtual tours, social links, people sync | PostgreSQL, `app.disable_persistence = false`, migrations                                       | The flag does not make them no-ops; the calls fail at run time ([persistence](/architecture/persistence#running-without-a-database))             |
+| Engagement events and the CRM person sync                           | `BOSS_ENABLED=true` with credentials; NATS and the worker for the sync                          | The `defaults` preset has the CRM off, so no event is sent                                                                                       |
+
+<Callout type="warning">
+  Run the commands against your own key and compare. If a value differs from a
+  synthetic response here, trust yours.
+</Callout>
+
+## Next
+
+- [Adding an endpoint](/tutorials/adding-an-endpoint) · [Adding an event selector](/tutorials/adding-an-event-selector) · [Adding an instance](/tutorials/adding-an-instance)
+- [Module catalogue](/architecture/modules) — where each path lives
+- [API reference](/api-reference)

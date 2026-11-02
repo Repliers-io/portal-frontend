@@ -269,15 +269,21 @@ importers:
 
   packages/backend-docs:
     dependencies:
+      '@next/third-parties':
+        specifier: ^16.3.1
+        version: 16.3.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)
+      '@theguild/remark-mermaid':
+        specifier: 0.3.0
+        version: 0.3.0(react@19.2.1)
       next:
         specifier: 16.3.1
         version: 16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       nextra:
         specifier: ^4.6.1
-        version: 4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3)
+        version: 4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3)
       nextra-theme-docs:
         specifier: ^4.6.1
-        version: 4.6.1(@types/react@19.2.17)(immer@11.1.4)(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(nextra@4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1))
+        version: 4.6.1(@types/react@19.2.17)(immer@11.1.4)(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(nextra@4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1))
       react:
         specifier: ^19.0.0
         version: 19.2.1
@@ -306,15 +312,21 @@ importers:
 
   packages/docs:
     dependencies:
+      '@next/third-parties':
+        specifier: ^16.3.1
+        version: 16.3.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)
+      '@theguild/remark-mermaid':
+        specifier: 0.3.0
+        version: 0.3.0(react@19.2.1)
       next:
         specifier: 16.3.1
         version: 16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       nextra:
         specifier: ^4.6.1
-        version: 4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3)
+        version: 4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3)
       nextra-theme-docs:
         specifier: ^4.6.1
-        version: 4.6.1(@types/react@19.2.17)(immer@11.1.4)(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(nextra@4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1))
+        version: 4.6.1(@types/react@19.2.17)(immer@11.1.4)(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(nextra@4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1))
       react:
         specifier: ^19.0.0
         version: 19.2.1
@@ -8843,6 +8855,12 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.3.1':
     optional: true
 
+  '@next/third-parties@16.3.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)':
+    dependencies:
+      next: 16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      react: 19.2.1
+      third-party-capital: 1.0.20
+
   '@next/third-parties@16.3.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@24.13.2)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1)':
     dependencies:
       next: 16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@24.13.2)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -14350,13 +14368,13 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  nextra-theme-docs@4.6.1(@types/react@19.2.17)(immer@11.1.4)(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(nextra@4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1)):
+  nextra-theme-docs@4.6.1(@types/react@19.2.17)(immer@11.1.4)(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(nextra@4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1)):
     dependencies:
       '@headlessui/react': 2.2.9(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       clsx: 2.1.1
       next: 16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       next-themes: 0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
-      nextra: 4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3)
+      nextra: 4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3)
       react: 19.2.1
       react-compiler-runtime: 19.1.0-rc.3(react@19.2.1)
       react-dom: 19.2.1(react@19.2.1)
@@ -14368,7 +14386,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  nextra@4.6.1(next@16.3.1(@playwright/test@1.61.1)(@types/node@22.19.13)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3):
+  nextra@4.6.1(next@16.3.1(@babel/core@7.29.7(supports-color@8.1.1))(@playwright/test@1.61.1)(@types/node@22.19.13)(babel-plugin-macros@3.1.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(supports-color@8.1.1)(typescript@5.9.3):
     dependencies:
       '@formatjs/intl-localematcher': 0.6.2
       '@headlessui/react': 2.2.9(react-dom@19.2.1(react@19.2.1))(react@19.2.1)

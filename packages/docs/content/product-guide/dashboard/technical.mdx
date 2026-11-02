@@ -47,3 +47,7 @@ DashboardCityPageContent             per-city report
   `@configs/location` `areaCities` — the stats API takes `area`, not `locationId`.
 - **City reports split by class:** the `[city]` route reuses `DashboardCityPageContent` for
   the combined, residential, and condo variants.
+
+## Workflow and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The [cross-layer guide](/technical-guide/caching-and-revalidation) covers city report regeneration and cache ownership. Server fetchWidgetStats memoizes by city/class, uses cityGeoFilters, and rethrows transient failures while logging and returning null for other errors. City reports declare daily regeneration.

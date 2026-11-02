@@ -3,6 +3,8 @@ export default {
   'getting-started': 'Getting Started',
   'product-guide': 'Product Guide',
   'technical-guide': 'Technical Guide',
+  operations: 'Operations',
   tutorials: 'Tutorials',
-  glossary: 'Glossary'
+  glossary: 'Glossary',
+  coverage: 'Coverage and Evidence'
 }

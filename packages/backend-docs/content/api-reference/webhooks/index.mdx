@@ -1,0 +1,30 @@
+# Webhooks
+
+Everything under `/api/webhooks` is served by `src/routes/webhooks/` and receives callbacks from
+external systems. No route here reads a JWT: each webhook has its own authorizer middleware. Today
+there is one webhook, the Follow Up Boss people callback. Terms are defined in the
+[Glossary](/glossary).
+
+This page is the operation index. The handler's calls before the response, the worker that
+finishes the job and the separate outcomes (broker acknowledgement, task status, record update) are
+on [Follow Up Boss](/integrations/follow-up-boss), with the sequence in
+[D07](/integrations/follow-up-boss#d07--webhook-to-worker) and one update followed end to end in
+[W8](/architecture/flows).
+
+## Operations
+
+| Method & path                    | Auth                                                                                                                                                         | Cached / header                                                                                         | Side effects                                                                                                                                                                                                | Errors                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Deep dive                                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/webhooks/boss/people` | `middleware.boss.webhook.auth`: `fub-signature` must equal the hex HMAC-SHA256 of the base64-encoded raw body, keyed with `BOSS_SYSTEM_KEY`; no JWT, no role | none; success is `204` with no body (`handlePeopleEvents` resolves to `undefined` for every event name) | awaited before the response: FUB `GET /people` per batch of 30 ids (created and updated events), one `webhooks` row per person in `PENDING`, one NATS publish per row; an unknown event name is only logged | 401 `Invalid signature` (no raw body, or a different signature); 400 only if Joi rejects the body, which `Joi.object().unknown()` does not for an object; relayed FUB status from `BossService.request` (500 when FUB gives no response); 500 for a database or NATS error, for a `peopleCreated` / `peopleUpdated` / `peopleDeleted` body without `resourceIds` (an unknown event without it still gets 204), and for created / updated events when `BOSS_ENABLED=false` | [Webhook handler](/integrations/follow-up-boss#webhook-handler-before-the-response), [D07](/integrations/follow-up-boss#d07--webhook-to-worker) |
+
+The route is mounted whatever the values of `BOSS_ENABLED` and `BOSS_WEBHOOK_ENABLED`. Those
+switches decide whether the backend registers the callback with FUB
+([Webhook installation](/integrations/follow-up-boss#webhook-installation)), not whether the route
+answers.
+
+## Follow Up Boss — `POST /webhooks/boss/people`
+
+The operation is in the table above; configuration, installation and worker processing are on
+[Follow Up Boss](/integrations/follow-up-boss#3-people-sync-fub--portal-via-nats).
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

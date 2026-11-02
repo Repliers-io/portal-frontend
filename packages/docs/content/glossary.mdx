@@ -1,5 +1,19 @@
 # Glossary
 
+## Execution and evidence
+
+- **Request-scoped render**: a server render with an actual request context;
+  distinct from static generation for cookies and forwarding headers.
+- **Generated artifact**: output such as tenant aliases, features, rewrites or
+  `locations.json`; updated through its owning generator, not by ordinary UI state.
+- **Provider cache**: mounted browser state mirroring results or backend records;
+  changing it does not by itself establish remote persistence.
+- **NLP token / iframe session id / JWT**: separate conversation, message-context
+  and authentication identities. See [Data Ownership](/technical-guide/data-ownership).
+- **Synthetic trace**: an example derived from source with invented inputs.
+  **Executed trace**: an observed request and outcome for an identified environment.
+  [Coverage](/coverage) records which is which.
+
 Terms that are **not obvious from context** — real-estate / MLS jargon and Portal-specific
 concepts. Self-evident words (bedrooms, mortgage, map view…) are intentionally omitted; the
 user-facing features are described in the [Product Guide](/product-guide).

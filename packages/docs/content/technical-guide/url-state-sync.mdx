@@ -5,14 +5,15 @@ import { Callout } from 'nextra/components'
 On `/search`, the **URL is the source of truth** for a shareable view. Camera
 (center + zoom), the active filters, layout (map/grid), overlay layers, 3D
 orientation and the map style are all encoded into the query string, so a copied
-link reproduces the exact same search — server-side for metadata/OpenGraph and
-client-side for the live map.
+link reconstructs the encoded search state — server-side for metadata/OpenGraph
+and client-side for the live map. Results can change with data, permissions and
+viewport; saved multi-ring regions are not fully represented by an ordinary map URL.
 
 ## Key files
 
 | File                                                      | Role                                                            |
 | --------------------------------------------------------- | --------------------------------------------------------------- |
-| `src/configs/defaults/params.ts`                          | Short query-param name registry (`@configs/params`)             |
+| `src/configs/defaults/params.ts`                          | Camera/presentation parameter registry (`@configs/params`); filters use their own field names             |
 | `src/app/search/[layout]/page.tsx`                        | Server-side parse of filters/camera/point → provider props      |
 | `src/app/search/[layout]/_utils.ts`                       | `getFiltersFromParams`, `getCameraFromParams` (server)          |
 | `src/providers/MapOptionsProvider/MapOptionsProvider.tsx` | Client init of style / 3D / layers / camera from `searchParams` |
@@ -29,7 +30,7 @@ Param names live in `@configs/params` (`paramNames`) — kept short to keep URLs
 - **Overlay layers** — `layers` (repeatable — schools, etc.).
 - **3D orientation** — `3d` as `bearing,pitch`; a bare `?3d` activates 3D with the default pitch.
 - **Map style** — `ms` (only when it differs from the page default).
-- **Filters** — spread by their own short names (`pmin`, `pmax`, `bd`, `bt`, `ht`, `ls`, …), plus synthetic `q`/`page`/`point`/`polygon`/`locationId`.
+- **Filters** — spread by their field names (`minPrice`, `maxPrice`, `minBedrooms`, `minBaths`, `listingType`, `listingStatus`), plus synthetic `q`/`page`/`point`/`polygon`/`locationId`.
 
 ## How it works
 
@@ -56,7 +57,8 @@ separate effect that calls `pushUrl(page)`, preserving pagination.
 </Callout>
 
 Both go through `window.history` directly rather than the Next.js router, so
-these updates don't retrigger a server navigation or a data refetch.
+these writes do not themselves navigate through the router. The state change
+that caused a write can independently trigger the search fetching effect.
 
 ## Gotchas & hints
 
@@ -77,3 +79,10 @@ these updates don't retrigger a server navigation or a data refetch.
 
 See also: [Property Search — How it works](/product-guide/search/technical) and
 [State Management](/technical-guide/state-management).
+
+## Worked traces and evidence
+
+[F01 and F02](/technical-guide/workflows/search) follow initialization, request
+construction, cancellation, result persistence and sharing. Source reviewed at
+`e30dd9b47` on 2026-11-02; relevant URL/search unit tests were executed. Browser
+evidence and its dataset boundary are recorded in [Coverage](/coverage).

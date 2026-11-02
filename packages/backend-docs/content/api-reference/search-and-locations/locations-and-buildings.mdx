@@ -1,0 +1,117 @@
+# Locations & Buildings
+
+`/api/locations` and `/api/buildings` are thin proxies: the route validates the query with Joi,
+a service method forwards it to one Repliers endpoint, and the response is returned as
+Repliers sent it. There is no reshaping, no scrubbing decorator and no restricted-listing
+filter on either path. Terms are in the [Glossary](/glossary).
+
+[Endpoints](/api-reference/search-and-locations) ·
+[Autosuggest](/api-reference/search-and-locations/autosuggest) ·
+[Caching](/architecture/caching#cache-state) ·
+[Repliers API](/integrations/repliers-api)
+
+## Locations
+
+`LocationsService` (`src/services/locations.ts`) wraps `RepliersLocations`
+(`src/services/repliers/locations.ts`). Both routes use passthrough auth, but neither reads the
+user: the token only decides whether an invalid one is a 401.
+
+### Location sources
+
+`source` selects the dataset. The client type lists four values; the proxy validates `source`
+only as a string array (`.single()`, so one value is accepted), so any other value is passed to
+Repliers as sent.
+
+| Source                         | Proxy behaviour                                                                                                                                                                                                                    | Source                                                           |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `MLS`, `UserDefined`, `LiveBy` | none beyond passing the value on; the dataset is chosen by Repliers                                                                                                                                                                | `src/services/repliers/locations.ts` (`RplLocationSourceValues`) |
+| `PublicRecord`                 | none beyond passing the value on; the response type describes property parcels: `type` `property`, a `map.boundary` that may be a MultiPolygon (`map.geometryType`), and the assessor fields in `publicRecord`, returned untouched | `src/services/repliers/locations.ts` (`RplLocation`)             |
+
+When `source` is absent the proxy sends none, and Repliers searches across sources
+(`AutosuggestService.search` omits `source` from the locations call when the request has none).
+
+### GET /locations
+
+Validated by `locationsGetSchema` (`src/validate/locations.ts`) and cached.
+
+| Parameter                                                                         | Rule                                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                                                                            | array of `area`, `city`, `city-alternate`, `neighborhood`, `neighborhood-alternate`, `postalCode`, `schoolDistrict`, `district`, `school`, `property` (`.single()`) |
+| `state`, `area`, `city`, `neighborhood`, `locationId`, `source`, `classification` | string arrays (`.single()`)                                                                                                                                         |
+| `resultsPerPage`                                                                  | 1 to **1000**, default **100**                                                                                                                                      |
+| `pageNum`                                                                         | at least 1, default 1                                                                                                                                               |
+| `map`                                                                             | JSON string or coordinate array (`rplMapFlexibleSchema`)                                                                                                            |
+| `lat`, `long`, `radius`                                                           | `lat` -90..90, `long` -180..180, `radius` at least 1; `radius` requires both `lat` and `long`                                                                       |
+| `sortBy`                                                                          | `typedesc` or `typeasc`                                                                                                                                             |
+| `hasBoundary`                                                                     | `"true"` or `"false"`                                                                                                                                               |
+| `minSize`, `maxSize`                                                              | positive numbers                                                                                                                                                    |
+| `fields`                                                                          | string                                                                                                                                                              |
+
+The cache entry (`locations:get`) is keyed by the validated parameter object and lives for
+`CACHE_LOCATIONS_TTL` (24 h). The response is written with `sendCached`, so a hit or a miss
+carries `Cache-Control: private, max-age=<remaining seconds>`.
+
+### GET /locations/autocomplete
+
+Validated by `locationsAutocompleteSchema`. `search` is required with at least 3 characters;
+`resultsPerPage` is 1 to **10** with **no default** (Repliers applies its own); the other filters
+match `/locations` except that `sortBy` is absent and `boundary` is accepted next to
+`hasBoundary`. The call is not cached and the body is written directly.
+
+The combined [autosuggest](/api-reference/search-and-locations/autosuggest) `locations` block
+calls the same client method but does not pass through this schema: its page size is bounded by
+`REPLIERS_AUTOSUGGEST_MAX_RESULTS` and `search` is the autosuggest `q`.
+
+## Buildings
+
+`BuildingsService` (`src/services/buildings.ts`) wraps `RepliersBuildings`
+(`src/services/repliers/buildings.ts`). The router resolves **no** JWT middleware: a token is
+never read or checked on any of the three routes.
+
+| Route                             | Validated by                               | Upstream                                              | Cache                                                      |
+| --------------------------------- | ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------- |
+| `GET /api/buildings`              | `buildingsSchema` on the query             | `GET /buildings`                                      | `buildings:search`, `CACHE_BUILDINGS_SEARCH_TTL` (24 h)    |
+| `POST /api/buildings`             | `buildingsSchema` on the query plus `body` | `POST /buildings`; `body` is sent as the request body | `buildings:search`, same TTL; `usePost` is part of the key |
+| `GET /api/buildings/{addressKey}` | `buildingsSingleSchema`                    | `GET /buildings/{addressKey}`                         | `buildings:single`, `CACHE_BUILDINGS_SINGLE_TTL` (1 h)     |
+
+`buildingsSchema` accepts paging (`pageNum`, `resultsPerPage`, both positive integers with no
+upper bound), area filters (`city`, `neighborhood`, `area`, `map`), listing filters (`class`,
+`type`, price, bedroom, bathroom, story and `propertyType` ranges, `displayPublic`), name and
+street filters (`buildingName`, `streetName`, `streetNumber`), `sortBy`, and `lat` / `long` /
+`radius` (`radius` requires both). On `POST` the only body key is `map` (`rplMapSchema`), which
+lets a large polygon travel in the body.
+
+### Single building
+
+`addressKey` is a non-empty string of at most 255 characters
+([`addressKey`](/glossary#addresskey)). The route assigns the `@cached` result to `ctx.body`
+without `sendCached`, so the response body is the cache wrapper `{ result, expires }` and no
+`Cache-Control` header is set; the list routes use `sendCached` and return the bare payload
+(`src/routes/buildings.ts`).
+
+## Cache namespaces
+
+| Namespace          | Method                    | Env, default                       |
+| ------------------ | ------------------------- | ---------------------------------- |
+| `locations:get`    | `LocationsService.get`    | `CACHE_LOCATIONS_TTL`, 24 h        |
+| `buildings:search` | `BuildingsService.search` | `CACHE_BUILDINGS_SEARCH_TTL`, 24 h |
+| `buildings:single` | `BuildingsService.single` | `CACHE_BUILDINGS_SINGLE_TTL`, 1 h  |
+
+Keys, values and the shared `@cached` mechanics are in
+[Cache state](/architecture/caching#cache-state). `locations/autocomplete` has no namespace.
+
+## Gotchas
+
+1. **`/locations/autocomplete` and `/locations` cap `resultsPerPage` differently.** 10 with no
+   default against 1000 with default 100 (`src/validate/locations.ts`).
+2. **`source` is validated as any string.** The schema is a string array; the
+   four-value list is a TypeScript type only (`src/validate/locations.ts`,
+   `src/services/repliers/locations.ts`).
+3. **Buildings carry no listing context.** The services have no `app_state` and no `@scrubbed`
+   decorator, and the router resolves no JWT middleware
+   (`src/routes/buildings.ts`, `src/services/buildings.ts`).
+4. **`GET` and `POST` buildings are separate cache entries.** `usePost` is an argument of the
+   cached method, so the same filters sent both ways are two entries
+   (`src/services/buildings.ts`, `BuildingsService.search`).
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

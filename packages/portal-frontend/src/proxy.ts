@@ -26,6 +26,8 @@ const staticRoutes = [
 
 type Environment = 'production' | 'development'
 
+const herokuHostSuffix = '.herokuapp.com'
+
 /**
  * Host suffixes that always identify a non-production deployment:
  *   - `.condosportal.ca` — the shared per-tenant dev sites (dev-<tenant>-com.condosportal.ca)
@@ -38,7 +40,7 @@ type Environment = 'production' | 'development'
 const previewHostSuffixes = [
   '.condosportal.ca',
   '.vercel.app',
-  '.herokuapp.com'
+  herokuHostSuffix
 ]
 
 const decode = (value: string) => {
@@ -76,6 +78,7 @@ const knownRoutes = [
 
 /**
  * Proxy (formerly middleware) handles only true per-request runtime logic:
+ *   - Heroku host → NEXT_PUBLIC_APP_DOMAIN home page
  *   - HTTPS enforcement
  *   - Route guard (unknown paths → /404, or → LEGACY_FALLBACK_HOST when set)
  *   - GrowthBook UUID cookie (disabled — see below)
@@ -93,6 +96,18 @@ export default function proxy(req: NextRequest) {
   const currentEnv = process.env.NODE_ENV as Environment
   const forceHttp = process.env.FORCE_HTTP === 'true'
   const disableRouteGuard = process.env.DISABLE_ROUTE_GUARD === 'true'
+  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN
+
+  // ── Heroku host → app domain ───────────────────────────────────────────────
+  // Runs before HTTPS enforcement so http://<app>.herokuapp.com lands in one hop.
+  // Skipped when the app domain is itself a herokuapp host — it would loop.
+  if (
+    appDomain &&
+    !appDomain.includes(herokuHostSuffix) &&
+    host.endsWith(herokuHostSuffix)
+  ) {
+    return NextResponse.redirect(new URL('/', appDomain), 301)
+  }
 
   // ── HTTPS enforcement ──────────────────────────────────────────────────────
   // Use === 'http' (not !== 'https') so that internal Next.js mock requests
@@ -157,8 +172,10 @@ export default function proxy(req: NextRequest) {
   // meta tag: it covers non-HTML responses and is honoured without parsing the
   // body. Crawling stays allowed so the directive is seen — never pair this with
   // a robots.txt Disallow, which would stop Google re-crawling and seeing it.
+  // The documentation bundled under /documentation is indexed even on such a tenant.
+  const documentation = /^\/documentation(\/|$)/.test(pathname)
   if (
-    content.noIndex ||
+    (content.noIndex && !documentation) ||
     previewHostSuffixes.some((suffix) => host.endsWith(suffix))
   ) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow')

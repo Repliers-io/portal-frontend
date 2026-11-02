@@ -15,7 +15,7 @@ import {
   addRegionPolygon,
   getDefaultBounds,
   getMapStyleUrl,
-  webglSupported
+  mapUnavailable
 } from 'utils/map'
 import { installBuildingWindows } from 'utils/map/buildingWindows'
 
@@ -131,9 +131,9 @@ export const useMapInit = ({
 
   useEffect(() => {
     if (!enabled || initializedRef.current || !containerRef.current) return
-    // No WebGL (e.g. hardware acceleration off) — the Map constructor would
-    // throw and crash the page; MapContainer renders the message instead.
-    if (!webglSupported()) return
+    // No Mapbox key or no WebGL — the Map constructor would throw and crash
+    // the page; MapContainer renders the message instead.
+    if (mapUnavailable()) return
     initializedRef.current = true
 
     const { initialView } = mapConfig.searchArea

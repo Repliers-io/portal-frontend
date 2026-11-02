@@ -1,0 +1,24 @@
+# Tutorials
+
+Three numbered recipes for the changes a contributor makes most often. Each follows the
+repository's own conventions (`CLAUDE.md`: route patterns, validation, decorators) and ends with
+the entry the change adds to this site: the pages below are registers, and a change that is not in
+its register is a change the next reader cannot find.
+
+| Recipe                                                          | You change                                       | It ends with                                                                                                                                                                         |
+| --------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Adding an endpoint](/tutorials/adding-an-endpoint)             | A route, a Joi schema, a service method, tests   | A row in the [module catalogue](/architecture/modules), a row in the [endpoint access register](/architecture/authentication#endpoint-access), a row in the domain's operation table |
+| [Adding an event selector](/tutorials/adding-an-event-selector) | A selector class and a second handler on a route | A row in the [engagement register](/architecture/events-and-messaging#engagement-reporting)                                                                                          |
+| [Adding an instance](/tutorials/adding-an-instance)             | A settings preset and an env file                | The [onboarding checklist](/operations/instances#onboarding-checklist) completed                                                                                                     |
+
+Before you start, have the backend running as in [Setup](/getting-started) and have sent the
+requests on [First requests](/getting-started/first-requests). The vocabulary is in the
+[Glossary](/glossary); the request path your code joins is in
+[Request lifecycle](/architecture/request-lifecycle).
+
+Two rules apply to every recipe:
+
+- **TypeScript compile errors only while you work.** Lint and format run on save and commit.
+- **Tests go with the code.** Mocha and `assert`, in `test/` at the same path depth as the file
+  under test; run one file with
+  `npx cross-env DB_PORT=5555 NODE_ENV=testing DOT_ENV_CONFIG=test.env npx mocha --grep "pattern"`.

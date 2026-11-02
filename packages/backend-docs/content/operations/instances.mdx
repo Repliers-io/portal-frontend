@@ -18,14 +18,15 @@ Two properties to keep in mind when writing presets:
 - Presets can set values that have **no env var** (e.g. Mapbox similarity
   thresholds) — the preset layer is strictly more expressive.
 
-The `instances/` directory is excluded from the [OSS export](/operations/oss-export)
+The `instances/` directory is excluded from the OSS export
 — presets may name markets, boards, and business rules that are not public.
 
 ## 2. Env file — `.env.<instance>`
 
 Secrets and environment-specific values: API keys, DB/Redis/NATS connections, CRM
-credentials, XFF tokens. Never committed; mirrored into Heroku config vars for
-deployed environments.
+credentials, XFF tokens. Never committed; for deployed environments the same names and
+values are set as environment variables in the runtime, since secrets are environment-only
+(see [Deployment](/operations/deployment#environment-specifics)).
 
 ## 3. npm scripts + pipeline entries
 
@@ -34,8 +35,8 @@ deployed environments.
 "db:migrate:<instance>": "DOT_ENV_CONFIG=.env.<instance> npm run db:migrate"
 ```
 
-plus a deployment entry in `bitbucket-pipelines.yml` pointing the instance's branch
-at its Heroku app.
+plus an entry in your CI/CD system that maps the instance's branch to its deployment
+target (see [CI/CD](/operations/ci-cd#branch-model)).
 
 ## Onboarding checklist
 
@@ -45,8 +46,8 @@ at its Heroku app.
 2. Create `.env.<instance>` from `env.example`; set the Repliers key, boards,
    `APP_SETTINGS_PRESET=<instance>`, CORS domain, and integration credentials.
 3. Add `dev:<instance>` (and, if persistent, `db:migrate:<instance>`) scripts.
-4. Provision the Heroku app (+ Postgres/Redis add-ons if needed); set config vars;
-   generate/upload JWT keys.
-5. Add the pipeline deployment entry and environment variables in Bitbucket.
+4. Provision the runtime for the instance (plus Postgres and Redis if it needs them); set
+   its environment variables; provide the JWT key files.
+5. Add the instance to your CI/CD system: its branch, deployment target and secrets.
 6. Verify scrubbing rules against the board's regulations **before** going live —
    `SETTINGS_SCRUBBING_*` defaults are written for the sample board, not yours.

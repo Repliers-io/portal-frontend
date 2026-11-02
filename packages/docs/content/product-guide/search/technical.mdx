@@ -242,3 +242,7 @@ popups are shared: `src/components/shared/Map/` — see
   `soldPriceAndDate: true` (in `@configs/filters`), a chosen `soldRange` makes
   `processParams` send `minSoldPrice`/`maxSoldPrice` and the sold-date sort token
   (`soldDateDesc`) instead. Default `false`.
+
+## Workflow and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The [cross-layer guide](/technical-guide/workflows/search) covers URL parsing, viewport geometry, adapter output, cancellation, response storage and sharing. Selected search/API tests and a defaults/sample-data browser replay were executed.

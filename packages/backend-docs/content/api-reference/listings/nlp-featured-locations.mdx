@@ -1,0 +1,124 @@
+import { Callout } from 'nextra/components'
+
+# NLP, featured, locations & lastUpdatedOn
+
+The remaining `/api/listings` endpoints: natural-language search, featured listings, the
+deprecated locations hierarchy, and the synthetic `lastUpdatedOn` timestamp. Terms are in the
+[Glossary](/glossary).
+
+[Listings endpoints](/api-reference/listings) ·
+[Search & Count](/api-reference/listings/search) ·
+[Scrubbing](/architecture/scrubbing) ·
+[Repliers API](/integrations/repliers-api)
+
+## NLP
+
+`POST /api/listings/nlp` turns a prompt into a listings request. `ListingsService.nlp` calls
+`RepliersListings.nlp`, which sends `POST /nlp` with `nlpVersion` in the query and the rest of
+the validated body — `prompt`, `nlpId`, `statistics`, `aggregates` **and `app_state`** — as
+the request body. The user's `app_state` claims are therefore sent upstream on this route
+(`RepliersListings.nlp` posts `{ ...bodyParams }`), unlike `search`, which strips `app_state`
+first. `ListingsService.nlp` always sets `nlpVersion: config.settings.nlp.version` and ignores
+the caller's `nlpVersion`, even though the schema has a `.default`. The service then reshapes
+the result (`src/services/listings.ts`):
+
+- `result.request.url` is parsed into `result.request.params` by `urlToParams` and the `url`
+  is deleted, so the client receives a params object rather than a URL;
+- any `imageSearchItems` without a `boost` gets `boost: "1"`;
+- **only** when the caller asked for `statistics` or `aggregates` does a follow-up
+  `this.search` run, with `listings: false` and the predicted params, and its `count`,
+  `statistics` and `aggregates` are copied onto `result.request`.
+
+The NLP result itself is not decorated; the follow-up `search` is `@scrubbed("listings")`, so
+any cluster listings it returns are scrubbed. Parameters: `prompt` (required), `nlpId`,
+`nlpVersion` (ignored, see above), `statistics`, `aggregates`. The endpoint is not cached and
+has no side effects. **Errors:** 400 on validation; the upstream status relayed through an
+`ApiError`.
+
+## Featured
+
+`GET /api/listings/featured/{slug}` returns the favorites of the Repliers client that `{slug}`
+maps to. `FavoritesService.featuredListings` (`src/services/favorites.ts`) looks the slug up in
+`settings.featuredListings` (from `SETTINGS_FEATURED_LISTINGS`); an unmapped slug is a **404**.
+It then reads the client's favorites through `FavoritesService.get`, which `dropRestricted`s
+them, and returns them under `listings`.
+
+Caching is per slug: the result is `@cached("favorites:featuredListings")` by `slug`
+(and by `slug` + `sortBy`), and the cache is **skipped** when `lat` or `long` is sent, because
+those produce per-location results. This is the single home for the featured-cache fact; other
+pages link here. The cached value is user-agnostic; `featuredListings` unwraps the cached `result` itself, so
+the route sends no `Cache-Control` header, and the `@scrubbed("listings")` decorator on it scrubs
+per request, so the shared cache never holds a scrubbing decision. Adding
+or deleting a favorite for a featured client clears that slug's cache entries. Parameters:
+`{slug}` (`^[a-z0-9]+(?:-[a-z0-9]+)*$`), `sortBy`, `lat`, `long`; validated with
+`stripUnknown: true`, so unknown query keys are dropped silently.
+
+## Locations
+
+<Callout type="info">
+  `GET /api/listings/locations` is **deprecated** in favour of the `/locations`
+  router (`@deprecated` JSDoc on the route and the service method).
+</Callout>
+
+`ListingsService.locations` calls `RepliersListings.locations` (`GET /listings/locations`) and
+reshapes the MLS area / city / neighborhood hierarchy for the instance's locations board: it
+keeps only `settings.locations.boardId`, merges the condo class into residential, restricts to
+`settings.locations.allowed_areas` unless `allow_all_areas`, removes every area / city /
+neighborhood whose `activeCount` is `≤ activeCountLimit` (the route default is 5, from the
+schema `.default(5)`), and optionally strips coordinates. The route forces `class` to
+residential + condo and defaults `dropCoordinates` to `settings.locations.drop_coordinates`. It
+returns no listing records, so no scrubber runs. The result is
+`@cached("listings:autosuggest:locations")` with `config.cache.statswidget.ttl_ms`
+(`CACHE_STATSWIDGET_TTL`); the `/autosuggest/locations` route shares the same cached method with
+different parameters ([Caching](/architecture/caching)).
+
+## lastUpdatedOn
+
+<Callout type="info">
+  **Not in OSS** — the route and the `ListingsService.lastUpdatedOn` method are
+  in `@oss-remove` regions, so they are absent from the open-source export.
+</Callout>
+
+`GET /api/listings/lastUpdatedOn` returns a `lastUpdatedOn` number. The value is **synthetic**:
+`ListingsService.lastUpdatedOn` computes `Date.now()` minus a random offset of two to five
+minutes and makes no upstream call (`src/services/listings.ts`):
+
+```ts
+const msecsInMinute = 1000 * 60
+const randomOffset = Math.round(
+  Math.random() * (msecsInMinute * 3) + 2 * msecsInMinute
+)
+const lastUpdatedOn = Date.now() - randomOffset
+```
+
+It is not the time of any listing update. The result is `@cached("listings:lastUpdatedOn")`
+(`CACHE_LISTINGS_LAST_UPDATED_ON_TTL`, default 20 minutes), so the same recent-but-not-now
+timestamp is returned for the life of the cache entry. This is distinct from the `lastUpdatedOn`
+field of [`/count`](/api-reference/listings/search#count), which **is** the newest listing's
+`timestamps.repliersUpdatedOn` from the match set.
+
+## Gotchas
+
+1. **NLP ignores the caller's `nlpVersion` and sends `app_state` upstream.** The service forces
+   `config.settings.nlp.version`, and the client posts the body including the user's
+   `app_state`. Source: `src/services/listings.ts` (`nlp`), `src/services/repliers/listings.ts`
+   (`nlp`).
+2. **The NLP follow-up search runs only for statistics or aggregates.** Without either, the
+   endpoint returns the predicted params alone and makes one upstream call. Source:
+   `src/services/listings.ts` (`nlp`).
+3. **A featured slug is cached user-agnostically, then scrubbed per request.** The cache holds
+   the list before scrubbing; `lat`/`long` bypass the cache entirely. Source:
+   `src/services/favorites.ts` (`featuredListings`, `cachedFeaturedListings`).
+4. **`lastUpdatedOn` is a synthetic timestamp, not listing data.** It is `Date.now()` minus a
+   random 2–5 minutes, cached. Source: `src/services/listings.ts` (`lastUpdatedOn`).
+
+## Evidence
+
+- `test/routes/featured.test.ts`: valid and unknown slug, invalid slug format, `sortBy`/`lat`/
+  `long` forwarding, cache by slug + `sortBy`, no caching with `lat`/`long`, cache invalidation
+  on favorite add/delete.
+- `test/services/listings/listings.test.ts`: `urlToParams` single, multiple and array values.
+- Source read for `nlp`, `locations` and `lastUpdatedOn` (`src/services/listings.ts`).
+- Not established by this checkout: Repliers' NLP model output for a given prompt.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

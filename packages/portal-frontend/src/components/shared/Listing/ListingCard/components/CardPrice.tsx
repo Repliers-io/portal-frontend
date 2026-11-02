@@ -7,7 +7,7 @@ import { type ListingCardSize } from '@defaults/cards-grids'
 import { ScrubbedPrice } from 'components/atoms'
 
 import { type ApiListing } from 'services/API'
-import { createListingI18nUtils, sold } from 'utils/listings'
+import { createListingI18nUtils, hiddenPrice, sold } from 'utils/listings'
 
 export const CardPrice = ({
   listing,
@@ -27,6 +27,7 @@ export const CardPrice = ({
   const sizeSmall = size === 'small'
   const sizeDrawer = size === 'drawer'
   const soldListing = sold(listing)
+  const hidden = hiddenPrice(listing)
 
   // Restricted listings arrive already masked (API scrubs listPrice to the
   // sentinel); ScrubbedPrice renders the placeholder for it.
@@ -44,10 +45,11 @@ export const CardPrice = ({
       justifyContent="space-between"
     >
       <Typography variant={titleHeading} color={color}>
-        <ScrubbedPrice value={price} />
+        {/* a withheld price leaves its slot empty, so the row keeps its height */}
+        {hidden ? '\u00A0' : <ScrubbedPrice value={price} />}
       </Typography>
       <Typography variant={daysHeading} color={color} noWrap>
-        {soldListing && soldPrice ? (
+        {soldListing && soldPrice && !hidden ? (
           <>
             {!sizeSmall && <>{t('Property.listedLabel')} </>}
             <span style={{ textDecoration: 'line-through' }}>

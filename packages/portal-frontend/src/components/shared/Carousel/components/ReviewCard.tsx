@@ -35,7 +35,7 @@ export const ReviewCard = ({ review }: ReviewCardProps) => {
         '&:before': {
           border: 1,
           borderColor: 'divider',
-          borderRadius: 1,
+          borderRadius: 'inherit',
           content: '""',
           position: 'absolute',
           inset: 0,

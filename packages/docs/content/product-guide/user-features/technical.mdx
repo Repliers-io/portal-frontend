@@ -34,7 +34,7 @@ render listing results. See [State Management](/technical-guide/state-management
 
 | Config              | Drives                                                                                                               |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `@configs/features` | `favorites`, `imageFavorites`, `saveSearch`, `recentlyViewed`, `profile` — each gates its page **and** its provider. |
+| `@configs/features` | `favorites`, `imageFavorites`, `saveSearch`, `recentlyViewed`, `profile` gate their pages; the three collection providers above are additionally mounted conditionally. |
 | `@configs/routes`   | The route paths above.                                                                                               |
 
 ## Gotchas & hints
@@ -60,3 +60,7 @@ render listing results. See [State Management](/technical-guide/state-management
 - **The ≤100-listings save gate is a heuristic.** The button check uses the on-screen count
   (locationId-based, viewport-clipped); the server matches the persisted geometry and rejects
   with 406 — the snackbar surfaces its message.
+
+## Workflow and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The [cross-layer guide](/technical-guide/workflows/user-actions) covers favorite mutations and persisted search geometry, including raw-response and error-feedback limits. Conversion tests ran; no account records or alerts were created.

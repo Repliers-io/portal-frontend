@@ -1,0 +1,18 @@
+# Next.js
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Generated / static assets
+public/
+*.d.ts
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Logs
+*.log

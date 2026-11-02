@@ -1,5 +1,8 @@
 # Setup
 
+Clone, install, generate the signing keys, fill in the four required variables and start the
+server. The first requests to send are on [First requests](/getting-started/first-requests).
+
 ## Prerequisites
 
 - Node.js 24 (see `engines` in `package.json`; npm 11+)
@@ -11,7 +14,8 @@ Two API keys are required:
 - **Repliers API key** — a free account at [login.repliers.com](https://login.repliers.com/)
   gives a sample-data key; paid keys unlock real board access.
 - **Mapbox token** — [mapbox.com](https://www.mapbox.com/), used for address
-  autosuggest and geocoding.
+  autosuggest and geocoding. The process refuses to start without one, even when
+  autosuggest uses Google.
 
 ## Install
 
@@ -32,7 +36,14 @@ Sessions are signed with an RSA key pair that lives in `keys/` (never committed)
 npm run jwt:generate
 ```
 
-This runs `openssl genrsa` and writes `keys/private.pem` + `keys/public.pem`.
+This runs `mkdir keys`, then `openssl genrsa` and `openssl rsa -pubout`, and writes
+`keys/private.pem` + `keys/public.pem`. The script fails when `keys/` already exists; delete
+the folder or create the pair by hand.
+
+`JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are either a path **relative to the repository
+root** (`keys/private.pem`, as in `env.example`) or the PEM text itself, starting with
+`-----BEGIN PRIVATE KEY-----` or `-----BEGIN PUBLIC KEY-----`
+(`src/providers/middleware/jwt/config.keys.ts`).
 
 ## Configure
 
@@ -40,8 +51,35 @@ This runs `openssl genrsa` and writes `keys/private.pem` + `keys/public.pem`.
 cp env.example .env
 ```
 
-Set at minimum `REPLIERS_API_KEY` and `MAPBOX_ACCESS_TOKEN`. Every other variable has a
-working default — see the [environment variable reference](/getting-started/environment-variables).
+`env.example` sets `APP_SETTINGS_PRESET=defaults`, `APP_ENVIRONMENT=localhost`, the Repliers
+throttle, the two JWT paths and `JWT_EXPIRE`, and holds two placeholders, `REPLIERS_API_KEY`
+and `MAPBOX_ACCESS_TOKEN`. Replace the placeholders, then add one more variable, **on its own
+line** (the file has no trailing newline):
+
+```bash
+printf '\nSETTINGS_EVENTS_COLLECTOR_URL_HOST=http://localhost:3000\n' >> .env
+```
+
+The `defaults` preset writes the CRM link templates (`propertyUrl`, `clientUrl`, `estimateUrl`)
+as relative paths, and the process throws while building the settings when no host is set to
+make them absolute. Any URL works for a local run; the value is the origin of the frontend
+that the CRM links should point to.
+
+What the process checks before it starts (`src/config.ts`):
+
+| Needed                                                                         | When                                                                                                                                                 |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REPLIERS_API_KEY`, `MAPBOX_ACCESS_TOKEN`, `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` | Always. These have no default and a preset cannot supply them                                                                                        |
+| `SETTINGS_EVENTS_COLLECTOR_URL_HOST`                                           | With the `defaults` preset, or any preset whose link templates are relative. Not needed when the templates are absolute (no preset set, for example) |
+| `GOOGLE_CREDENTIALS`                                                           | When the raw `APP_ENVIRONMENT` variable is anything other than `localhost`, including unset                                                          |
+| `XFF_SSG_TOKEN`                                                                | When `REPLIERS_CACHE_WARMUP_API_KEY` is set                                                                                                          |
+| `BOSS_SYSTEM` (and `NGROK_AUTHTOKEN` with ngrok)                               | When `BOSS_WEBHOOK_ENABLED=true`                                                                                                                     |
+| `DEBUG_AUTH_OTP_EXPOSE_CODE` unset or false                                    | When `APP_ENVIRONMENT` contains `prod`                                                                                                               |
+
+Every other variable has a default. The list with messages, the order in which the layers are
+combined and the per-feature requirements are on
+[Configuration resolution](/architecture/configuration-resolution#startup-prerequisites); the
+variables themselves are in the [environment variable reference](/getting-started/environment-variables).
 
 An alternative env file can be selected per run with `DOT_ENV_CONFIG=<file>` — this is
 how per-instance dev scripts work (`dev:<instance>` scripts set
@@ -55,7 +93,8 @@ npm run dev
 
 `dev` runs **two processes** via `concurrently`: the HTTP server (`src/index.ts`) and
 the NATS worker (`src/worker.ts`). Both restart on source or `.env` changes via
-nodemon. The server listens on port **8080** by default.
+nodemon. The server listens on port **8080** by default. `npm run dev:server` starts the
+server alone, which is all the first requests need.
 
 TypeScript executes directly through `@poppinss/ts-exec` — it is required because the
 DI container (tsyringe) needs `emitDecoratorMetadata`, which `tsx` does not support.

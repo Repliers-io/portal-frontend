@@ -12,11 +12,29 @@ const validMatchKey = /^match[1-9]$/
 const reservedMatchKey = /^match\d+$/
 const queryFieldKey = /^[\w.]+$/
 
+// Deep-flattens a nested group back into dotted API field names
+// (e.g. { raw: { BuyerAgentKey } } -> { 'raw.BuyerAgentKey' }); invalid names are reported.
+const toQueryFields = (
+  group: Record<string, unknown>,
+  label: string,
+  errors: string[]
+) => {
+  const fields: Record<string, unknown> = {}
+  for (const path of getPaths(group)) {
+    if (!queryFieldKey.test(path)) {
+      errors.push(`${label}.${path}: invalid field name`)
+      continue
+    }
+    fields[path] = getPath(group, path)
+  }
+  return fields
+}
+
 /**
  * Moves reserved `match1..9` groups out of a listings params object into a
- * `queries` array (raw OR-batches). Each group's nested object is deep-flattened
- * back into dotted keys (e.g. { raw: { BuyerAgentKey } } -> { 'raw.BuyerAgentKey' }),
- * so it matches the backend field names. Base filters are kept as-is.
+ * `queries` array (raw OR-batches), each group flattened to backend field names.
+ * A base `raw` filter is flattened the same way (`listings.raw.BuyerOfficeKey`
+ * -> `raw.BuyerOfficeKey`); other base filters are kept as-is.
  * Out-of-range `match<N>` (match0, match10, ...) are dropped and reported.
  */
 export const collapseMatchQueries = (
@@ -31,29 +49,24 @@ export const collapseMatchQueries = (
       matchKeys.push(key)
     } else if (reservedMatchKey.test(key)) {
       errors.push(`listings.${key}: match index must be between 1 and 9`)
+    } else if (key === 'raw' && value && typeof value === 'object') {
+      Object.assign(base, toQueryFields({ raw: value }, 'listings', errors))
     } else {
       base[key] = value
     }
   }
 
-  if (!matchKeys.length) {
-    return { listings: errors.length ? base : listings, errors }
-  }
+  if (!matchKeys.length) return { listings: base, errors }
 
   matchKeys.sort((a, b) => Number(a.slice(5)) - Number(b.slice(5)))
 
-  const queries = matchKeys.map((key) => {
-    const group = (listings[key] ?? {}) as Record<string, unknown>
-    const query: Record<string, unknown> = {}
-    for (const path of getPaths(group)) {
-      if (!queryFieldKey.test(path)) {
-        errors.push(`listings.${key}.${path}: invalid field name`)
-        continue
-      }
-      query[path] = getPath(group, path)
-    }
-    return query
-  })
+  const queries = matchKeys.map((key) =>
+    toQueryFields(
+      (listings[key] ?? {}) as Record<string, unknown>,
+      `listings.${key}`,
+      errors
+    )
+  )
 
   return { listings: { ...base, queries }, errors }
 }

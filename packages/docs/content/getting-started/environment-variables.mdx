@@ -1,0 +1,72 @@
+# Environment Variables
+
+Source review: `e30dd9b47`, 2026-11-02. This register names consumers, not secret
+values. The active tenant comes from the running command/build environment; a
+repository `.env` default does not establish which tenant a developer is viewing.
+
+## Core configuration
+
+| Variable | Consumer / time | Meaning and absence behavior |
+| --- | --- | --- |
+| `NEXT_PUBLIC_APP_CONFIGURATION` | `scripts/generate-tsconfig.js`, override plugins, i18n, public preparation; build | Selects tenant paths and artifacts. Regenerate through the supported tenant command; do not hand-edit generated aliases |
+| `NEXT_PUBLIC_APP_DOMAIN` | Root metadata, proxy, API origin checks, OAuth, sitemaps | Public site origin. Missing values have different local fallbacks; they do not form a valid production configuration |
+| `NEXT_PUBLIC_API_URL` | `configs/defaults/api.ts` | Proxy backend origin; `apiUrl` appends `/api`. Required for proxy data calls |
+| `NEXT_PUBLIC_MAPBOX_KEY` | `configs/defaults/map.ts` | Browser map token; absence becomes an empty string |
+| `NEXT_SSR_REQUEST_TOKEN`, `NEXT_SSG_REQUEST_TOKEN` | `utils/xff.ts`; server only | Forwarding credentials selected from actual request context; never browser configuration |
+| `NEXT_PUBLIC_APP_ENVIRONMENT` | `scripts/fetch-features.ts`; build | Feature environment; falls back to `development` |
+| `NEXT_PUBLIC_GROWTHBOOK_API_HOST`, `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY`, `NEXT_PUBLIC_GROWTHBOOK_INIT` | Feature generation; build | `offline` initialization selects the offline path; output is static feature configuration, not a runtime provider |
+
+## Optional capabilities
+
+Enable the associated feature/configuration and supply its dependencies together.
+An environment variable alone does not turn on every consuming page.
+
+| Variables | Owning source / capability |
+| --- | --- |
+| `NEXT_PUBLIC_GMAPS_KEY`, `GOOGLE_PLACES_API_KEY` | `configs/defaults/api.ts`; browser Google map imagery versus server Places calls; optional to the Mapbox-only core |
+| `MAPBOX_SEARCHBOX_KEY`, `MAPBOX_SEARCHBOX_REFERER` | `app/api/mapbox/pois/_searchbox.ts`; server POI requests |
+| `NEXT_PUBLIC_AI_AGENT_IFRAME_URL` | SupportAgent config and `next.config.js`; embedded assistant and framing configuration |
+| `NEXT_PUBLIC_FUB_URL` | Default API config; Follow Up Boss integration URL |
+| `CMS_PAGES_CLIENT`, `CMS_BLOG_CLIENT` | `services/CMS/CmsService.ts`; select `wordpress` or `ghost`; blog also requires its feature |
+| `WORDPRESS_API_URL`, `WORDPRESS_API_USER`, `WORDPRESS_API_PASSWORD`, `WORDPRESS_API_KEY`, `WORDPRESS_API_APPLICATION_NAME`, `WORDPRESS_REVALIDATE` | CMS service and generation scripts; user/password pair takes precedence over API key; revalidation is parsed as a number |
+| `GHOST_API_URL`, `GHOST_API_KEY` | CMS service; Ghost client |
+| `MOVESMARTLY_API_URL`, `MOVESMARTLY_EMAIL`, `MOVESMARTLY_PASSWORD`, `CF_BYPASS_TOKEN` | MoveSmartly integration service; listing enrichment also checks explicit URL presence |
+| `PYB_API_URL`, `PYB_USERNAME`, `PYB_PASSWORD` | ProtectYourBoundaries service; plans/surveys route checks explicit URL presence |
+| `NEXT_PUBLIC_GTAG_KEY`, `NEXT_PUBLIC_GTM_KEY` | `TrackingInline`; browser analytics |
+| `THIRD_PARTY_SCRIPT` | `PageTemplate`; injected script content, distinct from tenant `content.customScripts` |
+
+## Server operations and build controls
+
+| Variables | Owning source / effect |
+| --- | --- |
+| `REVALIDATE_TOKEN` | `/api/revalidate`; absent disables endpoint with 503 |
+| `LOCATIONS_REGEN_TOKEN` | `/api/generateLocations`; absent disables endpoint with 503 |
+| `REDISCLOUD_URL`, `REDIS_URL` | `cache-handler.js`; first takes precedence; absent Redis yields cache misses/no writes from the custom handler |
+| `NORMALIZED_BUILD` | `normalize-build.js`, `build-remote.js`; explicit normalized build path |
+| `DISABLE_SSG` | Individual static-parameter and sitemap functions | `true` skips supported enumeration paths; not a global switch guaranteeing no prerendering |
+| `NEXT_BUILD_WORKERS`, `NEXT_BUILD_API_RPS` | Next config and build throttling | Worker and API pressure controls; inspect both consumers before tuning |
+| `LOCATIONS_GEN_RPS`, `LOCATIONS_GEN_CONCURRENCY` | LocationsTree pipeline | Generator defaults: 6 requests/second and 8 in flight |
+| `SOURCE_VERSION`, `HEROKU_SLUG_COMMIT` | Deployment-id generator | Source identity used for generated deployment/cache namespace |
+| `FORCE_HTTP`, `DISABLE_ROUTE_GUARD`, `LEGACY_FALLBACK_HOST` | `src/proxy.ts` | Protocol, route guard and legacy fallback behavior |
+| `NEXT_ENABLE_SOURCEMAP`, `ANALYZE`, `LOG_STATIC_PARAMS` | Next config / generators | Diagnostic build output |
+| `NEXT_PUBLIC_STAGING`, `NEXT_PUBLIC_DEBUG_TRACKING_EVENTS`, `WORDPRESS_DEBUG_CURL` | Error template, analytics hook, WordPress request utility | Diagnostic behavior; review before publishing a build |
+| `PLAYWRIGHT_BASE_URL` | Existing homepage e2e test | Test target; default localhost, not automatic server startup |
+
+`NODE_ENV`, `VERCEL`, `NEXT_PHASE` and `NEXT_RUNTIME` are platform/runtime inputs
+used by Next config, instrumentation and throttling. Docs additionally use
+`DOCS_BASE_PATH`; see [Deployment](/operations/deployment).
+
+## Verification procedure
+
+1. Confirm the intended tenant command and proxy backend identity without printing
+   credentials. Read `defaults` before the tenant override.
+2. Match each required capability to its consumer above. Check feature/config
+   gates separately from variable presence.
+3. Build-time aliases, flags and public values need regeneration/rebuild; a server
+   restart alone cannot retrofit values into an already published browser bundle.
+4. Check one sanitized read-only response and the browser behavior. Do not use a
+   successful health response as proof that a particular board or dataset is loaded.
+
+The register covers application and build consumers inspected for this audit.
+It does not document provider account provisioning or claim that every tenant
+ships every integration.

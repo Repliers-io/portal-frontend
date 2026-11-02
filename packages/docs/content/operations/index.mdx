@@ -1,0 +1,17 @@
+# Operations
+
+Start by identifying the running tenant, frontend revision, proxy backend and
+dataset. A correct build against the wrong dataset can render a convincing but
+empty portal. The `.env` default is not evidence of the active process.
+
+| Task | Guide |
+| --- | --- |
+| Build the app, exports or bundled documentation | [Build and Deployment](/operations/deployment) |
+| Choose checks and interpret their limits | [Testing and Docs Checks](/operations/testing) |
+| Locate the layer responsible for a symptom | [Troubleshooting](/operations/troubleshooting) |
+| Diagnose stale data | [Caching and Revalidation](/technical-guide/caching-and-revalidation) |
+| Find a variable's consumer | [Environment Variables](/getting-started/environment-variables) |
+
+These pages describe repository mechanisms. Hosting accounts, production
+credentials, delivery guarantees and deployment permissions remain environment
+specific. [Coverage](/coverage) records checks actually performed for this edition.

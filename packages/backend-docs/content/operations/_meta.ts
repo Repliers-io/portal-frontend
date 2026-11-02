@@ -4,5 +4,5 @@ export default {
   'ci-cd': 'CI/CD',
   instances: 'Instances',
   testing: 'Testing',
-  'oss-export': 'OSS Export'
+  troubleshooting: 'Troubleshooting'
 }

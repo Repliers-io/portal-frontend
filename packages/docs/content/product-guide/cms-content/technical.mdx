@@ -73,3 +73,7 @@ resolved (sanitized) CMS HTML.
   active-only otherwise), so the requested listings show **regardless of status/geo** — an
   exact-MLS lookup. The grid still paginates normally; the list is validated slug-safe and
   capped at 50 items.
+
+## Workflow and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The [cross-layer guide](/technical-guide/workflows/content-and-build) covers resolver selection, local metadata merging, widgets and building/geography assembly. Ghost, widget and assembly tests ran; remote publishing and production invalidation were not executed.

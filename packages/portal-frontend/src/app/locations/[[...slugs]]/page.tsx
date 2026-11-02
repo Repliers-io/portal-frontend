@@ -8,7 +8,9 @@ import { PageTemplate } from '@templates'
 import { type PopularSearch } from '@defaults/location'
 import { LocationsPageContent } from '@pages/locations'
 
-import ListingPage from 'app/listing/[[...listingName]]/page'
+import ListingPage, {
+  generateMetadata as generateListingMetadata
+} from 'app/listing/[[...listingName]]/page'
 import { type RouteParamsProps } from 'app/types'
 
 import {
@@ -19,6 +21,7 @@ import {
   resolveLocation,
   type TreeResult
 } from 'services/LocationsTree'
+import { areaMetadata } from 'utils/indexing'
 import { capitalize, formatAreaLabel } from 'utils/strings'
 import { getLocationUrl, sanitizeUrl } from 'utils/urls'
 
@@ -61,13 +64,22 @@ export async function generateMetadata({
       city: requestedCity,
       neighborhood: requestedHood
     },
-    filters
+    filters,
+    listingId,
+    boardId
   } = parseUrlParams(slugs || [])
+
+  if (listingId && locationConfig.indexAreas.length) {
+    return generateListingMetadata({
+      params: {},
+      searchParams: { listingId, boardId }
+    })
+  }
 
   // Same resolution as the page below, so the title and canonical describe the
   // location the visitor actually gets rather than the slug's spelling.
   const { tree } = await loadStaticTree()
-  const { areaNode, cityNode, hoodNode } = resolveLocation(tree, {
+  const { areaNode, cityNode, hoodNode, parentArea } = resolveLocation(tree, {
     area: requestedArea,
     city: requestedCity,
     hood: requestedHood
@@ -104,6 +116,7 @@ export async function generateMetadata({
       : getLocationUrl({ area, city, hood, filters })
 
   return {
+    ...areaMetadata(parentArea?.name),
     title,
     description,
     alternates: { canonical: canonicalPath },

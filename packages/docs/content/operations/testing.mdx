@@ -1,0 +1,79 @@
+# Testing and Docs Checks
+
+Verification date: 2026-11-02. Source revision: `e30dd9b47` plus this documentation
+working tree. No application implementation changed for this documentation work.
+
+## What each check proves
+
+| Check | Evidence | Limit |
+| --- | --- | --- |
+| Docs build | MDX compilation, Next route generation, Pagefind indexing | Does not execute interactive diagrams in a browser |
+| Docs type check | Docs TypeScript contracts | Does not type-check arbitrary fenced tutorial snippets |
+| Docs checker | Internal paths/hashes, navigation entries, local images and preserved baseline anchors | No external-site reachability or visual review |
+| Frontend Jest | Selected transformation/service contracts with configured mocks | Default aliases are used; no proof of tenant forks or live API behavior |
+| Playwright/browser | Visible behavior and browser requests for the selected environment | Only the scenarios actually exercised |
+| Production smoke check | Deployed artifact and integration behavior | Requires a real deployment; not inferred from local builds |
+
+## Executed unit tests
+
+The first group passed **10 suites / 99 tests**: APIBase headers, APISearch,
+SearchService, adapter, search params/transformers/type declarations, map URL
+serialization, filter helpers and request-context forwarding.
+
+The second group passed **18 suites / 197 tests**: APIListingDetails,
+saved-search/estimate conversion, listing SEO/markers/sanitizers, location
+cache/fetchers/filters/pipeline, Ghost client, building assembly, shared form
+requirements/group resolver/field schemas/contact schema, widget parser/transform.
+
+These counts describe the selected existing suites, not the whole application's
+coverage. In particular, APIBase's selected tests exercise headers, not a complete
+retry timing matrix; URL tests do not establish a browser back/forward round trip.
+Mutation integrations were not executed.
+
+Three additional temporary fixture tests extracted the new tutorial snippets
+from their MDX files: filter updates preserve other state, the widget shortcode
+passes the real parser/transformer/Joi pipeline, and the overlay transformation
+preserves unrelated fields/layers without mutation. The proposed widget JSX and
+registry snippet passed syntax transpilation, not full application type checking.
+All three tests passed; the temporary test file was removed afterward.
+
+Run focused existing tests from `packages/portal-frontend`, for example:
+
+```powershell
+pnpm exec jest --runTestsByPath src/services/Search/adapter.test.ts src/utils/map/urls.test.ts --coverage=false --no-watch
+pnpm exec jest --runTestsByPath src/components/shared/Forms/requirements.test.ts src/components/shared/Forms/groupResolver.test.ts --coverage=false --no-watch
+```
+
+The repository's Jest mapper selects the last alias target, which resolves
+tenant-fallback imports to defaults. Do not report this as validating an active
+tenant override. `frontend:type-check` runs route type generation then TypeScript;
+its result depends on the selected alias configuration.
+
+## Documentation regression checks
+
+`packages/docs/scripts/anchors-baseline.json` records **468 original route/anchor
+pairs** from the pre-expansion site. Preserve it during normal edits; regenerating
+the baseline to hide a removed heading defeats the check. The backend retains its
+own baseline. Frontend `check` delegates to the parameterized backend checker.
+
+```powershell
+node --test packages/backend-docs/scripts/check-site.test.mjs
+pnpm docs:frontend:check
+```
+
+The three checker fixture tests cover removed anchors, broken hash/navigation/
+image references, and static base-path/peer-site handling. Framework error pages
+without a documentation body are excluded. Use `--base /documentation/frontend`
+only after a matching static build; do not check stale static output as standalone.
+
+## Browser checks
+
+The existing Playwright config has one Chromium project and does not start the
+portal server. Choose the installed/system browser supported by the environment;
+this audit uses Edge. Before a live trace, identify the running frontend, backend,
+tenant and dataset, read one real record, then record only sanitized fields.
+
+For docs, inspect at least a sequence diagram, long register, tutorial and search
+result at desktop/mobile widths. For the application, check the request payload,
+response, UI result and reopened URL. Keep observed counts separate from stable
+contracts. [Coverage](/coverage) contains the final execution boundary.

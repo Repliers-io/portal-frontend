@@ -164,6 +164,10 @@ export interface Filters {
 
   officeId?: string | number
   agentId?: string | number
+  boardId?: number
+  // Adds the pinned listings (`raw.is_pinned`) to the status — sent as a query
+  // union, never as a parameter (see `applyPinnedUnion`)
+  pinned?: boolean
   brokerage?: string | string[]
 
   style?: string[]

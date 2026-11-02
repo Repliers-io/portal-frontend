@@ -63,3 +63,7 @@ provider of its own. See [Property Search — How it works](/product-guide/searc
   `ExtractFilters` uses the _same_ `APIChat.fetchReply`, but AI Chat is the portal's **own**
   UI that applies filters directly, whereas the agent exposes that capability to an _external_
   UI over `postMessage`.
+
+## Workflow and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The [cross-layer guide](/technical-guide/workflows/content-and-build#f03--turn-language-into-search) covers the NLP request and its distinction from the iframe bridge. NLP conversation id, iframe session id and auth token have different owners. No live NLP conversation was executed.

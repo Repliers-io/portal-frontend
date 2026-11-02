@@ -1,0 +1,112 @@
+# Saved searches
+
+A saved search is a Repliers record of one client's criteria. The backend does not translate the
+criteria: it validates the body with `searchesCreateSchema`, puts the caller's `clientId` into it
+and forwards it to Repliers `/searches`. This page answers which keys are accepted, how PATCH and
+the ownership checks behave, and which notification settings exist and who acts on them. Terms
+are in the [Glossary](/glossary#searchid).
+
+[User & Favorites](/api-reference/user-and-favorites) ·
+[Listings search](/api-reference/listings/search) ·
+[Data ownership](/architecture/data-ownership#identity-and-ownership) ·
+[Events & messaging](/architecture/events-and-messaging) ·
+[W5 worked trace](/architecture/flows#w5--saved-search-and-notification-preferences)
+
+## Operations
+
+| Operation                         | `clientId`                       | Ownership                                                                                                             | Upstream calls                                                        | Returned                                                                                                 |
+| --------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `POST /api/searches`              | `sub`, overwriting a body value  | —                                                                                                                     | `POST /searches` with the validated body; no `agentId` is sent        | Repliers' body as returned                                                                               |
+| `GET /api/searches`               | `sub`                            | the list is the caller's                                                                                              | `GET /searches?clientId=…&agentId=<default agent>&resultsPerPage=100` | `{ page, numPages, pageSize, count, searches }` as returned; query parameters of the request are ignored |
+| `GET /api/searches/{searchId}`    | not read                         | —                                                                                                                     | `GET /searches/{id}`                                                  | the record without `client` and `agentId` (`SearchesService.getOne`)                                     |
+| `PATCH /api/searches/{searchId}`  | `sub`, inside the forwarded body | —                                                                                                                     | `PATCH /searches/{id}` with every validated key except `searchId`     | Repliers' body as returned                                                                               |
+| `DELETE /api/searches/{searchId}` | `sub`                            | `SearchesService.delete` looks the id up in the caller's searches; absent is 400 `You are not owner of that searchId` | `GET /searches` (as above), then `DELETE /searches/{id}`              | Repliers' body as returned                                                                               |
+
+`SearchesService.getAll` always adds `agentId` = `REPLIERS_AGENT_ID` (`config.repliers.clients.defaultAgentId`)
+to the filter. Sources: `src/routes/searches.ts`, `src/services/searches.ts`,
+`src/services/repliers/searches.ts`.
+
+## Criteria accepted
+
+One schema serves create and update (`searchesUpdateSchema` is the create schema plus a required
+`searchId`). Any key outside this register is a 400.
+
+| Group        | Keys                                                                                                                                                                                                                                                                                | Rule                                                                                             | Source                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Required     | `minPrice`, `maxPrice`                                                                                                                                                                                                                                                              | positive integers                                                                                | `src/validate/searches.ts` (`searchesCreateSchema`) |
+| Required     | `type`                                                                                                                                                                                                                                                                              | must be present; any value is accepted, including `null`                                         | `src/validate/common.ts` (`rplTypeSingleSchema`)    |
+| Required     | `class`                                                                                                                                                                                                                                                                             | `condo`, `residential` or `commercial`; one value or an array (`.single()`)                      | `src/validate/common.ts` (`rplClassSchema`)         |
+| Place        | `areas`, `cities`, `neighborhoods`, `streetNames`, `streetNumbers`                                                                                                                                                                                                                  | arrays of strings                                                                                | `src/validate/searches.ts`                          |
+| Place        | `map`                                                                                                                                                                                                                                                                               | GeoJSON Polygon or MultiPolygon coordinates, as an array or a JSON string (kept as sent)         | `src/validate/common.ts` (`rplMapFlexibleSchema`)   |
+| Ranges       | `minBeds` / `minBedrooms`, `maxBeds` / `maxBedrooms`, `minBaths` / `minBathrooms`, `maxBaths` / `maxBathrooms`, `maxMaintenanceFee`, `minGarageSpaces`, `minKitchens`, `minParkingSpaces`, `minYearBuilt`, `maxYearBuilt`, `minSqft`, `maxSqft`, `minLotSizeSqft`, `maxLotSizeSqft` | positive integers (0 is rejected); the two spellings are independent keys and both are forwarded | `src/validate/searches.ts`                          |
+| Ranges       | `minLotWidth`, `maxLotWidth`                                                                                                                                                                                                                                                        | positive numbers                                                                                 | `src/validate/searches.ts`                          |
+| Features     | `propertyTypes`, `styles`, `basement`, `sewer`, `heating`, `swimmingPool`, `waterSource`, `keywords`                                                                                                                                                                                | arrays of strings                                                                                | `src/validate/searches.ts`                          |
+| Notification | `notificationFrequency`                                                                                                                                                                                                                                                             | `instant`, `daily`, `weekly` or `monthly`                                                        | `src/validate/searches.ts`                          |
+| Notification | `soldNotifications`, `priceChangeNotifications`, `status`                                                                                                                                                                                                                           | booleans                                                                                         | `src/validate/searches.ts`                          |
+| Label        | `name`                                                                                                                                                                                                                                                                              | non-empty string                                                                                 | `src/validate/searches.ts`                          |
+
+The route's OpenAPI text states that Repliers answers 406 when the initial matches of a new
+search exceed 100; the backend relays an upstream status unchanged.
+
+## PATCH semantics
+
+Update does not merge on the backend: the validated body is forwarded as is, and the four
+required keys must be in every request.
+
+| Body                                              | Result                            |
+| ------------------------------------------------- | --------------------------------- |
+| `minPrice`, `maxPrice`, `type` or `class` omitted | 400 (`"minPrice" is required`, …) |
+| `{}`                                              | 400, for the same reason          |
+| any other key omitted                             | not in the forwarded body         |
+| `null` on any key other than `type`               | 400                               |
+| `type: null`                                      | accepted; forwarded as `null`     |
+| empty string (`name: ""`)                         | 400                               |
+| empty array (`cities: []`)                        | valid; forwarded as `[]`          |
+| `status: false`                                   | valid; forwarded                  |
+| unknown key                                       | 400                               |
+
+The forwarded body also carries `clientId` = `sub`. Whether Repliers treats omitted keys or `[]`
+as "keep" or "clear" is not established by this checkout.
+
+## Notification settings and delivery
+
+Two layers exist, both stored by Repliers:
+
+- **Per search**: `notificationFrequency`, `soldNotifications`, `priceChangeNotifications`,
+  `status` (above).
+- **Per client**: `preferences.email`, `preferences.sms`, `preferences.unsubscribe`, written by
+  [`PATCH /api/user`](/api-reference/user-and-favorites#patch-apiuser); `preferences.whatsapp` is
+  returned by `GET /api/user/me` but is not an accepted key.
+
+No code in this repository reads any of these values to send a notification: the three
+per-search keys appear only in the validator and the DTO. The backend's own reactions are the
+`Saved Property Search` FUB event after a successful create (description
+`Saved search url: …` when `BOSS_SAVED_SEARCH_URL` is set, with `[SEARCH_ID]` replaced) and the
+`Unsubscribed` event on `preferences.unsubscribe`. Delivery, and how an unsubscribe affects
+existing searches, are not established by this checkout.
+
+## Gotchas
+
+1. **Every PATCH repeats `minPrice`, `maxPrice`, `type` and `class`.** The update schema is the
+   create schema. Source: `src/validate/searches.ts` (`searchesUpdateSchema`).
+2. **The list ignores its query string and reads one page.** `searchsFilterSchema` is built from
+   `sub` only; `getAll` asks for `resultsPerPage: 100` and passes no page number. Source:
+   `src/routes/searches.ts` (`router.get("/")`), `src/services/searches.ts` (`getAll`).
+3. **Create sends no `agentId`; the list sends the default agent.** Source:
+   `src/services/repliers/searches.ts` (`create`), `src/services/searches.ts` (`getAll`).
+4. **Only create reports a CRM event.** PATCH and DELETE have no second handler. Source:
+   `src/routes/searches.ts`.
+5. **`minBeds` and `minBedrooms` are separate keys.** The CRM event uses `minBeds` when truthy,
+   else `minBedrooms`. Source: `src/services/eventsCollection/selectors/baseEventCollectionSelector.ts`
+   (`mapRplPropertySearchToBoss`).
+
+## Evidence
+
+- `test/services/eventsCollection/selectors/selectSaveSearchParams.test.ts`: the save-search
+  event payload.
+- The validators were also run in isolation with the project's joi on 2026-10-20 for the
+  `null`, empty-string, `0` and missing-`type` cases above.
+- No route or service test exists for `/searches`.
+- Not established by this checkout: Repliers' matching, merge and notification behaviour.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

@@ -92,7 +92,7 @@ The portal is white-label: branding, texts and the feature set are configured in
 3. **Build and start:**
 
 ```bash
-pnpm build:documentation   # optional: the documentation at /documentation
+pnpm frontend:build:docs   # optional: the documentation at /documentation
 pnpm frontend:build
 pnpm frontend:start
 ```
@@ -109,15 +109,17 @@ Run from the repository root:
 | `pnpm frontend:eslint`                             | Lint                                                                                   |
 | `pnpm frontend:type-check`                         | TypeScript check                                                                       |
 | `pnpm frontend:test`                               | Unit tests                                                                             |
-| `pnpm docs:dev` / `pnpm docs:start`                | Frontend documentation site at [localhost:4000](http://localhost:4000) (dev / production) |
-| `pnpm docs:build`                                  | Build the frontend documentation site                                                  |
-| `pnpm docs:type-check`                             | TypeScript check of the frontend documentation site                                    |
-| `pnpm docs:prettier` / `pnpm docs:prettier:fix`    | Check / fix formatting of the frontend documentation site                               |
+| `pnpm docs:frontend:dev` / `pnpm docs:frontend:start`                | Frontend documentation site at [localhost:4000](http://localhost:4000) (dev / production) |
+| `pnpm docs:frontend:build`                                  | Build the frontend documentation site                                                  |
+| `pnpm docs:frontend:type-check`                             | TypeScript check of the frontend documentation site                                    |
+| `pnpm docs:frontend:prettier` / `pnpm docs:frontend:prettier:fix`    | Check / fix formatting of the frontend documentation site                               |
 | `pnpm docs:backend:dev` / `pnpm docs:backend:start` | Backend documentation site at [localhost:4001](http://localhost:4001) (dev / production) |
 | `pnpm docs:backend:build`                          | Build the backend documentation site                                                   |
 | `pnpm docs:backend:type-check`                     | TypeScript check of the backend documentation site                                     |
-| `pnpm build:documentation`                         | Build both documentation sites into the portal at `/documentation`; run it before `pnpm frontend:build` |
-| `pnpm clean:documentation`                         | Remove the documentation built into the portal                                         |
+| `pnpm docs:backend:prettier` / `pnpm docs:backend:prettier:fix` | Check / fix formatting of the backend documentation site                    |
+| `pnpm docs:backend:check`                          | Check the built backend documentation site for broken links and anchors                |
+| `pnpm frontend:build:docs`                         | Build both documentation sites into the portal at `/documentation`; run it before `pnpm frontend:build` |
+| `pnpm frontend:clean:docs`                         | Remove the documentation built into the portal                                         |
 | `pnpm build:all`                                   | Build every package                                                                    |
 
 ## License

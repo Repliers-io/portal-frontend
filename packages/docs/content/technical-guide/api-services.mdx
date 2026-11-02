@@ -49,9 +49,10 @@ error: `408, 425, 429, 500, 502, 503, 504, 522, 524` — plus the synthetic `503
 both from `@configs/api`. Browser calls never retry, so user-facing failures stay
 immediate.
 
-The data behind these calls is required, not optional — a page must not prerender
-with map geometry or counts silently missing, so a build fails loudly once the
-retries are exhausted.
+After retries, the caller decides how to handle failure. Some page paths throw;
+others render a fallback or keep prior state. See the actual
+[failure register](/technical-guide/failure-and-degradation). A caller-supplied
+AbortSignal also bypasses APIBase's own timeout controller.
 
 ```ts
 import { APISearch } from 'services/API'
@@ -83,6 +84,32 @@ All are exported from `services/API` (`src/services/API/index.ts`) as singletons
 
 `locationsToGeoJson` (same folder) converts location records to GeoJSON for the map.
 
+## Caller and contract register
+
+Source review: `e30dd9b47`, 2026-11-02. This table identifies entry owners;
+it is not a promise that every exported service has a live caller.
+
+| Service | Principal caller / boundary | Contract details |
+| --- | --- | --- |
+| APISearch | SearchService and filter/statistics consumers | `/listings/search`; nonempty body selects POST; `fetchGraph` uses `/stats/graph`; featured collections accept only sort/pagination |
+| APIListingDetails | Listing route and detail UI | Board-aware detail; optional property history fallback; similar listings and last-update metadata |
+| APILocations | Map, resolver, generated tree | Location lookup/boundaries, autosuggest, demographics; source/ID handling is operation-specific |
+| APIAuth / APIUser | UserProvider and auth UI | OAuth/OTP/token exchange and profile fetch/update; update uses PATCH `/user` |
+| APIFavorites | FavoritesProvider | Collection GET, POST MLS+board, raw DELETE by favorite id |
+| APIImageFavorites | ImageFavoritesProvider | `/user/assets/image-favorites`; JSON add/remove responses and image id |
+| APISavedSearch | SaveSearchProvider and search route | `/searches/` CRUD, decoded names; raw DELETE differs from JSON create/update |
+| APIEstimate | Estimate data/provider hooks | Suggestions, property details, create/update/fetch, comparables, agent branch |
+| APIAgent | AgentClients/AgentEstimates/Agents providers | Agent/client/estimate management and send-estimate action |
+| APIFubUser | Estimate SpecialOfferBanner | `addTags` posts to `/user/boss/tag` |
+| APIBuildings | Building/catalog consumers | Building retrieval/search; CMS editorial assembly is a separate boundary |
+| APIChat | Built-in chat and SupportAgent | POST `/listings/nlp`; prompt and NLP token |
+| APIContact | Contact/scheduling/subscription forms | Mixed raw/JSON methods; see [Forms](/technical-guide/forms-and-validation) |
+| APIWidgets | Stats, dashboard, estimate statistics | `/stats/widgets`; `propertyClass` becomes query `class` |
+| APIPropertyGeometry | Exported, no runtime caller found in the scan | Builds same-origin `/api/geometry`; no matching handler exists in the current inventory. An export does not establish endpoint availability |
+
+CMS and integration services also call local [Frontend Route Handlers](/technical-guide/api-routes).
+These frontend inventories do not replace the backend's complete API reference.
+
 ## Transformers (where they really live)
 
 There is **no** `services/API/transformers/` directory. Filter/response transformation lives
@@ -96,7 +123,7 @@ in:
 ## Caching
 
 Data fetching is native `fetch` + Next.js caching, with a custom production cache handler
-(`cache-handler.js`, wired via `next.config.js` when `NODE_ENV=production`) backed by Redis
+(`cache-handler.js`, wired in production outside Vercel) backed by Redis
 (`redis`) with ISR (`revalidate`) on server routes — **not** React Query or SWR (neither is a
 dependency).
 

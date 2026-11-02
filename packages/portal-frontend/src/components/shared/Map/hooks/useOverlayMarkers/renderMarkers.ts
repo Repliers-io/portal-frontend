@@ -197,15 +197,14 @@ const wireLeaf = (
     if (clickZoom && map.getZoom() < clickZoom) {
       map.easeTo({ center: [d.lng, d.lat], zoom: clickZoom })
     }
-    // A tap is the preview a desktop user gets by hovering — never a commit. What
-    // the desktop click does (select, navigate) moves into the tooltip's own
-    // controls, so a fat-fingered tap can't change the search.
-    if (pointerType === 'touch') {
+    // Tooltip overlays preview on touch; markers without a tooltip select directly.
+    if (pointerType === 'touch' && overlay.tooltip) {
       if (preview) closePreview()
       else openPreview()
       return
     }
     if (overlay.onMarkerClick) {
+      popup.closeMarkerRef.current?.()
       if (overlay.onMarkerClick(props) === true) hideTooltip()
       else showTooltip()
     } else if (clickZoom || overlay.tooltip) {

@@ -1,3 +1,4 @@
+import { GoogleAnalytics } from '@next/third-parties/google'
 import { Poppins } from 'next/font/google'
 import { Layout, Navbar } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
@@ -19,9 +20,14 @@ const poppins = Poppins({
   variable: '--font-primary'
 })
 
+// Set at build time per deployment, as for the portal's TrackingInline.
+const gaId = process.env.NEXT_PUBLIC_GTAG_KEY
+
 export const metadata = {
   description: 'Portal Backend Documentation',
-  robots: 'noindex, nofollow',
+  // Standalone (Vercel) builds stay out of the index; the copy bundled into the
+  // portal (`build:docs` sets DOCS_BASE_PATH) is indexed.
+  ...(!process.env.DOCS_BASE_PATH && { robots: 'noindex, nofollow' }),
   // Reuse the house logo as the tab icon so the browser loads it instead of probing
   // /favicon.ico (which the MDX catch-all would otherwise try to resolve as a page).
   icons: { icon: logo.src }
@@ -36,7 +42,7 @@ const GithubIcon = () => (
   </svg>
 )
 
-// Inside the portal (`build:documentation` sets DOCS_BASE_PATH) the navbar links the hub and
+// Inside the portal (`build:docs` sets DOCS_BASE_PATH) the navbar links the hub and
 // the frontend site. Plain <a>: next/link would prefix the basePath, and both are separate
 // apps. Classes of Nextra's own navbar links, hidden below md like them — its mobile menu
 // takes no custom items.
@@ -103,6 +109,7 @@ export default async function RootLayout({
           {children}
         </Layout>
       </body>
+      {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
   )
 }

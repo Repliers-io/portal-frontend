@@ -1,0 +1,190 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Adding an endpoint
+
+Add a read-only endpoint, `GET /api/stats/active-count?city=`, that answers how many active
+listings a city has. The example is small on purpose: it touches every layer a real endpoint
+touches (router, schema, service, cache, upstream client, test) and nothing else. It is
+illustrative; the route does not exist in the repository. Names are the repository's: camelCase,
+`[feature][Action]Schema`, `[Feature][Action]Dto`.
+
+## Prerequisites
+
+- The backend runs locally ([Setup](/getting-started)).
+- You know which feature router owns the path. The routers are listed in the
+  [module catalogue](/architecture/modules#how-a-module-is-wired); a new top-level path also needs a
+  new router file, step 6.
+
+<Steps>
+
+### Decide who may call it
+
+Pick one of three, because it decides the middleware and the register row:
+
+| Choice      | Middleware                   | Pick it when                                                                       |
+| ----------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| strict      | `middleware.jwt`             | The data belongs to a signed-in caller (401 otherwise)                             |
+| passthrough | `middleware.jwt.passthrough` | Guests may call it; a valid token makes the caller a user, an invalid one is a 401 |
+| none        | no JWT middleware            | The answer never depends on who asks                                               |
+
+Roles come from `middleware.role([...])` after the JWT middleware. The example is passthrough, as the
+other stats routes are. If the response contains **listing records**, go through `ListingsService`,
+not `RepliersListings`: only the first applies `@scrubbed`
+([callers register](/api-reference/listings/search#listing-callers-register)). A count has no
+records, so the client is enough.
+
+### Validate the request
+
+In `src/validate/stats.ts` export the schema as a `const` and the DTO as an `interface`:
+
+```ts
+export const statsActiveCountSchema = joi.object<StatsActiveCountDto>().keys({
+  city: joi.string().max(100).required()
+})
+
+export interface StatsActiveCountDto {
+  city: string
+}
+```
+
+Joi only: no Zod or Yup. The handler passes the validated value on, never `ctx.request.query`.
+
+### Write the service method
+
+In `src/services/stats.ts`, a method on the class that owns the feature, with an explicit
+`Promise<T>` return type. `@cached` takes a namespace and a TTL; the decorated method returns a
+`Cached<T>` at run time whatever the type says
+([the decorator](/architecture/caching#the-cached-decorator)):
+
+```ts
+@cached("activeCount", config.cache.statswidget.ttl_ms)
+async activeCount(params: StatsActiveCountDto): Promise<ActiveCount | Cached<ActiveCount>> {
+   const { count } = await this.repliers.search({
+      listings: false,
+      city: [params.city],
+      ...statusFilters.active,
+   });
+   return { count };
+}
+```
+
+`statusFilters` is that file's own helper: it writes the status in the vocabulary the instance
+speaks (`status` or RESO `standardStatus`), and Repliers answers `400` when both are sent. Reusing
+the widgets TTL avoids a new setting. A new setting needs an environment variable with a default in
+`src/config.ts`, never a preset-only value
+([effective configuration](/architecture/configuration-resolution#effective-configuration)).
+
+<Callout type="warning">
+  Never cache a method whose arguments include `app_state` or the user: the key
+  is the JSON of the arguments, so the entry would be keyed per user ([the
+  `app_state`
+  trap](/architecture/caching#when-not-to-cache--the-app_state-trap)).
+</Callout>
+
+### Write the handler
+
+In `src/routes/stats.ts`, which already declares `authMiddlewarePassthrough` at the top. Every user-facing route sets `enable.xff`; failures throw `ApiError`, with
+no `try`/`catch` (the global error middleware answers); services are resolved per request from
+`ctx.state.container`; a cached result goes through `sendCached`, which sets `Cache-Control` from the
+entry's remaining lifetime:
+
+```ts
+router.get('/active-count', authMiddlewarePassthrough, async (ctx) => {
+  ctx.state['enable.xff'] = true
+  const { error, value } = statsActiveCountSchema.validate({
+    ...ctx.request.query
+  })
+  if (error) {
+    ctx.throw(new ApiError(error.message, 400))
+    return
+  }
+  const statsService = ctx.state.container.resolve(StatsService)
+  sendCached(ctx, await statsService.activeCount(value))
+})
+```
+
+Add the `@openapi` comment above it, as its neighbours have; it feeds `/swagger`. Import with the
+`.ts` extension in new code; the `.js` imports around it are legacy.
+
+### Test it
+
+Mirror the source path: `test/routes/stats.test.ts` for the route, `test/services/stats.test.ts` for
+the service. A route test uses `supertest` on `app.callback()`, a `nock` interceptor from
+`test/mocks/repliers/` for the upstream call and `generateAuthToken` from `test/mocks/auth.ts` when a
+token is needed. The test setup disables real network access, so a missing interceptor fails loudly.
+`@cached` entries live for the whole `describe`: use a distinct `city` per test, or the second test
+hits the cache instead of the mock.
+
+```ts
+it('counts active listings of a city', async function () {
+  mockActiveCount('Springfield', 42)
+  const res = await appInstance
+    .get('/api/stats/active-count')
+    .query({ city: 'Springfield' })
+  assert.equal(res.status, 200)
+  assert.deepEqual(res.body, { count: 42 })
+})
+
+it('rejects a missing city', async function () {
+  const res = await appInstance.get('/api/stats/active-count')
+  assert.equal(res.status, 400)
+})
+```
+
+### Mount it
+
+A path under an existing router, as here, needs nothing more. A new feature gets
+`src/routes/<feature>.ts` with `new Router({ prefix: "/<feature>" })`, a default export, and one
+`router.use(x.routes(), x.allowedMethods())` line in `src/routes/index.ts`. Code that must not ship in
+the open-source export sits between `@oss-remove-start` and `@oss-remove-end`
+([Export variants](/architecture/modules#export-variants)).
+
+### Add the register entries
+
+The change is not finished until these exist:
+
+1. **[Module catalogue](/architecture/modules#modules-register)** — a row in the router's table under
+   `/api/stats`: endpoint, auth, validator `statsActiveCountSchema`, service
+   `StatsService.activeCount`, upstream `RepliersListings.search`, store (Keyv `activeCount`,
+   `CACHE_STATSWIDGET_TTL`), conditions, deep dive. `npm run docs:check` in the backend compares the
+   routes in `src/routes/` with this page and fails on a route that is missing or one that no longer
+   exists.
+2. **[Endpoint access register](/architecture/authentication#endpoint-access)** — a row under
+   `/api/autosuggest`, `/api/locations`, `/api/buildings`, `/api/stats`: middleware, roles,
+   ownership, what a guest gets, and the route as the source.
+3. **The domain's operation table** — a row in
+   [Contact, Stats & Tours](/api-reference/contact-and-stats) with the fixed columns (auth, cached or
+   header, side effects, errors, deep dive): write "none" where it applies, and always fill Errors.
+
+If the method is `@cached` under a new namespace, list the namespace on
+[Caching](/architecture/caching#keyv-stores); if the endpoint reports to the CRM, add the selector row
+([next recipe](/tutorials/adding-an-event-selector)).
+
+</Steps>
+
+## Checklist
+
+| Done                                                                       | Where                          |
+| -------------------------------------------------------------------------- | ------------------------------ |
+| Schema and DTO                                                             | `src/validate/<feature>.ts`    |
+| Service method with an explicit return type, `@cached` if read-heavy       | `src/services/<feature>.ts`    |
+| Handler: `enable.xff`, validate, `ApiError`, `ctx.state.container.resolve` | `src/routes/<feature>.ts`      |
+| `@openapi` comment                                                         | same file                      |
+| Route and service tests, distinct cache keys                               | `test/routes`, `test/services` |
+| Router mounted (new feature only)                                          | `src/routes/index.ts`          |
+| Module catalogue, access register, operation table                         | this site                      |
+
+## Troubleshooting
+
+| Symptom                                              | Likely cause                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `400` with a Joi message for a valid-looking request | The query key is not in the schema; Joi rejects unknown keys by default              |
+| `docs:check` fails with "is not in modules.mdx"      | The catalogue row is missing, or its code span is not of the form `METHOD /api/path` |
+| Two users see the same data                          | A cached method keyed on shared arguments; see the `app_state` callout               |
+| `401` for a guest                                    | The route uses `middleware.jwt`, not the passthrough variant                         |
+
+## Next
+
+- [Request lifecycle](/architecture/request-lifecycle) — the middleware your handler runs behind
+- [Authentication](/architecture/authentication) — roles and ownership checks
+- [API reference](/api-reference) — error variants and status catalogue

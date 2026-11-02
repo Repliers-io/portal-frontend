@@ -4,7 +4,7 @@ const withNextra = nextra({
   defaultShowCopyCode: true,
 });
 
-// Set by the portal's `build:documentation`: a static export served from the
+// Set by the portal's `build:docs`: a static export served from the
 // portal's public/ under this prefix. Unset = the standalone (Vercel) build.
 const basePath = process.env.DOCS_BASE_PATH;
 
@@ -16,4 +16,10 @@ export default withNextra({
   trailingSlash: Boolean(basePath),
   // Nextra renders MDX images through next/image; the optimizer needs a server.
   images: { unoptimized: Boolean(basePath) },
+  turbopack: {
+    resolveAlias: {
+      // Nextra's generated relative alias uses backslashes on Windows.
+      '@theguild/remark-mermaid/mermaid': './node_modules/@theguild/remark-mermaid/dist/mermaid.js',
+    },
+  },
 });

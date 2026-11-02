@@ -1,0 +1,74 @@
+# Restricted listings
+
+A deployment can receive listings in its feed that it never serves. Repliers keeps no blocklist, so the backend holds one: `settings.restrictedListings`, a list of clean MLS numbers. This page answers where that list is enforced, how each exit behaves, and where the `not:` exclusion goes on a search. Terms are defined in the [Glossary](/glossary#mlsnumber).
+
+[Scrubbing & Restrictions](/architecture/scrubbing) | [MLS-number prefix](/architecture/mls-number-prefix) | [Repliers proxy](/architecture/repliers-proxy) | [Configuration resolution](/architecture/configuration-resolution)
+
+## Enforcement register
+
+| Exit                                       | Endpoints                                                                                                                                                                                                                                                           | Mechanism                                                          | Source                                                                                                                                                   | When the number matches                                                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Search                                     | `GET`/`POST /api/listings/search`, `GET`/`POST /api/listings/count`, the listings block of `GET /api/autosuggest`, the NLP follow-up search                                                                                                                         | `not:<mlsNumber>` entries added to the Repliers request            | `src/services/repliers/listings.ts` (`RepliersListings.search`) calling `excludeRestrictedListings` in `src/services/listings/listingHelpers.ts`         | Repliers never returns the listing; `count` and pagination stay exact                                        |
+| Other callers of `RepliersListings.search` | `GET /api/estimate/property_details` (every search it makes: the address lookup, its history fallback and the tax statistics, on the default and the historical-key client alike), `GET /api/stats/widgets`, `GET /api/stats/neighborhoodsranking` (**Not in OSS**) | The same exclusion, because it sits inside the client method       | `src/services/estimate.ts` (`findListingByAddress`, `fetchFromHistory`, `adjustPropertyTax`, `getAddressData`, `getAverageTax`), `src/services/stats.ts` | The listing is not found by the address lookup and is not counted in statistics                              |
+| Single                                     | `GET /api/listings/{mlsNumber}`                                                                                                                                                                                                                                     | `validateAvailability`                                             | `src/services/listings.ts` (`ListingsService.single`)                                                                                                    | `ApiError` `Not found. Restricted listing` with `settings.hide_unavailable_listings_http_code` (default 410) |
+| Similar                                    | `GET /api/listings/{mlsNumber}/similar`                                                                                                                                                                                                                             | `dropRestricted` on `similar`, then the decorator                  | `src/services/listings.ts` (`ListingsService.similar`)                                                                                                   | The entry is removed from the array; the other response fields are spread unchanged                          |
+| History                                    | `GET /api/listings/history`                                                                                                                                                                                                                                         | `dropRestricted` after `servable`                                  | `src/services/listings.ts` (`ListingsService.history`)                                                                                                   | The record is removed                                                                                        |
+| Favorites                                  | `GET /api/favorites`                                                                                                                                                                                                                                                | `dropRestricted`                                                   | `src/services/favorites.ts` (`FavoritesService.get`)                                                                                                     | The favorite is removed from the list                                                                        |
+| Featured                                   | `GET /api/listings/featured/{slug}`                                                                                                                                                                                                                                 | `dropRestricted`, through `FavoritesService.get`, before the cache | `src/services/favorites.ts` (`fetchFeaturedListings`)                                                                                                    | The listing is removed; the cached copy is already filtered                                                  |
+| Favorites delete                           | `DELETE /api/favorites/{favoriteId}`                                                                                                                                                                                                                                | Not filtered: ownership is read from the unfiltered Repliers list  | `src/services/favorites.ts` (`FavoritesService.delete`)                                                                                                  | A listing favorited before it was restricted can still be deleted                                            |
+
+`dropRestricted` removes the records whose `mlsNumber` is a string in the restricted list. It treats `null` or `undefined` as an empty array.
+
+The exits act on top-level arrays and on search requests. The backend runs no comparable search of its own: `EstimateService.add` and `get` call `RepliersEstimate` only.
+
+## Configuration
+
+`settings.restrictedListings` is `string[]` (`src/config.ts`). The env var `SETTINGS_RESTRICTED_LISTINGS` is a comma-separated string, split on `,` with empty entries removed and no trimming; unset means an empty list and no filtering. Entries are MLS numbers without a board prefix, for example `1000001`.
+
+An instance preset can set the same key. `merge` in `src/lib/settings.ts` uses `_.mergeWith` with a customizer that returns the preset's array as is, so a preset list replaces the env list rather than extending it. See [Configuration resolution](/architecture/configuration-resolution).
+
+The list is read from `config` in each service; settings are immutable at runtime, so changing the list takes a restart.
+
+## Placing `not:` on a search
+
+Two Repliers API rules decide where the exclusion goes:
+
+- a parameter given both top-level and inside `queries[]` is rejected with `400 Parameter conflict`;
+- `queries[]` is a union, so an exclusion missing from one branch lets the listing back in through that branch.
+
+`excludeRestrictedListings(query, body, mlsNumbers, { prefix, usePost })` therefore works in this order:
+
+1. With an empty list it returns.
+2. Each number becomes `not:` plus `addMlsPrefix(number, prefix)`.
+3. If any entry of `body.queries` has a non-empty `mlsNumber`, the entries are unioned into every branch (a branch without `mlsNumber` gets the exclusion alone).
+4. Otherwise one top-level entry is added: on `query` when the query already has an `mlsNumber` or the call is a GET (`usePost` false), else on `body`.
+
+`ListingsService.search` and `count` call `RepliersListings.search` with `usePost = true`, so their exclusion lands in the body; the estimate lookup and the statistics calls leave `usePost` false, so theirs lands in the query string. Entries are merged with `Set`, so repeating the call adds nothing. A positive number and its `not:` twin can share one array and the exclusion wins: upstream behaviour taken from the backend architecture notes, not re-verifiable here.
+
+Worked input, with the instance prefix `ABC` and the restricted number `1000001`:
+
+| Request body (POST)                                                             | After `excludeRestrictedListings`                                                         |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `{}`                                                                            | `{ "mlsNumber": ["not:ABC1000001"] }`                                                     |
+| `{ "mlsNumber": ["ABC2000002"] }`                                               | `{ "mlsNumber": ["ABC2000002", "not:ABC1000001"] }`                                       |
+| `{ "queries": [{ "mlsNumber": ["ABC2000002"] }, { "city": ["Springfield"] }] }` | every branch carries `not:ABC1000001`, the first next to `ABC2000002`; no top-level entry |
+
+### Ordering
+
+The exclusion has to be added after `addMlsNumbers`. That function prefixes the value of every `mlsNumber` key, so a `not:1000001` already present would become `ABCnot:1000001`. `excludeRestrictedListings` runs after it and builds `not:ABC1000001` itself (`src/services/repliers/listings.ts`, `search`). On the way back, `stripMlsNumbers` cleans the response before `dropRestricted`, `validateAvailability` and the scrubber compare numbers. See [MLS-number prefix](/architecture/mls-number-prefix) and the ordering table in [Scrubbing & Restrictions](/architecture/scrubbing#ordering).
+
+## Gotchas
+
+1. **The exclusion sits in the Repliers client, not in `ListingsService`.** Every caller of `RepliersListings.search` gets it, including the estimate lookup and statistics. Source: `src/services/repliers/listings.ts` (`search`).
+2. **Filtered lists keep their upstream paging fields.** `similar` has no upstream exclusion and favorites and featured are filtered after the response arrives; `count`, `numPages` and `pageSize` of the favorites response are spread unchanged after `dropRestricted`. Source: `src/services/listings.ts` (`similar`), `src/services/favorites.ts` (`get`).
+3. **A restricted `single` answers like an unavailable listing.** The same status code and error class as a hidden status or `displayInternetEntireListing=N`, with a different message. Source: `src/services/listings.ts` (`validateAvailability`).
+4. **The cached featured list holds the filtered result.** The filter runs in `fetchFeaturedListings`, before `@cached` stores the value. Source: `src/services/favorites.ts`.
+5. **Delete ignores the list.** Ownership is checked against the unfiltered favorites. Source: `src/services/favorites.ts` (`delete`).
+
+## Evidence
+
+- `test/services/listings/listingHelpers.test.ts`: exclusion placement for POST and GET, joining the caller's own filter, one top-level entry versus every branch, prefixing without swallowing `not:`, `dropRestricted` on blocked, unnumbered and `null` input.
+- `test/services/listings/restrictedListings.test.ts`: the blocklist excluded from every search whatever the status.
+- Not established by this checkout: the two Repliers API rules above are recorded in the code comment of `excludeRestrictedListings` and cannot be re-verified here.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

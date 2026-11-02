@@ -22,6 +22,7 @@ import {
   resolveLocation
 } from 'services/LocationsTree'
 import { hasCmsBuildingRedirects } from 'utils/buildings/buildingMatcher'
+import { areaMetadata } from 'utils/indexing'
 import { capitalize } from 'utils/strings'
 import { getLocationUrl, sanitizeUrl } from 'utils/urls'
 
@@ -107,7 +108,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Resolve to the tree's spelling so the title and the canonical describe the page
   // the visitor actually gets — a variant slug renders the resolved location's content.
   const { tree } = await loadStaticTree()
-  const { cityNode, hoodNode } = resolveLocation(tree, {
+  const { cityNode, hoodNode, parentArea } = resolveLocation(tree, {
     area,
     city: requestedCity,
     hood: requestedHood
@@ -126,6 +127,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : String(content.pagesMeta.buildings?.description ?? '')
 
   return {
+    ...areaMetadata(parentArea?.name),
     title,
     description,
     alternates: {

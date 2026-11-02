@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { GridWidget } from '@shared/CmsWidgets'
 
 import { type ApiBuilding } from 'services/API'
-import { getBuildingLabel } from 'utils/buildings'
+import { buildingAddressFilter, getBuildingLabel } from 'utils/buildings'
 
 import { BuildingSectionContainer } from '.'
 
@@ -16,8 +16,6 @@ interface BuildingListingsProps {
 
 export const BuildingListings = ({ building }: BuildingListingsProps) => {
   const t = useTranslations('Building')
-  const { address } = building
-  const { streetNumber, streetName, city, neighborhood } = address || {}
   const [resultsCount, setResultsCount] = useState<number | null>(null)
 
   const label = getBuildingLabel(building)
@@ -44,10 +42,7 @@ export const BuildingListings = ({ building }: BuildingListingsProps) => {
           listingType: 'condo',
           sortBy: 'createdOnDesc',
           resultsPerPage: 6,
-          streetNumber,
-          streetName,
-          neighborhood,
-          city
+          ...buildingAddressFilter(building)
         }}
         onResultsChange={setResultsCount}
         onLoadingChange={handleLoadingChange}

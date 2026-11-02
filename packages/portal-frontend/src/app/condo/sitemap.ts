@@ -10,7 +10,8 @@ import {
 } from 'app/condos/_utils'
 
 import { transient } from 'services/API'
-import { loadStaticTree } from 'services/LocationsTree'
+import { loadStaticTree, resolveLocation } from 'services/LocationsTree'
+import { excludedArea } from 'utils/indexing'
 import { logError } from 'utils/log'
 
 export const revalidate = 86400
@@ -33,7 +34,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const cityCounts = await fetchCityBuildingCounts(topCityNames)
     const citiesWithBuildings = topCityNames.filter(
-      (name) => (cityCounts[name] ?? 0) > 0
+      (name) =>
+        (cityCounts[name] ?? 0) > 0 &&
+        !excludedArea(resolveLocation(tree, { city: name }).parentArea?.name)
     )
 
     const allBuildings = (

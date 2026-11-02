@@ -1,7 +1,8 @@
 import React from 'react'
 
 import BannerContainer from './BannerContainer'
-import BannerDescription from './BannerDescription'
+import { BannerDescription } from './BannerDescription'
+import { BannerDocumentation } from './BannerDocumentation'
 import BannerImage from './BannerImage'
 
 export const HomePageBanner = ({
@@ -17,6 +18,7 @@ export const HomePageBanner = ({
     <BannerContainer>
       <BannerImage />
       <BannerDescription title={title} subtitle={subtitle} />
+      <BannerDocumentation />
       {children}
     </BannerContainer>
   )

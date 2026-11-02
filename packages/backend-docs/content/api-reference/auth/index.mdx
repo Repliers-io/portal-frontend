@@ -1,0 +1,52 @@
+# Auth
+
+Everything under `/api/auth` is served by `src/routes/auth.ts`. No route on this router has
+role middleware; only `refresh` and `logout` require a token (strict). The flows, the token
+claims, role resolution, revocation and the access rules of every other endpoint are on
+[Architecture → Authentication](/architecture/authentication); this page is the operation index.
+The full parameter contract is in Swagger (`/swagger`), which does not document `POST /embed`.
+
+[Authentication](/architecture/authentication) ·
+[Endpoint access](/architecture/authentication#endpoint-access) ·
+[W9 OTP login, refresh and logout](/architecture/flows#w9--otp-login-cooldown-refresh-logout-and-revocation)
+
+## Operations
+
+No auth route writes `Cache-Control`. "Relayed upstream status" means a failed Repliers call
+answered with Repliers' own status ([error variants](/api-reference#error-variants)).
+
+| Method & path                   | Auth                                               | Cached / header                                 | Side effects                                                                                                                          | Errors                                                                                                                                                                                                                                 | Deep dive                                                             |
+| ------------------------------- | -------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `GET /api/auth/{provider}/url`  | none; `provider` must be `google` or `facebook`    | none                                            | none                                                                                                                                  | 400 (unknown provider, invalid `redirect_uri`, no `redirect_uri` sent or configured); 500 for `facebook` (no OIDC configuration)                                                                                                       | [OAuth](/architecture/authentication#oauth-sign-in)                   |
+| `POST /api/auth/{provider}/cb`  | none                                               | none                                            | First sign-in of an unknown email: Repliers client created and a registration event sent, not awaited. Agent sign-in: FUB user lookup | 400 (provider, body or query validation, no `id_token`, no email in it); the provider's status for a rejected code; relayed upstream status; 500 otherwise                                                                             | [OAuth](/architecture/authentication#oauth-sign-in)                   |
+| `POST /api/auth/login`          | none                                               | `Retry-After` on the cooldown 403               | Code and cooldown marker in Keyv `otp`; Repliers message; the client's email preferences re-enabled when off                          | 400 (neither `email` nor `phone`, bad format); 404 `User not found`; 403 + `Retry-After` inside `AUTH_OTP_RESEND_TTL_MS`; 500 when the preferences update fails; relayed upstream status                                               | [OTP login](/architecture/authentication#otp-login)                   |
+| `POST /api/auth/otp`            | none                                               | none                                            | The code is deleted                                                                                                                   | 400 (`code` not 6 characters); 403 unknown or used code; 500 when the ACL query fails; relayed upstream status                                                                                                                         | [OTP login](/architecture/authentication#otp-login)                   |
+| `POST /api/auth/refresh`        | strict                                             | none                                            | Old `jti` blocklisted until its `exp`                                                                                                 | 401 (no, invalid, expired or revoked token); 500 for a token without `iat`/`exp` or a failed ACL query                                                                                                                                 | [Refresh and logout](/architecture/authentication#refresh-and-logout) |
+| `POST /api/auth/logout`         | strict                                             | none                                            | `jti` blocklisted until its `exp`                                                                                                     | 401 (no, invalid, expired or revoked token)                                                                                                                                                                                            | [Refresh and logout](/architecture/authentication#refresh-and-logout) |
+| `POST /api/auth/signup`         | none                                               | `Retry-After` on the cooldown 403               | Repliers client created; registration event sent, not awaited; then the code, the cooldown marker and the message as for `login`      | 400 (validation); 409 relayed when the client exists; 403 + `Retry-After` inside the cooldown; 500 when the preferences update fails; relayed upstream status. No 404: signup passes the new client to `login`, which skips the lookup | [Signup](/architecture/authentication#signup)                         |
+| `POST /api/auth/repliers-token` | none                                               | `Retry-After` when `auto_otp` hits the cooldown | With `AUTH_EMAILTOKEN_AUTO_OTP=true` and an expired message token: a new code and message                                             | 400 (not a UUID; `AUTH_EMAILTOKEN_ENABLED` off); 403 unknown or expired token; 412 expired with `auto_otp`; 403 + `Retry-After` when that re-send is inside the cooldown; relayed upstream status                                      | [Email token](/architecture/authentication#email-token)               |
+| `POST /api/auth/embed`          | none; FUB context signature checked in the service | none                                            | none                                                                                                                                  | 400 (validation); 401 `Invalid signature`; 500 for a context that is not base64 JSON or a failed ACL query                                                                                                                             | [FUB embed login](/architecture/authentication#fub-embed-login)       |
+
+## Response bodies
+
+| Endpoint               | Body                                                                                                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `login`, `signup`      | `{ "result": true }`, plus `"code"` with `DEBUG_AUTH_OTP_EXPOSE_CODE=true`                                                                                                               |
+| `otp`, `{provider}/cb` | `{ "token": "<jwt>", "profile": { … } }`: the client's `fname`, `lname`, `phone`, `email`, `status`, `preferences`, `tags`, or for an agent `fname`, `lname`, `phone`, `email`, `status` |
+| `{provider}/url`       | `{ "url": "<authorization URL>" }`                                                                                                                                                       |
+| `refresh`              | `{ "token": "<jwt>" }`                                                                                                                                                                   |
+| `logout`               | `{ "result": true }`                                                                                                                                                                     |
+| `repliers-token`       | `{ "result": { "token": "<jwt>", "profile": { … } } }`                                                                                                                                   |
+| `embed`                | `{ "result": { "jwt": "<jwt>", "clientSignature": "<hex>" } }`                                                                                                                           |
+
+## Notes
+
+The notes that used to be listed here now live with their mechanism:
+
+- **The `provider` guard** → [OAuth sign-in](/architecture/authentication#oauth-sign-in).
+- **Logout, the blocklist and the `isRevoked` hook** →
+  [Revocation](/architecture/authentication#revocation).
+- **Email tokens and `AUTH_EMAILTOKEN_AUTO_OTP`** →
+  [Email token](/architecture/authentication#email-token).
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

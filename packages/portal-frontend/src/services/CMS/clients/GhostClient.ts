@@ -1,5 +1,6 @@
 import GhostContentAPI from '@tryghost/content-api'
 
+import { ApiError } from 'services/API/APIBase'
 import { logError } from 'utils/log'
 
 import {
@@ -38,17 +39,19 @@ interface GhostAuthorPayload {
   }
 }
 
-const getErrorStatusCode = (error: unknown): number | undefined => {
-  const value = error as {
-    statusCode?: number
-    response?: { status?: number }
-  }
-
-  if (typeof value?.statusCode === 'number') return value.statusCode
-  if (typeof value?.response?.status === 'number') return value.response.status
-
-  return undefined
+// The SDK rejects with Ghost's error spread over an Error plus the whole axios response,
+// request config with the content key included: logged as is, Ghost's reason (`context`)
+// drowns in a socket dump, and onRequestError prints only the message. As an ApiError the
+// status and Ghost's payload read in one line in both.
+const report = (label: string, cause: unknown) => {
+  const { response } = cause as { response?: { status: number; data: unknown } }
+  const error = response ? new ApiError(response.status, response.data) : cause
+  logError(label, error)
+  return error
 }
+
+const notFound = (error: unknown) =>
+  error instanceof ApiError && error.status === 404
 
 /**
  * Ghost API client for fetching content
@@ -83,8 +86,8 @@ class GhostClient implements CmsClient {
     try {
       const page = await this.api.pages.read({ slug })
       return transformPage(page)
-    } catch (error) {
-      logError(`Error fetching page with slug "${slug}":`, error)
+    } catch (cause) {
+      const error = report(`Error fetching page with slug "${slug}":`, cause)
       // Page not found, try markdown fallback if available
       if (this.fallbackClient) {
         const markdownPage = await this.fallbackClient.getPage(slug)
@@ -94,9 +97,7 @@ class GhostClient implements CmsClient {
         }
       }
 
-      if (getErrorStatusCode(error) !== 404) {
-        throw error
-      }
+      if (!notFound(error)) throw error
 
       return null
     }
@@ -114,7 +115,7 @@ class GhostClient implements CmsClient {
       })
       return pages.map((page) => transformPage(page))
     } catch (error) {
-      logError('Error fetching pages from Ghost:', error)
+      report('Error fetching pages from Ghost:', error)
       return []
     }
   }
@@ -135,12 +136,10 @@ class GhostClient implements CmsClient {
         }
       )
       return transformPost(post)
-    } catch (error) {
-      logError(`Error fetching post with slug "${slug}":`, error)
+    } catch (cause) {
+      const error = report(`Error fetching post with slug "${slug}":`, cause)
 
-      if (getErrorStatusCode(error) !== 404) {
-        throw error
-      }
+      if (!notFound(error)) throw error
 
       return null
     }
@@ -156,10 +155,7 @@ class GhostClient implements CmsClient {
     if (!this.api) return 0
 
     try {
-      const params: any = {
-        limit: 1,
-        include: []
-      }
+      const params: any = { limit: 1 }
 
       // Build filter string
       const filters: string[] = []
@@ -175,9 +171,8 @@ class GhostClient implements CmsClient {
 
       const response = await this.api.posts.browse(params)
       return response.meta?.pagination?.total || 0
-    } catch (error) {
-      logError('Error fetching total posts count:', error)
-      throw error
+    } catch (cause) {
+      throw report('Error fetching total posts count:', cause)
     }
   }
 
@@ -220,9 +215,8 @@ class GhostClient implements CmsClient {
 
       const posts = await this.api.posts.browse(params)
       return posts.map((post) => transformPost(post))
-    } catch (error) {
-      logError('Error fetching posts from Ghost:', error)
-      throw error
+    } catch (cause) {
+      throw report('Error fetching posts from Ghost:', cause)
     }
   }
 
@@ -239,7 +233,7 @@ class GhostClient implements CmsClient {
       })
       return pages.map((page) => page.slug)
     } catch (error) {
-      logError('Error fetching page slugs from Ghost:', error)
+      report('Error fetching page slugs from Ghost:', error)
       return []
     }
   }
@@ -257,7 +251,7 @@ class GhostClient implements CmsClient {
       })
       return posts.map((post) => post.slug)
     } catch (error) {
-      logError('Error fetching post slugs from Ghost:', error)
+      report('Error fetching post slugs from Ghost:', error)
       return []
     }
   }
@@ -291,7 +285,7 @@ class GhostClient implements CmsClient {
           count: count?.posts || 0
         }))
     } catch (error) {
-      logError('Error fetching tags from Ghost:', error)
+      report('Error fetching tags from Ghost:', error)
       return []
     }
   }
@@ -347,7 +341,7 @@ class GhostClient implements CmsClient {
       const author = await this.api.authors.read({ id: String(id) })
       return transformAuthor(author as GhostAuthorPayload)
     } catch (error) {
-      logError(`Error fetching author ${id} from Ghost:`, error)
+      report(`Error fetching author ${id} from Ghost:`, error)
       return null
     }
   }
@@ -362,12 +356,13 @@ class GhostClient implements CmsClient {
     try {
       const author = await this.api.authors.read({ slug })
       return transformAuthor(author as GhostAuthorPayload)
-    } catch (error) {
-      logError(`Error fetching author by slug ${slug} from Ghost:`, error)
+    } catch (cause) {
+      const error = report(
+        `Error fetching author by slug ${slug} from Ghost:`,
+        cause
+      )
 
-      if (getErrorStatusCode(error) !== 404) {
-        throw error
-      }
+      if (!notFound(error)) throw error
 
       return null
     }
@@ -385,7 +380,7 @@ class GhostClient implements CmsClient {
         transformAuthor(author as GhostAuthorPayload)
       )
     } catch (error) {
-      logError('Error fetching all authors from Ghost:', error)
+      report('Error fetching all authors from Ghost:', error)
       return []
     }
   }

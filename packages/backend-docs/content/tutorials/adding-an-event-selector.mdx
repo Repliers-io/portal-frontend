@@ -1,0 +1,199 @@
+import { Steps } from 'nextra/components'
+
+# Adding an event selector
+
+Report a new engagement event to the CRM: when a signed-in user opens the similar-listings list of
+a property, send a `Viewed Page` event for that property. An event is built by a **selector**, a class
+that reads the finished request and returns the payload (or `null` for "report nothing"); a second
+route handler runs it after the response is decided. The example is illustrative: the selector
+`SelectViewSimilarParams` does not exist in the repository. How the report travels, and what is and
+is not awaited, is on [Events & Messaging](/architecture/events-and-messaging#d06--second-handler-and-detached-report).
+
+## Prerequisites
+
+- The CRM integration is configured for the instance, or you are content to test with the service
+  stubbed (the selector tests do): [Follow Up Boss](/integrations/follow-up-boss).
+- You have read the [engagement register](/architecture/events-and-messaging#engagement-reporting): a
+  selector is one row of it, and the field rules (default tags, assignment, guest policy) are shared.
+
+<Steps>
+
+### Choose the event type
+
+`type` is a `BossEventType` (`src/services/boss.ts`), the closed list of event types the CRM client
+accepts: `Registration`, `Inquiry`, `Seller Inquiry`, `Property Inquiry`, `General Inquiry`,
+`Viewed Property`, `Saved Property`, `Visited Website`, `Incoming Call`, `Unsubscribed`,
+`Property Search`, `Saved Property Search`, `Visited Open House`, `Visited Website - Estimate` and
+`Viewed Page`. Use one of them. Adding a name to the union is a CRM-side decision, not a code one.
+
+### Add a tag setting (only if the event needs tags)
+
+Default tags come from `BOSS_DEFAULT_TAGS` and are added to every event. A selector-specific tag
+list lives in `eventsCollection.eventTags`, which has one key per selector, backed by an environment
+variable with a default; a value that only a preset can set is not allowed. Add to the type and the
+object in `src/config.ts`:
+
+```ts
+SelectViewSimilarParams: string[];
+// ...
+SelectViewSimilarParams: process.env["SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_VIEW_SIMILAR"]?.split(",") || [],
+```
+
+Skip this step when the default tags are enough. Add the variable to
+[Environment variables](/getting-started/environment-variables).
+
+### Write the selector
+
+In `src/services/eventsCollection/selectors/selectViewSimilarParams.ts`: PascalCase file name matching
+the class, `@injectable()`, a default export, and a `select` arrow property typed
+`EventsCollectionPropertiesSelector`. Extend `BaseEventCollectionSelector`; it supplies
+`getDefaults` (referrer, `occurredAt`, the person from the JWT email), `buildPropertyUrl` and
+`getProperty` (a `RepliersListings.single` read, falling back to `{ mlsNumber, url }` on any error):
+
+```ts
+@injectable()
+export default class SelectViewSimilarParams extends BaseEventCollectionSelector {
+  select: EventsCollectionPropertiesSelector = async (ctx) => {
+    // mlsNumber is a path parameter on this route; boardId is an optional query key
+    const mlsNumber = ctx.params['mlsNumber']
+    const { boardId } = ctx.request.query
+    if (!mlsNumber) return null
+
+    const defaults = await this.getDefaults(ctx)
+    const tags = this.config.eventsCollection.eventTags.SelectViewSimilarParams
+
+    return {
+      ...defaults,
+      person: { ...defaults.person, tags },
+      type: 'Viewed Page',
+      pageUrl: this.buildPropertyUrl(
+        String(mlsNumber),
+        Number(boardId) || undefined
+      ),
+      property: await this.getProperty(
+        String(mlsNumber),
+        Number(boardId) || undefined
+      )
+    } as BossEventsCreateRequest
+  }
+}
+```
+
+Rules the base class and the service set for you:
+
+- **Return `null` to skip.** Validate the way the route does and return `null` on an error, as the
+  sibling selectors do; the user's request is never failed by a reporting problem.
+- **Do not set assignment.** `assignAgent` copies only what you put on the person
+  (`assignedUserId` or `assignedTo`); `BOSS_DEFAULT_ASSIGNED_TO` is not applied.
+- **Do not add the default tags yourself.** The service prepends them, unless the payload sets
+  `ignoreDefaultTags`.
+- **Do not catch around the CRM call.** The failure of the CRM request itself reaches only the
+  `repliers:services:eventsCollection` debug log.
+
+### Wire it as the second handler
+
+The first handler sets `ctx.body` and calls `next()`; a second handler resolves
+`middleware.eventsCollection` with the selector, as `POST /api/favorites` does. The report starts
+after the body is set and is not awaited:
+
+```ts
+router.get(
+  '/:mlsNumber/similar',
+  authMiddleware,
+  async (ctx, next) => {
+    // ...unchanged: validate, resolve ListingsService, ctx.body = await listingsService.similar(value);
+    next() // the real handler is `async (ctx)` today; adding a second handler adds the `next` parameter
+  },
+  (ctx, next) => {
+    const eventsCollectionMiddleware =
+      ctx.state.container.resolve<EventsCollectionMiddleware>(
+        'middleware.eventsCollection'
+      )
+    const selector = ctx.state.container.resolve(SelectViewSimilarParams)
+    return eventsCollectionMiddleware({ selector: selector.select })(ctx, next)
+  }
+)
+```
+
+**Guest policy.** Without `options: { allowIncognito: true }` the report runs only when
+`ctx.state["user"]` is set. On a passthrough route that means signed-in callers only, which is what
+this example wants. Pass `allowIncognito: true` for a form a guest may submit; the person then has no
+email, so the selector must supply one from the body (see `selectContactUsParams.ts`).
+To skip some roles, return from the second handler before calling the middleware, as the single-listing
+route does for agents.
+
+**Reporting somewhere other than the CRM.** The same two-handler shape works for any side-effect
+report: answer first, report second, not awaited. A destination other than Follow Up Boss gets its
+own service rather than a selector, since `EventsCollectionService` sends to Follow Up Boss only
+([Respond first, report second](/architecture/events-and-messaging#respond-first-report-second)).
+
+### Test the selector
+
+Mirror the path: `test/services/eventsCollection/selectors/selectViewSimilarParams.test.ts`. Build a
+minimal context, resolve the selector from the container with the dummy forwarded-for provider and
+assert on the payload, as `selectUnsubscribedParams.test.ts` does:
+
+```ts
+const makeCtx = (params = {}, user = {}, query = {}) =>
+  ({
+    params,
+    request: { query, headers: {} },
+    state: { user }
+  }) as unknown as Context
+
+it('returns null without an mlsNumber', async function () {
+  assert.equal(
+    await selector.select(makeCtx({}, { sub: 1, email: 'u@example.com' })),
+    null
+  )
+})
+
+it('reports Viewed Page with the property URL', async function () {
+  const result = await selector.select(
+    makeCtx({ mlsNumber: '1000001' }, { sub: 1, email: 'u@example.com' })
+  )
+  assert.equal(result?.type, 'Viewed Page')
+  assert.ok(result?.pageUrl?.includes('1000001'))
+})
+```
+
+`getProperty` calls Repliers; stub `repliersService.listings.single` or add a `nock` interceptor, as
+`baseEventCollectionSelector.test.ts` does.
+
+### Add the register entry
+
+A row in the [engagement register](/architecture/events-and-messaging#engagement-reporting), one
+cell each for: route (`GET /api/listings/{mlsNumber}/similar`), selector
+(`SelectViewSimilarParams`), event or note type (`Viewed Page`), field, tag and assignment inputs,
+guest policy (signed-in only), awaited or detached (**M**, the middleware path), and the source cells
+`src/routes/listings.ts` and `selectViewSimilarParams.ts`. If you added a tag setting, mention its
+variable in the row; if the route is new, also add it to the
+[module catalogue](/architecture/modules) (the [endpoint recipe](/tutorials/adding-an-endpoint)).
+
+</Steps>
+
+## Checklist
+
+| Done                                                                   | Where                                                                         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Event type is in `BossEventType`                                       | `src/services/boss.ts`                                                        |
+| Tag setting with an environment variable and default (if any)          | `src/config.ts`                                                               |
+| Selector extends `BaseEventCollectionSelector`, returns `null` to skip | `src/services/eventsCollection/selectors/`                                    |
+| Second handler after a first one that calls `next()`                   | `src/routes/<feature>.ts`                                                     |
+| Guest policy chosen on purpose (`allowIncognito`)                      | same                                                                          |
+| Selector test                                                          | `test/services/eventsCollection/selectors/`                                   |
+| Engagement register row                                                | [Events & Messaging](/architecture/events-and-messaging#engagement-reporting) |
+
+## Troubleshooting
+
+| Symptom                                     | Likely cause                                                                                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nothing reaches the CRM                     | The CRM is off for the instance (`BOSS_ENABLED`), the caller is a guest on a route without `allowIncognito`, or the selector returned `null`                                |
+| `Events collection failed` in the error log | The selector threw, or the call that starts the CRM request threw before the request was sent                                                                               |
+| Links in the event are relative             | `SETTINGS_EVENTS_COLLECTOR_URL_HOST` is applied at startup only to the templates; see [URL assembly](/architecture/configuration-resolution#events-collection-url-assembly) |
+
+## Next
+
+- [Events & Messaging](/architecture/events-and-messaging) — the detached report and lead tags
+- [Follow Up Boss](/integrations/follow-up-boss) — the CRM side
+- [Adding an endpoint](/tutorials/adding-an-endpoint)

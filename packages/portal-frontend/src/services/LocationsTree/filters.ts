@@ -121,7 +121,12 @@ export function resolveLocation(
       )
     : undefined
 
-  return { areaNode, cityNode, hoodNode }
+  const parentArea =
+    cityNode && (!hood || hoodNode)
+      ? tree.areas.find((node) => node.cities.includes(cityNode))
+      : undefined
+
+  return { areaNode, cityNode, hoodNode, parentArea }
 }
 
 /**
