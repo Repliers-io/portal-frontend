@@ -1,10 +1,14 @@
 import dayjs from 'dayjs'
 
+import content from '@configs/content'
+import locationConfig from '@configs/location'
+
 import { type ApiListingAddress } from 'services/API'
 
 import { property1, property2, property3 } from './__mocks__'
 import {
   formatFullAddress,
+  formatMetadata,
   formatMultiLineText,
   formatOpenHouseBadge,
   formatOpenHouseTimeRange,
@@ -14,6 +18,32 @@ import {
 } from './formatters'
 
 describe('utils/listings/formatters', () => {
+  it('restricts known outside counties while retaining global nofollow and unknown data', () => {
+    const { indexAreas } = locationConfig
+    const { noIndex } = content
+    try {
+      locationConfig.indexAreas = ['King']
+      content.noIndex = false
+      const metadata = (area: string) =>
+        formatMetadata({
+          ...property1,
+          details: { ...property1.details },
+          address: { ...property1.address, city: 'Bothell', area }
+        })
+      expect(metadata('Pierce').robots).toEqual({ index: false, follow: true })
+      for (const area of ['King', ' king ', '', '!scrubbed!']) {
+        expect(metadata(area).robots).toBeUndefined()
+      }
+      content.noIndex = true
+      expect(metadata('Pierce').robots).toEqual({ index: false, follow: false })
+      locationConfig.indexAreas = []
+      expect(metadata('Pierce').robots).toBeUndefined()
+    } finally {
+      locationConfig.indexAreas = indexAreas
+      content.noIndex = noIndex
+    }
+  })
+
   it('should correctly format short address line from address object', () => {
     expect(formatShortAddress(property1.address)).toBe(
       '#PH3 - 135 Lower Barrette Way EAST'

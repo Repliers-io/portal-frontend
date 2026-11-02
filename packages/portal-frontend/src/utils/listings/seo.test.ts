@@ -1,4 +1,7 @@
+import listingsConfig from '@configs/listings'
 import searchConfig from '@configs/search'
+
+import urbnListings from 'configs/urbn/listings'
 
 import { type ApiListing } from 'services/API'
 
@@ -11,12 +14,22 @@ import {
 } from './__mocks__'
 import {
   getCompactSeoTitle,
+  getSeoTitle,
   getSeoUrl,
   parseSeoUrl,
   resolveBoardId
 } from './seo'
 
 let mockDistinctBoardIds = [15]
+
+// the defaults tenant withholds no price; one flag exercises the masked title
+jest.mock('@configs/listings', () => {
+  const actual = jest.requireActual('@configs/listings').default
+  return {
+    __esModule: true,
+    default: { ...actual, hiddenPriceFlags: ['hide_list_price'] }
+  }
+})
 
 // Board 15 stands in for a board the tenant addresses by its own id, so the
 // board-suffix behavior is exercised (the defaults tenant ships an empty
@@ -36,6 +49,86 @@ jest.mock('@configs/search', () => {
 })
 
 describe('utils/listings/seo', () => {
+  describe('URBN unit addresses', () => {
+    const listing = {
+      mlsNumber: '2597026',
+      boardId: 149,
+      address: {
+        streetNumber: '2510',
+        streetName: '6th',
+        streetSuffix: 'Avenue',
+        unitNumber: '3603',
+        city: 'Seattle',
+        state: 'WA',
+        zip: '98121'
+      }
+    } as ApiListing
+    const { seoUnitFormat, titleFormat } = listingsConfig
+
+    beforeEach(() => {
+      listingsConfig.seoUnitFormat = urbnListings.seoUnitFormat
+      listingsConfig.titleFormat = urbnListings.titleFormat
+    })
+
+    afterEach(() => {
+      listingsConfig.seoUnitFormat = seoUnitFormat
+      listingsConfig.titleFormat = titleFormat
+    })
+
+    it('puts the labelled unit after the abbreviated street in the title and URL', () => {
+      expect(getSeoTitle(listing)).toBe(
+        '2510 6th Ave unit 3603, Seattle, WA 98121 | MLS# 2597026'
+      )
+      expect(getSeoUrl(listing)).toBe(
+        '/listing/2510-6th-ave-unit-3603-seattle-98121-2597026'
+      )
+    })
+
+    it('reads both the new unit suffix and existing unit-first links', () => {
+      for (const slug of [
+        '2510-6th-ave-unit-3603-seattle-98121-2597026',
+        '3603-2510-6th-avenue-seattle-98121-2597026'
+      ]) {
+        expect(parseSeoUrl(slug)).toMatchObject({
+          unitNumber: '3603',
+          streetNumber: '2510',
+          streetName: '6th',
+          city: 'Seattle',
+          mlsNumber: '2597026'
+        })
+      }
+    })
+
+    it('preserves addresses without units and tenants using the existing format', () => {
+      const noUnit = {
+        ...listing,
+        address: { ...listing.address, unitNumber: '' }
+      }
+      expect(getSeoUrl(noUnit)).toBe(
+        '/listing/2510-6th-avenue-seattle-98121-2597026'
+      )
+      expect(getSeoTitle(noUnit)).toBe(
+        '2510 6th Avenue, Seattle, WA 98121 | MLS# 2597026'
+      )
+      Object.assign(listingsConfig, { seoUnitFormat: 'default' })
+      expect(getSeoUrl(listing)).toBe(
+        '/listing/3603-2510-6th-avenue-seattle-98121-2597026'
+      )
+      expect(getCompactSeoTitle(listing)).toBe(
+        '2510 3603 6th Avenue, Seattle, WA 98121 | MLS# 2597026'
+      )
+    })
+
+    it('falls back to the listing ID when the labelled address contains unsafe path characters', () => {
+      expect(
+        getSeoUrl({
+          ...listing,
+          address: { ...listing.address, unitNumber: '3603?other=1' }
+        })
+      ).toBe('/listing/2597026')
+    })
+  })
+
   it('should correctly format addresses to SEO url', () => {
     expect(getSeoUrl(property1)).toBe(
       '/listing/ph3-135-lower-barrette-way-east-ottawa-k1l-7z9-12345'
@@ -68,6 +161,22 @@ describe('utils/listings/seo', () => {
     expect(getSeoUrl({ ...property3, boardId: 15 })).toBe(
       '/listing/13-5-d-artagnan-bay-ottawa-12346-15?image=IMG-12346_1.jpg'
     )
+  })
+
+  it('masks a withheld list price in the title', () => {
+    const listing = (raw: Record<string, boolean>) =>
+      ({
+        ...property2,
+        status: 'A',
+        listPrice: '2100000',
+        details: { propertyType: 'Detached' },
+        raw
+      }) as unknown as ApiListing
+
+    const masked = getSeoTitle(listing({ hide_list_price: true }))
+    expect(masked).toContain('$xxxx')
+    expect(masked).not.toContain('2,100,000')
+    expect(getSeoTitle(listing({}))).toContain('$2,100,000')
   })
 
   describe('resolveBoardId', () => {

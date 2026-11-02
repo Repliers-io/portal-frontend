@@ -1,0 +1,106 @@
+# Agent & Admin
+
+The agent-facing surface: agents manage their clients, estimates and messages (`/api/agent`),
+and admins list and maintain agents (`/api/admin`). Both routers are strict-JWT with
+[role checks](/architecture/authentication#agents-and-roles); a token without a `role` claim
+fails them with 403 `Insufficient privileges`. Terms are in the [Glossary](/glossary#agentid).
+
+[Agent clients, estimates & messages](/api-reference/agent-and-admin/agent-clients) ·
+[Endpoint access register](/architecture/authentication#endpoint-access) ·
+[Module catalogue](/architecture/modules) ·
+[Events & messaging](/architecture/events-and-messaging)
+
+## Agent — `/agent`
+
+Source: `src/routes/agent.ts`, `AgentService` (`src/services/agent.ts`). Roles admitted: Agent,
+Admin (not Root). The agent id is always `ctx.state.user.sub`; a body or query value of the same
+name is overwritten. Routes with a `clientId` or `estimateId` path parameter pass a
+`router.param` guard first (ownership check, or the `?s=` signature, which also replaces `sub`);
+the guard is described on [the deep page](/api-reference/agent-and-admin/agent-clients#the-param-guards).
+No route caches or writes `Cache-Control`. "Errors" lists what the route and its guard produce
+on top of 401 and the role 403; Repliers failures are relayed with their own status.
+
+| Method & path                                | Auth                                       | Cached / header | Side effects                                                                                                 | Errors                                              | Deep dive                                                                                 |
+| -------------------------------------------- | ------------------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `POST /api/agent/client`                     | strict, Agent or Admin                     | none            | Repliers `POST /clients` (`agentId` = `sub`, `status` forced `true`); detached client-registration FUB event | 400                                                 | [Clients](/api-reference/agent-and-admin/agent-clients#clients)                           |
+| `GET /api/agent/client`                      | strict, Agent or Admin                     | none            | none                                                                                                         | 400 (unknown query key, including `s`)              | [Clients](/api-reference/agent-and-admin/agent-clients#clients)                           |
+| `GET /api/agent/client/{clientId}`           | strict, Agent or Admin; `clientId` guard   | none            | none                                                                                                         | 400, 403                                            | [Clients](/api-reference/agent-and-admin/agent-clients#clients)                           |
+| `PATCH /api/agent/client/{clientId}`         | as above                                   | none            | Repliers `PATCH /clients/{id}`                                                                               | 400, 403                                            | [Client PATCH](/api-reference/agent-and-admin/agent-clients#patch-apiagentclientclientid) |
+| `POST /api/agent/estimate/{clientId}`        | as above                                   | none            | Repliers `POST /estimates`; detached estimate FUB event and note                                             | 400, 403                                            | [Estimates](/api-reference/agent-and-admin/agent-clients#estimates)                       |
+| `GET /api/agent/estimate/{clientId}`         | as above                                   | none            | none                                                                                                         | 400, 403                                            | [Estimates](/api-reference/agent-and-admin/agent-clients#estimates)                       |
+| `POST /api/agent/estimate/{estimateId}/send` | strict, Agent or Admin; `estimateId` guard | none            | Repliers `PATCH /estimates/{id}` with `sendEmailNow: true`; un-awaited FUB note                              | 400, 403, 404 (unknown estimate)                    | [Estimates](/api-reference/agent-and-admin/agent-clients#estimates)                       |
+| `PATCH /api/agent/estimate/{estimateId}`     | as above                                   | none            | Repliers `PATCH /estimates/{id}`                                                                             | 400, 403, 404                                       | [Estimates](/api-reference/agent-and-admin/agent-clients#estimates)                       |
+| `DELETE /api/agent/estimate/{estimateId}`    | as above                                   | none            | Repliers `DELETE /estimates/{id}`                                                                            | 400, 403, 404                                       | [Estimates](/api-reference/agent-and-admin/agent-clients#estimates)                       |
+| `POST /api/agent/messages/{clientId}`        | strict, Agent or Admin; `clientId` guard   | none            | Repliers `POST /messages` as `sender: "agent"`                                                               | 400, 403                                            | [Messages](/api-reference/agent-and-admin/agent-clients#messages)                         |
+| `GET /api/agent/messages/{clientId}`         | as above                                   | none            | none                                                                                                         | 400, 403                                            | [Messages](/api-reference/agent-and-admin/agent-clients#messages)                         |
+| `GET /api/agent/boss/people`                 | strict, Agent or Admin                     | none            | FUB `GET /people`                                                                                            | 400 (no `external.fub_id` claim; unknown query key) | [Boss people](/api-reference/agent-and-admin/agent-clients#boss-people)                   |
+| `POST /api/agent/boss/people`                | as above                                   | none            | FUB read; rows in `sync` and `people_sync`; one NATS `people.upsert` message per person                      | 400; 500 on a database or NATS failure              | [Boss people](/api-reference/agent-and-admin/agent-clients#boss-people)                   |
+
+`DELETE /api/agent/estimate/{estimateId}` sets status 200 and no body.
+
+## Admin — `/admin`
+
+Source: `src/routes/admin.ts`, `AdminService` (`src/services/admin.ts`), validators
+`src/validate/admin.ts`. `router.use(middleware.jwt, middleware.role([Admin, Root]))` guards the
+whole router. No route caches or writes `Cache-Control`.
+
+| Method & path                       | Auth                  | Cached / header | Side effects                                                | Errors                                                     | Deep dive                     |
+| ----------------------------------- | --------------------- | --------------- | ----------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------- |
+| `GET /api/admin/agents`             | strict, Admin or Root | none            | FUB `GET /users`, Repliers `GET /agents?status=true`        | 400 (`limit` outside 1–100, `offset` below 0, unknown key) | [List](#list)                 |
+| `POST /api/admin/agents`            | strict, Admin or Root | none            | one Repliers `POST /agents` per accepted item, sequentially | 400 (validation of the array); 500 (body not iterable)     | [Batch create](#batch-create) |
+| `PATCH /api/admin/agents/{agentId}` | strict, Admin or Root | none            | Repliers `PATCH /agents/{id}`                               | 400                                                        | [Update](#update)             |
+
+### List
+
+Query `offset` (default 0) and `limit` (default 10, at most 100) go to FUB `GET /users`. One
+Repliers call lists the active agents (first page only, no paging parameters). Each FUB user is
+returned with `repliers`: the active agents whose email equals the user's email
+(case-insensitive) or whose phone equals the user's phone, skipping agents without email or
+phone. The body is `{ offset, limit, total, agents }`, the first three from FUB's `_metadata`.
+
+### Batch create
+
+The body is an array. The route spreads `ctx.request.body` into a new array before validating,
+so a body that is not iterable throws before validation and is answered by the generic 500.
+Each item needs `fname`, `lname`, `phone` (10–20 characters), `email`, `brokerage`,
+`designation`; `externalId` (string, or integer cast to string), `avatar`, `status` and
+`location` are optional; any other key is a 400 for the whole request. Items are then processed
+one after another: phone and email are normalized (`normalizePhoneNumber`, `normalizeEmail`),
+`data.lastSyncOn` is set to the current time, and Repliers is called. The response is always an
+array in input order whose entries are the Repliers result, the string `Phone or email is
+missing` (the item was not sent), or a JSON string `{ "error", "info" }` for a failed call. A
+failed item does not change the status code or stop the next one.
+
+### Update
+
+`PATCH /api/admin/agents/{agentId}` validates the create keys as optional plus `agentId`, with
+at least two keys in total (`.min(2)`), so `{}` is a 400. `null` and empty strings are rejected
+for every key; omitted keys are not forwarded. The service always sets `phone` to
+`normalizePhoneNumber(phone)` and `data` to `{ lastSyncOn }`: an omitted or unparsable `phone`
+becomes `undefined` and is dropped from the JSON, and `data` is sent on every update because the
+schema has no `data` key to carry another value. `email` is forwarded as given on update (it is
+not normalized). The success body is Repliers' response.
+
+## Gotchas
+
+1. **Admin is admitted to `/api/agent`, Root is not.** Both are in the `/api/admin` list.
+   Source: `src/routes/agent.ts`, `src/routes/admin.ts` (`router.use`).
+2. **A path id reaches the guard before Joi runs.** The `clientId` and `estimateId` guards read
+   the raw path string; `joi.number()` validates it afterwards in the handler. Source:
+   `src/routes/agent.ts` (`router.param`), `src/services/agent.ts` (`checkClient`).
+3. **`GET /api/agent/client` rejects `?s=`; `GET /api/agent/client/{clientId}` strips it.** Only
+   the single-client route removes `s` before validation. Source: `src/routes/agent.ts`.
+4. **The FUB claim exists only on OAuth agent tokens.** `external.fub_id` is set in
+   `OAuthService.agentLogin`; the boss-people routes answer 400 without it. Source:
+   `src/services/oauth.ts` (`agentLogin`), `src/validate/agent.ts` (`agentGetBossPeopleSchema`).
+5. **A batch create answers 200 whatever the item results.** Source:
+   `src/services/admin.ts` (`createAgentsBatch`).
+
+## Evidence
+
+- `test/validate/admin.test.ts`: `externalId` kept as a string or cast from a number.
+- `test/services/eventsCollection/selectors/selectAgentClientRegistrationParams.test.ts`,
+  `selectAgentEstimateParams.test.ts`: the agent events.
+- Read, not exercised: the agent and admin routes and services; no route test exists for them.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

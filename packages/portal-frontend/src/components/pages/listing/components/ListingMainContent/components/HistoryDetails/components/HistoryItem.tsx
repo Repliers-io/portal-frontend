@@ -6,6 +6,7 @@ import listingsConfig from '@configs/listings'
 
 import { type ApiLastStatus, type HistoryItemType } from 'services/API'
 import { useListing } from 'providers/ListingProvider'
+import { hiddenPrice } from 'utils/listings'
 
 import { getHistoryItemLink } from '../utils'
 
@@ -41,6 +42,9 @@ export const HistoryItem = ({
 
   const { listing } = useListing()
   const link = getHistoryItemLink(listing, item, active)
+  // the current record's withheld price takes the row's scrubbed path (no amount)
+  const startPrice =
+    active && hiddenPrice(listing) ? listingsConfig.scrubbed.data : listPrice
 
   const startLabel = `Listed For ${type}`
   const endLabel = listingsConfig.statusLabels[lastStatus as ApiLastStatus]
@@ -102,7 +106,7 @@ export const HistoryItem = ({
                     <HistoryItemRow
                       date={startDate!}
                       label={startLabel}
-                      price={listPrice}
+                      price={startPrice}
                     />
                   </Stack>
                 </Stack>

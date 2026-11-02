@@ -34,10 +34,11 @@ export const useCitySalePrice = (city: string) => {
   )
 
   useEffect(() => {
-    fetchSalePrice(
-      { ...cityGeoFilters(city), propertyClass: cityCardClasses, timeRange: 6 },
-      true
-    )
+    fetchSalePrice({
+      ...cityGeoFilters(city),
+      propertyClass: cityCardClasses,
+      timeRange: 6
+    })
       .then((result) => setData(result as SalePricePoint[] | null))
       .finally(() => setLoading(false))
   }, [city])

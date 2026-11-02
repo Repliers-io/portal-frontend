@@ -1,0 +1,53 @@
+# Failure and degradation
+
+A failed request, an empty result and a cancelled request are distinct states. This register describes the code's current outcomes, including paths with little user feedback. It does not promise that every domain has the same error handling.
+
+## Failure outcomes
+
+| Stage | Trigger | Propagation / visible outcome | Retained state or side effects | Source |
+| --- | --- | --- | --- | --- |
+| API transport | Network error or aborted fetch | `fetchRaw` returns synthetic status 503; `fetchJSON` rejects after applicable retry policy | No new successful response | `APIBase.fetchRaw`, `fetchJSON` |
+| API response | Non-OK JSON response | `ApiError(status, data)`; JSON parse failure leaves data null | Caller decides how to present the failure | `APIBase.fetchJSON` |
+| Authentication | Response 401 | Token clearing attempted; response still follows the error path | Clearing a cookie alone does not update all context state; server render cookies can be read-only | `APIBase.fetchRaw`, `utils/tokens.ts` |
+| Search superseded | New non-independent search aborts prior request | SearchService resolves null for the aborted request | The newer request owns the eventual result | `SearchService.fetch` |
+| Search disabled | Requests disabled before or after fetch | Promise rejects; provider catches | Prior response remains | `SearchService.disableRequests`, `fetch` |
+| Search provider | Real search error | Catch does not expose an error or clear map loading; returns null | Prior saved results remain; no successful `save` effect to finish loading | `SearchProvider.search`, `MapPageContent.fetchListings` |
+| External location | Selected ID has no resolved geometry yet | Map effect returns without requesting listings | Waits for locations to change; URL parser removes unsupported resolver IDs | `MapPageContent`, `getFiltersFromParams` |
+| Saved-search entry | Backend returns 404 for `searchId` | Route calls `notFound()` | No map initialization from that record | `app/search/[layout]/page.tsx` |
+| Saved-search entry | Other backend error | Rethrown from route | Render fails instead of silently replacing with default filters | Same route |
+| Favorites | Fetch/add/delete fails | Error swallowed; progress flags cleared in `finally` | Existing favorite list unchanged | `FavoritesProvider.tsx` |
+| Image favorites | Request fails | Error swallowed; processing flag cleared | Cache changes only on successful response conditions | `ImageFavoritesProvider.tsx` |
+| Saved-search creation | API rejects | Backend `info[0].msg` or translated fallback shown in snackbar | Cache updated only on success; processing cleared | `SaveSearchProvider.create` |
+| Profile update | API rejects | Returns false and logs the failure | Stored profile is not replaced by the failed change | `UserProvider.update` |
+| Session refresh | Refresh rejects | Local logout and browser reload | Cookie and stored profile removed | `UserProvider.refresh`, `logout` |
+| Optional feature | Page-level flag is off | Relevant route calls `notFound()` | Hiding a menu item is not the only gate | Domain `app/**/page.tsx` files |
+| Raw-response mutation | HTTP error returned by `fetchRaw` | Promise can resolve; caller must inspect status | Favorite/saved-search deletes and general contact success can diverge from backend persistence | API service methods and caller hooks |
+| Listing history | Optional history request fails | Empty history fallback, logging unless aborted | Detail retains embedded history; main detail failure still rejects | `APIListingDetails.fetchHistory` |
+| Listing page | Detail fails | Nearby attempt and fallback template; transient metadata adds noindex | Does not establish record deletion | Listing route and utilities |
+| Dashboard stats | Transient versus other API error | Transient rethrown; other errors log and return null | No universal empty-chart success contract | `app/dashboard/_utils.ts` |
+| Estimate submission | No returned estimate | Failure snackbar and last data step | Result route is not entered | `EstimateProvider.processEstimateData` |
+| CMS page | Remote returns no page versus throws | Resolver fallback depends on strategy; exceptions propagate | Local metadata can overlay a successful remote page | `CmsResolver.getPage` |
+| Locations file | Missing file versus invalid JSON | Missing logs/empty tree; parsing failure can throw | No runtime rebuild by the loader | `LocationsTree/static.ts` |
+| Iframe NLP | Extraction rejects | Null filters returned, loading cleared | Previous search is not automatically replaced | `SupportAgent.getNlpFilters` |
+| Redis | Missing configuration, connection or read failure | Cache miss/no write from handler | Hosting fallback durability is not established | `cache-handler.js` |
+
+## Timeout and retry ownership
+
+| Layer | Behavior | What this does not establish |
+| --- | --- | --- |
+| APIBase timeout | Own AbortController and `apiRequestTimeout`, unless caller supplies a signal | A caller-supplied signal does not also get this timeout |
+| APIBase server retry | Retries 408, 425, 429, 500, 502, 503, 504, 522, 524; attempts bounded by `apiRequestRetries`; linear delay `attempt * apiRetryBackoff` | Browser requests are not retried by this loop |
+| SearchService | Aborts its previous non-independent request; independent requests opt out | Cancellation is not a retry policy |
+| Backend / provider | Separate service behavior | Frontend retries do not prove upstream idempotence or message delivery |
+
+The configured retry value is an **attempt cap**, because the loop starts at attempt 1 and checks `attempt < apiRequestRetries`. It is not a count of additional attempts after the first one.
+
+## Diagnosis order
+
+For a search that never finishes, first distinguish no dispatch (map not loaded or location unresolved) from a failed request caught by SearchProvider. Check the outgoing URL/body and HTTP response before assuming the dataset is empty. For a server render, preserve the status and the thrown `ApiError`; a static generation failure is different from a rendered empty page.
+
+Do not “fix” these behaviors in a documentation change. Record a separately scoped application issue if a demonstrated outcome needs improvement.
+
+## Evidence and limits
+
+Source-read against portal monorepo `e30dd9b47`, 2026-11-02, from the symbols in the tables. The Search test group executed successfully (10 suites, 99 tests); the existing APIBase tests cover headers, not every retry/error branch listed here. No outage was injected into a live deployment. External provider timing, delivery and deployment caches remain unverified. [Coverage](/coverage).

@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server'
 
 import content from '@configs/content'
 import features from '@configs/features'
+import locationConfig from '@configs/location'
 import routes from '@configs/routes'
 import { PageTemplate } from '@templates'
 import { BuildingPageContent } from '@pages/building'
@@ -20,12 +21,14 @@ import {
 } from 'components/pages/condos/utils'
 
 import { type ApiBuilding } from 'services/API'
+import { loadStaticTree, resolveLocation } from 'services/LocationsTree'
 import { ACFParser, BuildingProvider } from 'providers/BuildingProvider'
 import {
   assembleBuilding,
   findCmsSlugByApiBuilding,
   getBuildingName
 } from 'utils/buildings'
+import { areaMetadata } from 'utils/indexing'
 import { capitalize } from 'utils/strings'
 import { beautify } from 'utils/urls'
 
@@ -151,7 +154,16 @@ export async function generateMetadata({
         ? [{ url: apiBuilding.image }]
         : []
 
+  let county: string | undefined
+  if (locationConfig.indexAreas.length && apiBuilding?.address?.city) {
+    const { tree } = await loadStaticTree()
+    county = resolveLocation(tree, {
+      city: apiBuilding.address.city
+    }).parentArea?.name
+  }
+
   return {
+    ...areaMetadata(county),
     title,
     description,
     openGraph: {

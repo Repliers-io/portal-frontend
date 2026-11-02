@@ -6,25 +6,23 @@ export const useChartData = (params: ChartStatsParams) => {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<Record<string, any> | null>(null)
 
-  const fetchChartData = async () => {
-    setLoading(true)
-    try {
-      const result = await fetchStatistics(
-        'med-soldPrice,med-daysOnMarket,grp-mth',
-        params
-      )
-
-      setData(result)
-    } catch (error) {
-      console.error(`Failed to load chart data: ${error}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    // A response that lands after the params changed is stale — drop it.
+    let current = true
+
     setData(null)
-    fetchChartData()
+    setLoading(true)
+    fetchStatistics('med-soldPrice,med-daysOnMarket,grp-mth', params).then(
+      (result) => {
+        if (!current) return
+        setData(result)
+        setLoading(false)
+      }
+    )
+
+    return () => {
+      current = false
+    }
   }, [JSON.stringify(params)])
 
   return {

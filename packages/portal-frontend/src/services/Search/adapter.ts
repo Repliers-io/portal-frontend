@@ -19,7 +19,12 @@ const arraysMatch = (arr1: string[], arr2: string[]): boolean => {
   return sortedArr1.every((value, index) => value === sortedArr2[index])
 }
 
-const { unionListingTypes, rawFilters, soldPriceAndDate } = filtersConfig
+const {
+  unionListingTypes,
+  rawFilters,
+  soldPriceAndDate,
+  listingStatusDeclaration
+} = filtersConfig
 
 export const getListingType = (
   propertyTypes: string[]
@@ -109,14 +114,26 @@ export const listingTypeQueryGroups = (
 }
 
 /**
+ * Writes a union into `params.queries` (mutates in place). A pre-existing query
+ * union (e.g. external overlay polygons) is combined by cartesian product:
+ * (O1∨O2) ∧ (G1∨G2) = ∨ over { Oi ∧ Gj }. Overlay keys (locationId/map) and the
+ * callers' keys (type or status axis) are disjoint, so a spread ANDs them correctly.
+ */
+const crossQueries = (params: Partial<ApiQueryParams>, groups: RawQuery[]) => {
+  const existing = params.queries ?? []
+  params.queries = existing.length
+    ? existing.flatMap((query) =>
+        groups.map((group) => ({ ...query, ...group }))
+      )
+    : groups
+}
+
+/**
  * Writes the listing-type union into `params.queries` (mutates in place).
  *
  * Any class/propertyType/style left at the top level (an explicit user
  * selection) is AND-merged into every type branch — both to keep its constraint
- * and to avoid the API's top-level / in-query duplicate-param 400. A pre-existing
- * query union (e.g. external overlay polygons) is combined by cartesian product:
- * (O1∨O2) ∧ (T1∨T2) = ∨ over { Oi ∧ Tj }. Overlay keys (locationId/map) and type
- * keys (class/propertyType/style) are disjoint, so a spread ANDs them correctly.
+ * and to avoid the API's top-level / in-query duplicate-param 400.
  */
 export const applyListingTypeUnion = (
   params: Partial<ApiQueryParams>,
@@ -130,11 +147,34 @@ export const applyListingTypeUnion = (
       delete params[key]
     }
   }
-  const groups = typeGroups.map((type) => ({ ...shared, ...type }))
-  const existing = params.queries ?? []
-  params.queries = existing.length
-    ? existing.flatMap((query) => groups.map((type) => ({ ...query, ...type })))
-    : groups
+  crossQueries(
+    params,
+    typeGroups.map((type) => ({ ...shared, ...type }))
+  )
+}
+
+/**
+ * Adds the pinned listings to the status axis (mutates in place): the status
+ * fragment becomes one `queries` element and the pinned listings of the tenant's
+ * Both (`all`) fragment a second — status ∨ (Both ∧ pinned), the legacy Sezlik
+ * Active collection, which fetched Both and kept `status === 'A' || raw.is_pinned`
+ * (L/src/app/(SezlikListings)/listings/hooks/useFetchListings.ts:60-114).
+ * The pinned element carries its own status, as the API answers active listings
+ * only when none is sent. The status keys leave the top level (a key both there
+ * and inside `queries` is a 400); `type` stays there and ANDs with both elements.
+ */
+export const applyPinnedUnion = (params: Partial<ApiQueryParams>): void => {
+  const fragment: RawQuery = {}
+  // a query value must be a string: a boolean `true` is a 400
+  const pinned: RawQuery = { 'raw.is_pinned': 'true' }
+  for (const key of ['status', 'lastStatus'] as const) {
+    const value = params[key]
+    if (value != null) fragment[key] = value as RawQuery[string]
+    const both = listingStatusDeclaration.all?.[key]
+    if (both != null) pinned[key] = both as RawQuery[string]
+    delete params[key]
+  }
+  crossQueries(params, [fragment, pinned])
 }
 
 const getTransformKeys = (params: Partial<ApiQueryParams>) =>
@@ -325,6 +365,15 @@ export const processParams = (rawParams: Partial<ApiQueryParams>) => {
   const unionTypes = typeGroups.length >= 2
   if (unionTypes) delete (params as { listingType?: unknown }).listingType
 
+  // `pinned` is no API parameter but a status union (see `applyPinnedUnion`):
+  // removed here, whatever its value, so it never reaches the request. A
+  // Filters field, read through the same narrow cast.
+  const { pinned } = params as { pinned?: boolean }
+  delete (params as { pinned?: unknown }).pinned
+  // A tenant that parses `boardId` from the URL defaults it to 0 (no board); the
+  // API rejects `boardId=0`, so an unset board never reaches the request.
+  if (!params.boardId) delete params.boardId
+
   // This is the main logic of finding and transforming SOME items from
   // the params object, while passing the rest of the object properties as is.
   // We name those items `filters`, but it's not exactly what they are.
@@ -419,6 +468,9 @@ export const processParams = (rawParams: Partial<ApiQueryParams>) => {
 
   // Step 7.5: fold the listing-type union into `queries`.
   if (unionTypes) applyListingTypeUnion(expanded, typeGroups)
+
+  // Step 7.6: fold the pinned listings into the status axis.
+  if (pinned) applyPinnedUnion(expanded)
 
   // Step 8: split params into GET and POST objects. A tenant opting into
   // `soldPriceAndDate` gets a chosen sold range priced and ordered by the sale —

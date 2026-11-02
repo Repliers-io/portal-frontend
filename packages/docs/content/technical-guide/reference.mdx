@@ -141,30 +141,27 @@ if (!features.blog) return <Page40XTemplate />
 
 ### Search Filters
 
-| Parameter      | Type   | Example                  |
-| -------------- | ------ | ------------------------ |
-| `city`         | string | `Seattle`                |
-| `area`         | string | `King County`            |
-| `neighborhood` | string | `Belltown`               |
-| `status`       | enum   | `active`, `sold`, `rent` |
-| `type`         | string | `condo`, `residential`   |
-| `minPrice`     | number | `500000`                 |
-| `maxPrice`     | number | `1000000`                |
-| `minBeds`      | number | `2`                      |
-| `maxBeds`      | number | `4`                      |
-| `minBaths`     | number | `1`                      |
-| `minSqft`      | number | `1000`                   |
-| `maxSqft`      | number | `3000`                   |
-| `minYearBuilt` | number | `2000`                   |
-| `soldWithin`   | number | `90` (days)              |
-| `sortBy`       | enum   | `listPriceDesc`          |
-| `page`         | number | `1`                      |
+The map URL serializes non-default **Filters field names**, not a translation of every entry in `@configs/params`. The server reads those same keys against `defaultFilters` and `defaultAdvancedFilters`. Values and available listing types depend on the configured dataset.
+
+| URL field | Meaning | Owner |
+| --- | --- | --- |
+| `city`, `area`, `neighborhood`, `locationId` | Geographic filters | Search state |
+| `listingType` | Configured property-type key, for example `condo` | Filters declaration |
+| `listingStatus` | Configured UI status | Filters declaration |
+| `type` | `sale` or `lease`, not a property type | Transaction axis |
+| `minPrice`, `maxPrice`, `minBedrooms`, `minBaths` | Numeric filters | Filters defaults/parser |
+| `sortBy` | API sort token | Search state |
+| `page` | Grid page; omitted at page 1 | Map URL writer |
+| Bare `lat,lng` key, `z` | Camera | Map URL codec |
+| `layers`, `3d`, `ms` | Overlay, orientation, style | Map options |
 
 ### Example URL
 
-```
-/search/map?city=Seattle&status=active&minPrice=500000&maxPrice=1000000&minBeds=2&type=condo&sortBy=listPriceDesc
-```
+A synthetic example, not a promise of results in every dataset:
+
+`/search/map?city=Exampleville&minPrice=500000&minBedrooms=2&listingType=condo`
+
+See [URL & State Synchronization](/technical-guide/url-state-sync) for parsing, omitted defaults, repeated values and the distinction between URL state and API parameters. Source: `src/utils/map/urls.ts` (`getMapUrl`), `src/app/search/[layout]/_utils.ts` (`getFiltersFromParams`).
 
 ## Path Aliases
 
@@ -181,22 +178,9 @@ if (!features.blog) return <Page40XTemplate />
 
 ## API Endpoints
 
-| Endpoint         | Method | Description         |
-| ---------------- | ------ | ------------------- |
-| `/listings`      | GET    | Search listings     |
-| `/listings/:id`  | GET    | Get listing details |
-| `/locations`     | GET    | Get geography data  |
-| `/favorites`     | GET    | Get user favorites  |
-| `/favorites`     | POST   | Add favorite        |
-| `/favorites/:id` | DELETE | Remove favorite     |
-| `/searches`      | GET    | Get saved searches  |
-| `/searches`      | POST   | Save search         |
-| `/estimate`      | POST   | Get home estimate   |
-| `/user`          | GET    | Get user profile    |
-| `/user`          | PUT    | Update user         |
-| `/auth/login`    | POST   | Login               |
-| `/auth/logout`   | POST   | Logout              |
-| `/auth/refresh`  | POST   | Refresh token       |
+The canonical frontend client map is [API Services](/technical-guide/api-services). Search uses `/listings/search` (GET or POST); profile update uses `PATCH /user`. These are relative to the configured backend API base, not necessarily same-origin Next.js routes.
+
+Source: `src/services/API/APISearch.ts` (`fetch`, `search`), `src/services/API/APIUser.ts` (`update`). Avoid copying the backend endpoint catalogue here: caller behavior belongs to the service page, and backend validation/ownership belongs to the backend contract.
 
 ## Board IDs
 

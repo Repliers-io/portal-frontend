@@ -1,20 +1,24 @@
 import { type Map } from 'mapbox-gl'
 
-let supported: boolean | null = null
+import mapConfig from '@configs/map'
+
+let webgl: boolean | null = null
 
 /**
- * Mapbox GL v3 throws "Failed to initialize WebGL" from the Map constructor
- * when a WebGL2 context cannot be created (e.g. hardware acceleration is
- * disabled in the browser). Probe once and cache — consumers skip map
+ * Why the map cannot be built, or null when it can. The Mapbox GL v3 Map
+ * constructor throws when `NEXT_PUBLIC_MAPBOX_KEY` is unset ("An API access
+ * token is required") and when a WebGL2 context cannot be created (e.g.
+ * hardware acceleration is disabled in the browser). Consumers skip map
  * construction and MapContainer shows a message instead of crashing the page.
  */
-export const webglSupported = () => {
-  if (supported === null) {
+export const mapUnavailable = () => {
+  if (!mapConfig.mapboxDefaults.accessToken) return 'token'
+  if (webgl === null) {
     const gl = document.createElement('canvas').getContext('webgl2')
-    supported = gl !== null
+    webgl = gl !== null
     gl?.getExtension('WEBGL_lose_context')?.loseContext()
   }
-  return supported
+  return webgl ? null : 'webgl'
 }
 
 /**

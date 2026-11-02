@@ -5,7 +5,10 @@ import i18nConfig from '@configs/i18n'
 import listingsConfig from '@configs/listings'
 import locationConfig from '@configs/location'
 
+import streetTypes from 'addresser/data/us-street-types.json'
+
 import { type ApiListing, type ApiListingAddress } from 'services/API'
+import { areaMetadata } from 'utils/indexing'
 
 import { capitalize, joinNonEmpty } from '../strings'
 import { getCDNPath } from '../urls'
@@ -68,8 +71,7 @@ export const formatShortAddress = (
   )
 }
 
-// Compact SEO-title order: "3816 B Evanston Avenue N" — bare unit after the number,
-// directionals around the street. Independent of the tenant `addressFormat`.
+// Independent of the display address format used in listing cards and headers.
 export const formatTitleAddress = (
   address: Partial<ApiListingAddress>,
   removeScrubbed: boolean = true
@@ -79,10 +81,23 @@ export const formatTitleAddress = (
     removeScrubbed
   )
 
+  const labelled = listingsConfig.seoUnitFormat === 'labelled' && unitBare
+  const parts = labelled
+    ? [
+        number,
+        prefix,
+        name,
+        capitalize(
+          streetTypes[suffix.toLowerCase() as keyof typeof streetTypes] ??
+            suffix
+        ),
+        direction,
+        `unit ${unitBare}`
+      ]
+    : [number, unitBare, prefix, name, suffix, direction]
+
   return joinNonEmpty(
-    [number, unitBare, prefix, name, suffix, direction].map((value) =>
-      removeScrubbed ? sanitizeScrubbed(value) : value
-    ),
+    parts.map((value) => (removeScrubbed ? sanitizeScrubbed(value) : value)),
     ' '
   )
 }
@@ -144,6 +159,7 @@ export const formatMetadata = (listing: ApiListing, host?: string | null) => {
   }
 
   return {
+    ...areaMetadata(listing.address?.area),
     title: getSeoTitle(listing),
     description: scrubbed(description)
       ? listingsConfig.scrubbed.descriptionLabel

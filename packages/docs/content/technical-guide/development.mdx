@@ -10,8 +10,8 @@ Everything you need to set up and run Portal locally.
 
 | Requirement | Version |
 | ----------- | ------- |
-| Node.js     | v22+    |
-| pnpm        | v10+    |
+| Node.js     | 24.x or 26.x    |
+| pnpm        | 12.6 at the repository root    |
 | Git         | Latest  |
 
 ## Getting Started
@@ -20,7 +20,7 @@ Everything you need to set up and run Portal locally.
 
 ```bash
 git clone <repo-url>
-cd smartmls-frontend
+cd portal-frontend
 ```
 
 ### 2. Install Dependencies
@@ -103,10 +103,11 @@ pnpm exec jest path/to/file.test.ts
 | ------------------------------- | ---------------------------------------------------------------------- |
 | `NEXT_PUBLIC_API_URL`           | Proxy backend URL (forwards to Repliers; never call Repliers directly) |
 | `NEXT_PUBLIC_MAPBOX_KEY`        | Mapbox API key                                                         |
-| `NEXT_PUBLIC_GMAPS_KEY`         | Google Maps API key                                                    |
 | `NEXT_PUBLIC_APP_CONFIGURATION` | Tenant name                                                            |
 
 ### Optional
+
+`NEXT_PUBLIC_GMAPS_KEY` enables Google Street View / satellite previews; it is not required for the rest of the portal.
 
 | Variable                    | Description                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------- |

@@ -16,7 +16,7 @@ packages/*/dist/
 # Pagefind search index (generated on build)
 packages/*/public/_pagefind/
 
-# Static docs assembled by `build:documentation`
+# Static docs assembled by `build:docs`
 packages/portal-frontend/public/documentation/
 
 # Runtime data

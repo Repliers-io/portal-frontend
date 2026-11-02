@@ -160,3 +160,7 @@ address parts (`state`/`area`/`city`/`neighborhood`); tenants with
   _duplicate branches_ (same `locationId` twice — a generation artifact, e.g. TRREB "Toronto")
   and _genuine cross-area collisions_ (different ids, e.g. TRREB "Ashton" Ottawa vs Lanark,
   URBN "Ashford" Pierce vs Lewis). Neighborhood-level collisions don't occur in current trees.
+
+## Workflow and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The [cross-layer guide](/technical-guide/workflows/content-and-build#f11--publish-geography-and-building-content) covers generation, loading and rendering. Location pipeline tests ran. Missing files return an empty tree, malformed JSON can throw, and the process-lifetime count memo does not refresh just because a file changed.

@@ -1,0 +1,193 @@
+import { Callout } from 'nextra/components'
+
+# Estimate pipeline
+
+Estimates are computed and stored by Repliers. This backend validates the request, enriches
+property details from listings, applies owner adjustments to the numbers it gets back, decides
+who may touch a stored estimate and sets the email flags. The user routes
+(`src/routes/estimate.ts`) and the agent routes (`src/routes/agent.ts`) share
+`EstimateService` only in part, and the difference matters. Endpoint summary:
+[Estimates](/api-reference/estimate). Terms: [Glossary](/glossary#estimateid).
+
+## Entry points
+
+| Entry                | Route and guard                                                      | Service path                                             | Owner adjustment                        | Email flags                                 | Ownership check                                    | Source                                                                                                                               |
+| -------------------- | -------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------- | ------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| User create          | `POST /api/estimate`, passthrough                                    | `EstimateService.add`                                    | yes, when the request has `data`        | request value or preset default, users only | —                                                  | `src/routes/estimate.ts` (`router.post`), `src/services/estimate.ts` (`add`)                                                         |
+| User read            | `GET /api/estimate` (passthrough), `GET /api/estimate/my` (strict)   | `EstimateService.get` / `getByClientId`                  | yes, when the stored payload has `data` | n/a                                         | `GET /` —; `/my` filters by the token's `clientId` | `src/routes/estimate.ts` (`router.get`), `src/services/estimate.ts` (`get`, `getByClientId`)                                         |
+| User patch / delete  | `PATCH` / `DELETE /api/estimate/{estimateId}`, strict                | `EstimateService.patch` / `delete`                       | no                                      | passed through as sent                      | `assertOwnership` with role `User`                 | `src/routes/estimate.ts` (`assertOwnership`, `router.patch`, `router.delete`)                                                        |
+| Agent create         | `POST /api/agent/estimate/{clientId}`, strict, roles Agent and Admin | `AgentService.createEstimate` to `RepliersEstimate.add`  | no                                      | passed through as sent                      | `clientId` param guard                             | `src/routes/agent.ts` (`router.param("clientId")`, `router.post("/estimate/:clientId")`), `src/services/agent.ts` (`createEstimate`) |
+| Agent read           | `GET /api/agent/estimate/{clientId}`                                 | `AgentService.getEstimate` to `RepliersEstimate.get`     | no                                      | n/a                                         | `clientId` param guard                             | `src/routes/agent.ts` (`router.get("/estimate/:clientId")`), `src/services/agent.ts` (`getEstimate`)                                 |
+| Agent send           | `POST /api/agent/estimate/{estimateId}/send`                         | `AgentService.sendEstimate`                              | no                                      | sets `sendEmailNow: true`                   | `estimateId` param guard                           | `src/routes/agent.ts` (`router.param("estimateId")`, `/estimate/:estimateId/send`), `src/services/agent.ts` (`sendEstimate`)         |
+| Agent patch / delete | `PATCH` / `DELETE /api/agent/estimate/{estimateId}`                  | `AgentService.updateEstimate` / `EstimateService.delete` | no                                      | passed through as sent                      | `estimateId` param guard                           | `src/routes/agent.ts` (`router.patch`, `router.delete` on `/estimate/:estimateId`), `src/services/agent.ts` (`updateEstimate`)       |
+
+In the Ownership check column, `—` means the route runs no ownership check.
+
+The agent routes are also listed on [Agent & Admin](/api-reference/agent-and-admin); the guard internals are under [Ownership](#ownership).
+
+## Property details
+
+`GET /api/estimate/property_details` assembles what an estimate form pre-fills. It reads the
+listings API directly, so no scrubber runs ([Scrubbing](/architecture/scrubbing)).
+
+| Step                | What happens                                                                                                                                                                                                                                                                           | Source                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1 Search            | `RepliersListings.search` on the live key: `status` `U` and `A`, `city`, street fields, `displayInternetEntireListing=Y`, newest `createdOn` first, `resultsPerPage` 1, a fixed `fields` list (address, one image, dates, `details.*`, `lot.*`, `taxes.annualAmount`, `condominium.*`) | `src/services/estimate.ts` (`findListingByAddress`, `propertyDetailsFields`)                |
+| Street strategy     | `searchStrategy=streetSuffixInStreetName` with a `streetSuffix` sends `streetName` as two values (the name alone, and name plus suffix) and omits `streetSuffix`                                                                                                                       | `src/services/estimate.ts` (`applySearchStrategy`)                                          |
+| 2 Historical retry  | No hit and `REPLIERS_API_KEY_EXTRA` set: the same request on a second `RepliersListings` whose key was switched                                                                                                                                                                        | `src/services/estimate.ts` (`fetchFromHistory`, constructor)                                |
+| 3 Tax adjustment    | Applied to a found listing when `shouldAdjustTax` is true ([Tax adjustment](#tax-adjustment))                                                                                                                                                                                          | `src/services/estimate.ts` (`adjustPropertyTax`)                                            |
+| 4 Previous estimate | Signed-in callers only: the client's saved estimates are ranked by address similarity; at 0.9 or more the best one's `payload.data` and `similarity` are added to the listing                                                                                                          | `src/services/estimate.ts` (`findSimilarClientEstimate`), `src/lib/utils.ts` (`howSimilar`) |
+| 5 Nothing found     | [Fallback](#fallback) when `SETTINGS_EXTENDED_PROPERTY_DETAILS` is on, else an empty body                                                                                                                                                                                              | `src/services/estimate.ts` (`handleEmptyResponse`)                                          |
+
+### Two listings clients, one key switch
+
+`EstimateService` injects `RepliersListings` twice, and the container creates a separate
+instance for each parameter. When `repliers.historical_data_key` (`REPLIERS_API_KEY_EXTRA`) is
+set, the constructor calls `switchKey` on the second instance only, which rebuilds its HTTP
+client with that key. With no extra key the second instance still exists and carries the
+default key, but step 2 is skipped (`historicalServiceEnabled` stays false). `switchKey`
+re-selects the throttle the way the constructor did, so SSG traffic with a warmup key keeps the
+warmup throttle while sending the historical key ([Repliers proxy](/architecture/repliers-proxy)).
+The service is resolved per request, so the switch runs on every request.
+
+### Tax adjustment
+
+`shouldAdjustTax` is true unless the listing's tax year (`taxes.assessmentYear`, else
+`listDate`, else `updatedOn`) equals both the calendar year and the current tax year. The
+current tax year is the previous year from January to June and the calendar year from July.
+
+| Condition (checked in order)                        | Outcome                                                                                      |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Listing has no `address.city`                       | Listing returned unchanged                                                                   |
+| Statistics request throws                           | Logged to debug; listing returned unchanged                                                  |
+| Listing has no `taxes.annualAmount`                 | `annualAmount` set to the current tax year's average, or 0 when absent                       |
+| Either year has fewer than 15 records or no average | Listing returned unchanged                                                                   |
+| Otherwise                                           | `annualAmount` multiplied by the current-year average over the listing-year average, rounded |
+
+The statistics request asks `statistics=avg-tax,grp-yr` for the listing's class and property
+type with `listings=false`, on the historical client when enabled, else on the live one
+(`shouldAdjustTax`, `getCurrentTaxYear` and `adjustPropertyTax` in `src/services/estimate.ts`).
+
+### Fallback
+
+With no listing and `SETTINGS_EXTENDED_PROPERTY_DETAILS` on, the response is built from two
+lookups:
+
+| Part      | Lookup                                                                                                                                                                                                                                                                                                                              | Source                                                               |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `address` | Historical client, same city and street name, street numbers within 50 of the requested one (floor 1), up to 999 rows, `fields=address`. The closest number wins, same parity (odd or even) preferred, and a same-parity number within 5 is accepted at once. Its `neighborhood` is added. Any error leaves `address` as `{ city }` | `src/services/estimate.ts` (`getAddressData`, `findClosestLocation`) |
+| `taxes`   | Live client, `statistics=med-tax` for the city (and neighborhood when found), listings of the last 12 months. `annualAmount` is the median and `assessmentYear` the current tax year. A missing median or an error omits `taxes`                                                                                                    | `src/services/estimate.ts` (`getAverageTax`)                         |
+
+The result is `{ address, taxes }`, or `{ address }` alone when there is no median.
+
+## Creating an estimate
+
+`POST /api/estimate` validates with `estimateAddSchema` (`boardId` required) and takes the
+`clientId` from the token when there is one.
+
+|                    | User (has `clientId`)                                                                | Guest (no `clientId`)                                       |
+| ------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Sent to Repliers   | the body including `data`                                                            | the body with `data` withheld                               |
+| Email flags sent   | `sendEmailNow`, `sendEmailMonthly` with the preset default ([rules](#notifications)) | only if present in the body; no preset default              |
+| Stored by Repliers | against the client                                                                   | not tied to a client                                        |
+| Owner adjustment   | applied to the upstream response when the request has `data`                         | same, using the request's `data`                            |
+| Response           | adjusted estimate                                                                    | adjusted estimate, with `request.data` set from the request |
+
+`EstimateService.add` and `isUser` (`src/services/estimate.ts`) make the split.
+
+### Owner adjustment
+
+`ownerAdjustedEstimates` adds spend entered by the owner to the model value:
+
+```text
+estimate' = estimate + maintenanceSpent * 0.6 + improvementSpent * 0.8 + landscapingSpent * 0.7
+low       = estimate' - estimate' * confidence
+high      = estimate' + estimate' * confidence
+```
+
+Missing amounts count as 0, and only these three `data.improvements` fields change the number.
+A positive adjustment is also added to every `history.mth[*].value` (`ownerAdjustedEstimates`,
+`estimateBounds` and `adjustHistory` in `src/services/estimate.ts`).
+
+### Reading estimates
+
+`GET /api/estimate` validates `estimateId` against `settings.max_estimate_id` (a joi `max`, read when the schema module loads). The `defaults` preset sets it to 0, so there any positive `estimateId` is a 400 and only `ulid` lookups succeed; a preset that leaves it unset gets `SETTINGS_MAX_ESTIMATE_ID` (default 100000).
+
+`EstimateService.get` drops `clientId` from the parameters, asks Repliers for the estimate by
+`estimateId` or `ulid`, throws 404 when none comes back and applies the owner adjustment when
+the stored payload has `data`. `getByClientId` does the same for every estimate of the token's
+client. The agent reads and the patch and delete paths return the upstream estimate unadjusted.
+
+## Ownership
+
+`EstimateService.checkOwnership` loads the estimate (an `estimateId` triggers a `get`, which is
+where the 404 comes from) and compares by role:
+
+| Role passed in | Rule                                                                                                                                        | Source                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `Agent`        | an estimate with no `clientId` (guest) is not owned; otherwise the agent's id must equal the owning client's `agentId` (`UserService.info`) | `src/services/estimate.ts` (`checkOwnership`) |
+| `User`         | the token's `sub` must equal the estimate's `clientId`, compared as strings                                                                 | `src/services/estimate.ts` (`checkOwnership`) |
+| any other      | false                                                                                                                                       | `src/services/estimate.ts` (`checkOwnership`) |
+
+The user routes (`PATCH`, `DELETE`) call it through `assertOwnership` with `UserRole.User`
+and answer 403 on false. The agent routes run it in
+`router.param("estimateId")`: a guest estimate is refused with 403, then the `s` signature is
+checked. A valid signature replaces the token's `sub` with the agent id that owns the client and
+skips the ownership comparison; otherwise `checkOwnership` runs with `UserRole.Agent`.
+Signatures are described in [Authentication](/architecture/authentication).
+
+## Notifications
+
+Emails are sent by Repliers; this backend only sets two flags on the estimate.
+
+| Trigger                                      | Flag set                           | Rule                                                                                                                                                            | Source                                                                           |
+| -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `POST /api/estimate` by a user               | `sendEmailNow`, `sendEmailMonthly` | the request value, or if falsy the preset value (`repliers.estimatesNotificationSettings`, from `REPLIERS_ESTIMATES_SEND_EMAIL_NOW` and `_MONTHLY`), else false | `src/services/estimate.ts` (`add`)                                               |
+| `POST /api/estimate` by a guest              | as sent in the body, if present    | no preset default                                                                                                                                               | `src/services/estimate.ts` (`add`)                                               |
+| `PATCH` by a user or agent                   | as sent in the body                | no preset default                                                                                                                                               | `src/services/estimate.ts` (`patch`), `src/services/agent.ts` (`updateEstimate`) |
+| `POST /api/agent/estimate/{clientId}`        | as sent in the body                | no preset default                                                                                                                                               | `src/services/agent.ts` (`createEstimate`)                                       |
+| `POST /api/agent/estimate/{estimateId}/send` | `sendEmailNow: true`               | `PATCH` to Repliers                                                                                                                                             | `src/services/agent.ts` (`sendEstimate`)                                         |
+
+After an agent send, a second handler adds a FUB note "Estimate sent to the client via email".
+It finds the person by the client's `externalId`, else by email, and skips the note when neither
+exists or FUB returns no person. Failures are logged with `console.error` and do not change the
+response. Delivery paths are on [Email](/integrations/email).
+
+## CRM events
+
+The event middleware starts after the handler has set the body and is not awaited
+([Events and messaging](/architecture/events-and-messaging)).
+
+| Route                                 | Event                                                     | Note                       | Condition                                                                                               | Source                                                                |
+| ------------------------------------- | --------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `POST /api/estimate`                  | "Seller Inquiry" (`SelectEstimateParams`)                 | `SelectEstimateNoteParams` | guests included (`allowIncognito: true`)                                                                | `src/routes/estimate.ts`                                              |
+| `GET /api/estimate`                   | "Visited Website - Estimate" (`SelectViewEstimateParams`) | none                       | `BOSS_REPORT_CLIENT_VIEW_ESTIMATE`, a signed-in caller whose role is absent or `User`, an estimate body | `src/services/eventsCollection/selectors/selectViewEstimateParams.ts` |
+| `POST /api/agent/estimate/{clientId}` | "Seller Inquiry" (`SelectAgentEstimateParams`)            | `SelectEstimateNoteParams` | a token is required (`allowIncognito: false`)                                                           | `src/routes/agent.ts`                                                 |
+
+With `BOSS_ENABLED` false the middleware factory returns an empty middleware and none of these
+run. Estimate links in events come from `eventsCollection.estimateUrl`: a `[ULID]` in the
+template selects the `ulid`, otherwise `[ESTIMATE_ID]` is replaced by the id
+(`src/services/eventsCollection/selectors/baseEventCollectionSelector.ts`, `getEstimateUrl`).
+
+## Gotchas
+
+- **Similarity needs all five fields.** `howSimilar` counts matches over the five keys `city`,
+  `streetName`, `streetNumber`, `unitNumber` and `zip`. With the 0.9 threshold, a request that
+  omits `unitNumber` or `zip` scores at most 0.8 and merges no previous data
+  (`src/services/estimate.ts` `findSimilarClientEstimate`; `src/lib/utils.ts` `howSimilar`).
+- **Email flags are `request || preset`.** `false || true` is true, so with
+  the preset flag on, a user's `sendEmailNow: false` is still sent as true
+  (`src/services/estimate.ts` `add`).
+- **Agent writes call `RepliersEstimate` directly.** `AgentService.createEstimate` and `updateEstimate`
+  apply no preset email default, no `data` withholding and no owner
+  adjustment to the response (`src/services/agent.ts`).
+- **The historical key serves tax statistics, not the average-tax fallback.**
+  `adjustPropertyTax` uses the historical client when enabled; `getAverageTax` always uses the
+  live one (`src/services/estimate.ts`).
+
+<Callout type="info">
+  Workflow W6 on [Workflows](/architecture/flows) traces one create, one
+  ownership check and one agent send end to end.
+</Callout>
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

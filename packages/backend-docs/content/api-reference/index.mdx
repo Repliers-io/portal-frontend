@@ -1,42 +1,215 @@
 # API Conventions
 
-These pages describe **what each endpoint is for and how it behaves** — the semantic
-layer. The exact request/response contracts (parameters, schemas, examples) are
-maintained as `@openapi` JSDoc annotations next to the routes and served as a
-**Swagger UI at `/swagger`** when `APP_USESWAGGER=true`. Use both together: Swagger
-for the contract, these pages for the behavior.
+These pages describe **what each endpoint is for and how it behaves**: the semantic layer. The exact request/response contracts (parameters, schemas, examples) are maintained as `@openapi` JSDoc annotations next to the routes and served as a **Swagger UI at `/swagger`** when `APP_USESWAGGER=true`. Use both together: Swagger for the contract, these pages for the behavior. Endpoint-level detail (which middleware guards a path, which schema validates it, which service answers) is in the [module catalogue](/architecture/modules).
 
 ## Base rules
 
 - Everything is mounted under **`/api`**.
 - **Auth modes** per endpoint (see [Authentication](/architecture/authentication)):
-  - *strict* — valid JWT required, 401 otherwise;
-  - *guest-allowed* — anonymous works (responses are
+  - _strict_: valid JWT required, 401 otherwise;
+  - _guest-allowed_: anonymous works (responses are
     [scrubbed](/architecture/scrubbing)); an invalid token still fails with 401;
-  - *role-gated* — strict plus an ACL role check.
-- **Validation** — every body/query is Joi-validated; failures return
-  `400` with the schema message.
-- **Error body** — all errors share one shape (from the global handler):
+  - _role-gated_: strict plus a check of the token's `role` claim (the ACL is read only when
+    the token is issued, see [Issuing](/architecture/authentication#issuing)).
+- **Validation**: every body/query is Joi-validated; failures return
+  `400` with the schema message (see [Validation](#validation)).
+- **Error body**: errors thrown as `ApiError` share one shape; other errors carry
+  `message` alone. All five variants are listed in [Error variants](#error-variants):
 
   ```json
-  { "message": "<status> - <details> - <path>", "userMessage": "<details>", "info": {} }
+  { "message": "<status> - <details> - <path>", "userMessage": "<details>", "info": <options, omitted when none> }
   ```
 
-- **`Retry-After`** is set only when the backend itself knows the wait — today the OTP
+- **`Retry-After`** is set only when the backend itself knows the wait: today the OTP
   resend cooldown (`403`). Upstream (Repliers) headers are not forwarded; an upstream
   error's body arrives in `info`.
-- **Caching** — cached endpoints return a `Cache-Control: private, max-age=<n>`
-  header reflecting the server cache's remaining TTL.
+- **Caching**: cached endpoints return a `Cache-Control: private, max-age=<n>`
+  header reflecting the server cache's remaining TTL, except `GET /api/buildings/{addressKey}`,
+  `POST /api/listings/count` and `GET /api/listings/featured/{slug}`, which send none
+  ([Cache-Control](#cache-control)).
 
 ## Router map
 
-| Prefix | Page | Auth default |
-|---|---|---|
-| `/listings` | [Listings](/api-reference/listings) | guest-allowed |
-| `/autosuggest`, `/locations`, `/buildings` | [Search & Locations](/api-reference/search-and-locations) | guest-allowed |
-| `/user`, `/favorites`, `/searches` | [User & Favorites](/api-reference/user-and-favorites) | strict (few exceptions) |
-| `/estimate` | [Estimates](/api-reference/estimate) | mixed |
-| `/auth` | [Auth](/api-reference/auth) | public by nature |
-| `/contact`, `/stats`, `/vtour` | [Contact, Stats & Tours](/api-reference/contact-and-stats) | mixed |
-| `/agent`, `/admin` | [Agent & Admin](/api-reference/agent-and-admin) | role-gated |
-| `/webhooks` | [Webhooks](/api-reference/webhooks) | webhook signature |
+| Prefix                                     | Page                                                       | Auth default                                                                                                                                               |
+| ------------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/listings`                                | [Listings](/api-reference/listings)                        | guest-allowed                                                                                                                                              |
+| `/autosuggest`, `/locations`, `/buildings` | [Search & Locations](/api-reference/search-and-locations)  | guest-allowed (passthrough JWT) on `/autosuggest` and `/locations`; no JWT middleware on `/autosuggest/address`, `/autosuggest/locations` and `/buildings` |
+| `/user`, `/favorites`, `/searches`         | [User & Favorites](/api-reference/user-and-favorites)      | strict (few exceptions)                                                                                                                                    |
+| `/estimate`                                | [Estimates](/api-reference/estimate)                       | mixed                                                                                                                                                      |
+| `/auth`                                    | [Auth](/api-reference/auth)                                | public, except strict JWT on `/auth/refresh` and `/auth/logout`                                                                                            |
+| `/contact`, `/stats`, `/vtour`             | [Contact, Stats & Tours](/api-reference/contact-and-stats) | mixed                                                                                                                                                      |
+| `/agent`, `/admin`                         | [Agent & Admin](/api-reference/agent-and-admin)            | role-gated                                                                                                                                                 |
+| `/webhooks`                                | [Webhooks](/api-reference/webhooks)                        | webhook signature                                                                                                                                          |
+
+The table gives the default per prefix. The path, middleware and schema of every individual endpoint are in the [module catalogue](/architecture/modules); the order in which a request meets them is on [Request lifecycle](/architecture/request-lifecycle).
+
+## HTTP semantics
+
+The rules below hold for every route unless a section says otherwise. Where behaviour differs per route, the section says so and points to the [module catalogue](/architecture/modules) instead of stating a universal rule.
+
+### Paths
+
+Route files declare relative paths; the `/api` router (`src/routes/index.ts`) prefixes them, and each feature router adds its own prefix (`new Router({ prefix: "/listings" })`). Pages and Swagger annotations name the full mounted path, for example `GET /api/listings/search`. A path that matches no route gets Koa's plain-text `404 Not Found`; a known path with another method gets `405 Method Not Allowed` and an `Allow` header (`@koa/router` `allowedMethods`).
+
+### Body parsing
+
+`middleware.bodyparser` (`src/providers/middleware/body.ts`, `koa-body`) parses the body of `POST`, `PUT` and `PATCH` requests only. `GET` and `DELETE` bodies are not parsed.
+
+| Content type                        | Result in `ctx.request.body`                              | Limit                                                                                                      |
+| ----------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `application/json`                  | parsed JSON (strict mode: an object or array)             | 1 mb                                                                                                       |
+| `application/x-www-form-urlencoded` | object of strings                                         | 56 kb                                                                                                      |
+| `text/*`                            | a string                                                  | 56 kb                                                                                                      |
+| `multipart/form-data`               | text fields as an object; file parts through `formidable` | file parts: only parts whose MIME type contains `image`, at most one file, no empty files, extensions kept |
+
+- **Reading the body.** Handlers call `getBody(ctx.request.body)` (`src/lib/utils.ts`), which returns `{}` when the body is a string or undefined and the value otherwise. A text body or a missing body therefore reaches the schema as an empty object, and the failure is whatever the schema says about missing keys.
+- **Array bodies.** `POST /api/listings/count` takes a JSON array; its handler spreads `ctx.request.body` into a new array before validating.
+- **Uploads.** No handler under `src/routes/` reads `ctx.request.files`; the multipart configuration only affects which parts are parsed.
+- **Limits and parse failures.** A malformed JSON body is rejected by `koa-body` with status 400, and a body over the limit with status 413. Both come from `koa-body` (`co-body`, `raw-body`) before route code. The 413 is a koa `HttpError` and is answered by variant 2; the 400 is answered by variant 4. Body `{ "message": ... }` in both.
+- **Sanitising.** `middleware.xss` filters every string in the body, query and headers before the route sees it, so markup in a value arrives escaped.
+
+### Query strings
+
+Koa builds `ctx.request.query` with `URLSearchParams` (`koa` `search-params.js`):
+
+| Request              | Value in `ctx.request.query`                                     |
+| -------------------- | ---------------------------------------------------------------- |
+| `?status=A`          | `"A"` (a string, not an array)                                   |
+| `?status=A&status=U` | `["A", "U"]`                                                     |
+| `?status[]=A`        | key `"status[]"` with value `"A"`: no bracket syntax, no nesting |
+| `?q=`                | `""`                                                             |
+| `?map=[[[...]]]`     | the string; the schema parses and checks it but keeps the string |
+
+- **Arrays.** Repeat the key. Fields declared as arrays in the schema use Joi `.single()` (for example `stringArraySchema`, `rplStatusSchema`, `rplTypeSchema` in `src/validate/common.ts`), so a lone value is wrapped into a one-element array. A field declared with a plain string schema stays a string, and the `raw.*` keys of the listing search keep a lone value as a string on purpose (`src/validate/listings.ts`).
+- **Comma lists.** Some fields are one string holding a comma-separated list (`fields`, `clusterFields`, `statistics`, `aggregates`); the schema checks the string, and `csvFieldValidator` checks each member where a value set exists.
+- **Numbers and booleans.** Query values are always strings. Joi's default conversion turns `"2"` into `2` for a `number()` key and `"true"` into `true` for a `boolean()` key before the service sees them.
+
+### GET query vs POST body
+
+Whether a parameter travels in the query or in the body is decided per route and cannot be inferred from the verb. Examples of the range, all verifiable in the route and schema files:
+
+- `GET /api/listings/search` validates the query alone. `POST /api/listings/search` validates the query merged with a `body` object (`listingBodySchema` in `src/validate/listings.ts`), so a filter can be sent either way. `map` accepts a JSON string in the query and a coordinate array in the body (`rplMapFlexibleSchema` vs `rplMapSchema`).
+- `GET /api/listings/count` takes the query; `POST /api/listings/count` takes an array of count queries.
+- Most `POST`, `PATCH` and `PUT` routes validate the body spread with path parameters and token claims; most `GET` and `DELETE` routes validate the query and path parameters.
+
+See the [module catalogue](/architecture/modules) for the payload each route builds.
+
+### Validation
+
+Every route validates with `schema.validate(payload)` and no options, so Joi's defaults apply (`src/validate/**`, `src/routes/**`):
+
+| Option                | Effect here                                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `abortEarly: true`    | only the first violation is reported; one request, one message                                                           |
+| `allowUnknown: false` | an unknown key fails with `"<key>" is not allowed`                                                                       |
+| `convert: true`       | strings are coerced to the schema type (`"2"` to `2`), arrays to a single value by `.single()`, case by `.insensitive()` |
+| `presence: optional`  | a key is required only where the schema says `.required()`                                                               |
+
+- **Exceptions to unknown-key rejection.** `GET /api/listings/featured/:slug` validates with `{ stripUnknown: true }`, so unknown query keys are dropped silently. `bossWebhooksEventSchema` and the token `external` claim accept any keys (`.unknown()`), and the listing search accepts any key that starts with `raw.`.
+- **Defaults.** Schemas fill some values with `.default(...)`: for example `boardId` from the preset (`config.settings.defaults.boardId`) on the listing search, `nlpVersion` from settings on NLP, and fixed values on a few options. The service receives the filled value.
+- **Message format.** The response message is Joi's message for the first violation, for example:
+
+  ```text
+  "pageNum" must be a positive number
+  "x" is not allowed
+  "phone" is not allowed to be empty
+  ```
+
+  It becomes `message` and `userMessage` of a 400 `ApiError` ([Error variants](#error-variants)).
+
+### Pagination
+
+Listing search pages with `pageNum` and `resultsPerPage`, both positive integers (`joi.number().positive().integer()`), passed to Repliers. Other list endpoints define their own paging parameters or none; the response keys (`page`, `pageSize`, `count`, ...) are those of the upstream payload on the routes that proxy it. Per-route detail is in the [module catalogue](/architecture/modules) and Swagger.
+
+### Dates
+
+Date filters use `dateSchema` (`src/validate/common.ts`): a string matching `YYYY-MM-DD` with month `01` to `12` and day `01` to `31`. The pattern does not check the calendar (`2025-02-31` matches). Date-time values in responses are the upstream's ISO strings, or the fixed placeholder that [scrubbing](/architecture/scrubbing) writes.
+
+### Null, empty and omitted
+
+The behaviour is set by each schema, not by a global rule:
+
+- **Omitted** keys are absent from the validated value unless the schema has `.default(...)` or `.required()`.
+- **Empty strings** are rejected by `joi.string()` (`"<key>" is not allowed to be empty`) unless the schema opts in with `.allow("")` or `.empty("")`. The estimate details schema allows `""` on some fields (`src/validate/estimate.ts`); most schemas do not.
+- **`null`** is rejected (`"<key>" must be a string`) unless the schema opts in with `.allow(null)`. `PATCH /api/user` accepts `phone: null` (`userUpdateSchema` in `src/validate/user.ts`); the other keys of that schema do not.
+
+### Error variants
+
+The error handler in `src/app.ts` answers every thrown value by the first of five branches that matches. All bodies are JSON.
+
+| #   | Variant         | Trigger                                                                                                                                                 | Status                          | Body                                                                                                         |
+| --- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 1   | `ApiError`      | `ctx.throw(new ApiError(message, status, opts))`: validation (400), guards, services, wrapped upstream errors                                           | `status`, or 500 when undefined | `{ "message": "<status> - <message> - <path>", "userMessage": "<message>", "info": <opts> }`                 |
+| 2   | koa `HttpError` | `ctx.throw(status, ...)`, `koa-jwt` failures (missing or invalid token on a strict route), body over the parser limit (413, `request entity too large`) | the error's status              | `{ "message": "<message>" }`; for `koa-jwt`: `{ "message": "<message>: <original message>" }`                |
+| 3   | `httpCode`      | errors from the multipart parser (`formidable`), which carry `httpCode`                                                                                 | `httpCode`                      | `{ "message": "<message>" }`                                                                                 |
+| 4   | `status`        | any other error with a numeric `status`: `ctx.assert(...)` failures, malformed JSON body (400)                                                          | `status`                        | `{ "message": "<message>" }`                                                                                 |
+| 5   | other           | any other thrown value                                                                                                                                  | 500                             | `{ "message": "Internal Server Error" }`; outside production the body also carries `err`, `stack` and `file` |
+
+Examples (synthetic values):
+
+```json
+// 1: ApiError, validation failure on GET /api/listings/search?pageNum=0
+{ "message": "400 - \"pageNum\" must be a positive number - /api/listings/search",
+  "userMessage": "\"pageNum\" must be a positive number" }
+
+// 1: ApiError wrapping an upstream error (info carries the upstream body)
+{ "message": "404 - Repliers API error: 404 - /api/listings/AB123456",
+  "userMessage": "Repliers API error: 404", "info": { "...": "upstream body" } }
+
+// 2: koa-jwt on a strict route without a token
+{ "message": "Authentication Error" }
+
+// 2: koa-jwt, token present but expired (originalError appended)
+{ "message": "Authentication Error: jwt expired" }
+
+// 4: ctx.assert(isOwnEstimate, 403, "You are not allowed to access this estimate")
+{ "message": "You are not allowed to access this estimate" }
+
+// 5: unexpected error in production
+{ "message": "Internal Server Error" }
+```
+
+- `info` is `undefined` (key omitted from the JSON) when the `ApiError` was thrown without options.
+- An upstream call that fails without any response (timeout, connection error) becomes an `ApiError` with an undefined status: the response is 500 and the message text reads `undefined - Repliers API error: undefined - <path>`.
+- `ctx.assert` is answered by variant 4, not variant 2: the status is kept, the `userMessage` and `info` keys are absent. See [Request lifecycle](/architecture/request-lifecycle#error-handling).
+- Every thrown value, including 4xx, is logged at `error` level before the response is written.
+
+### Status catalogue
+
+Statuses the code itself produces. A route may relay any status that Repliers returns (`ApiError` takes the upstream status), so this list is not closed.
+
+| Status | Source in the backend                                                                                                                                                                                                                              |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200    | default for a body; `ctx.status = 200` on `DELETE /api/agent/estimate/:estimateId`; a plain `OPTIONS` on a known path                                                                                                                              |
+| 201    | `ctx.status = 201` in `src/routes/user/assets.ts` (create asset) and `src/routes/user/boss.ts`                                                                                                                                                     |
+| 204    | `GET /api/stats/communities` when its result is empty (`src/routes/stats.ts`)                                                                                                                                                                      |
+| 400    | Joi validation failure (the large majority of `ApiError(..., 400)` calls); malformed JSON body                                                                                                                                                     |
+| 401    | `koa-jwt` failure on strict routes; invalid token on guest-allowed routes (`middleware.jwt.passthrough`); invalid signature checks in `AuthService` and `src/providers/middleware/boss.webhook.auth.ts`                                            |
+| 403    | `middleware.role` (`Insufficient privileges`); ownership and signature assertions; invalid or expired email token; OTP resend cooldown (with `Retry-After`)                                                                                        |
+| 404    | not-found checks in routes and services; `router.param` lookups; unmatched paths                                                                                                                                                                   |
+| 405    | known path, wrong method (`allowedMethods`)                                                                                                                                                                                                        |
+| 409    | duplicate asset (`src/services/user/assets.ts`) and duplicate vtour slug (`src/services/vtour.ts`)                                                                                                                                                 |
+| 410    | `GET /api/listings/:mlsNumber` for a listing that must be hidden (restricted, `displayInternetEntireListing = N`, or a hidden status); the code is `APP_HIDE_UNAVAILABLE_LISTINGS_HTTP_CODE`, default 410 (`ListingsService.validateAvailability`) |
+| 412    | expired email token when `auto_otp` is on: a fresh OTP is sent and the request fails (`AuthService.useRepliersToken`)                                                                                                                              |
+| 413    | body over the parser limit                                                                                                                                                                                                                         |
+| 500    | unexpected error; `ApiError` without a status; `Error ensuring user can receive email` (`AuthService`)                                                                                                                                             |
+
+### Retry-After
+
+`Retry-After` is written only by the error handler, from `opts["Retry-After"]` of an `ApiError`. The only producer is the OTP resend cooldown in `AuthService`, which sends the remaining seconds with status 403. A `429` or `Retry-After` from Repliers is not forwarded as a header.
+
+### Cache-Control
+
+`sendCached(ctx, data)` (`src/lib/decorators/cached.ts`) unwraps the `{ result, expires }` object that a `@cached` method returns, sets `Cache-Control: private, max-age=<expires>` and writes `result` as the body. `expires` is the remaining lifetime of the cache entry in seconds (the full TTL on a miss), so two identical requests see a decreasing `max-age`. Other values are sent as they are with no header. Which routes use `sendCached` varies; `GET /api/stats/communities` sets its own fixed header. The cache namespaces are on [Caching](/architecture/caching).
+
+### Limits
+
+| Limit                    | Value                                                                           | Source                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| JSON body                | 1 mb                                                                            | `koa-body` default `jsonLimit`                                                            |
+| urlencoded and text body | 56 kb                                                                           | `koa-body` defaults `formLimit`, `textLimit`                                              |
+| uploaded files           | one image per request                                                           | `src/providers/middleware/body.ts`                                                        |
+| inbound rate limit       | rate-limit `/api/auth/*` in front of the backend                                | [Hardening layers](/architecture/authentication#hardening-layers)                         |
+| outbound Repliers calls  | one process-wide throttle (`REPLIERS_API_LIMIT` per `REPLIERS_API_INTERVAL_MS`) | `src/providers/throttler/repliers.ts`, see [Repliers proxy](/architecture/repliers-proxy) |
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

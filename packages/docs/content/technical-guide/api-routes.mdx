@@ -1,0 +1,77 @@
+# Frontend Route Handlers
+
+Source review: `e30dd9b47`, 2026-11-02. These are Next.js handlers inside the
+frontend, **not** the proxy backend's `/api` contract. A relative browser request
+to `/api/schools` reaches this application; `APISearch` reaches
+`NEXT_PUBLIC_API_URL + /api/listings/search`. See [API Services](/technical-guide/api-services).
+
+## Shared boundary
+
+`src/app/api/_lib.ts` provides `assertSameOrigin`, `parseQuery`, `parseBody` and
+`getClientIp`. `assertSameOrigin` checks whether the Referer starts with the
+configured application domain; an unset domain disables this check. It is not a
+JWT or resource-ownership check. Only handlers that call it get that behavior.
+Joi parsing returns validation errors; each handler still owns its upstream and
+failure response. Do not infer a common error envelope from the `/api` prefix.
+
+## Operation register
+
+Each path maps directly to `src/app/api/<path>/route.ts`; bracket segments are
+dynamic. There are **23 handler files and 25 method exports** in this register.
+“Origin” below means the shared Referer check, not authenticated access.
+
+| Path under `/api` | Methods and input | Boundary / owner | Result and failure behavior |
+| --- | --- | --- | --- |
+| `agent-directory` | GET | Origin; MoveSmartly | Directory JSON; upstream failure 500 |
+| `agent-reviews` | GET query; POST review body | Origin; Joi review schemas; MoveSmartly | Reviews / created review; POST revalidates `/reviews` and `/about`; failure 500 |
+| `agent-reviews/summary` | GET summary query | Origin; Joi; MoveSmartly | Summary; failure 500 |
+| `agents/can-review` | GET | Origin; MoveSmartly | Review eligibility records; failure 500 |
+| `blog/posts` | GET pagination, tag/category | CMS blog client | `{ posts }`; failure 500 |
+| `career` | GET | Origin; MoveSmartly | Careers with sanitized rendered content; failure 500 |
+| `condo-development` | GET `map` polygon | Origin; bounds parser; MoveSmartly | Developments; invalid map 400, upstream 503 |
+| `fetchMeta` | GET `url` | Handler fetches supplied URL; no shared origin check | HTML response; absent URL 400, failure 503 |
+| `generateLocations` | GET `token`, optional `output=file` | `LOCATIONS_REGEN_TOKEN`; LocationsTree | Download or streamed progress; disabled 503, unauthorized 401; generation errors are JSON 500 or stream error records |
+| `listing-enrichment` | GET `mlsNumber` | `MOVESMARTLY_API_URL`; identifier allowlist | Disabled 404, invalid identifier 400; enriched data from service |
+| `mapbox/pois` | GET Searchbox inputs | Origin; local parser, cache and Searchbox service | POI results; validation, configuration, cancellation and upstream errors have separate branches |
+| `og/map` | GET `lat`, `lng`, `z`, `ms` | Map image handler | Image; invalid input 400, upstream failure 503 |
+| `overlay-locations` | GET type/source, coordinates/radius, marker/boundary options | APILocations and GeoJSON conversion | Feature collection; invalid input 400, failure 500 with empty collection |
+| `parcel` | GET `map`, `zoom` | Origin; parcel service | Geometry simplified for zoom; invalid input 400, upstream 503 |
+| `places` | GET `id` | Origin; Google Places | Place details; absent id 400; upstream/not-found/authorization failures retained by handler |
+| `plans-surveys` | GET `lat`, `lng` | `PYB_API_URL`; finite coordinate ranges | Disabled 404, invalid input 400; service result otherwise |
+| `public-record` | GET `map` and record filters | Origin; typed query validation; APILocations | GeoJSON; invalid input 400, failure 500 |
+| `revalidate` | GET query or POST JSON `{ path, token }` | `REVALIDATE_TOKEN`; safe path validation | GET redirects, POST reports paths; disabled 503, unauthorized 401, invalid body/path 400 |
+| `schools` | GET `map`, source, filters, zoom/boundaries | Origin; bounds and school helpers | Schools filtered locally; invalid map 400, upstream 503 |
+| `schools/coords` | GET coordinate search | Origin; school helpers | Coordinate lookup; invalid input 400, upstream 503 |
+| `schools/[id]` | GET numeric id and source | Origin; 1–10 digit identifier | School detail without internal bbox fields; invalid 400, absent 404, upstream 503 |
+| `social-housing` | GET `map` polygon | Origin; bounds parser; MoveSmartly | Housing records; invalid map 400, upstream 503 |
+| `streetView` | GET `estimateId` or `ulid`, optional size | APIEstimate then Street View image | Successful image cached for 86400 seconds; failures return fallback image with error status |
+
+The endpoint-specific absence of a guard is a description of the current code,
+not permission to expose arbitrary new inputs. New handlers should reuse the
+nearest equivalent contract, including the `map` polygon format. External values
+entering URL path segments require an explicit allowlist before interpolation.
+
+## Revalidation contract
+
+POST accepts a JSON object with `path` and `token`. The path must start with `/`,
+exclude `..`, match the handler's safe-character expression and fit its 300-character
+limit. The handler expands the input against `rewrites.generated.json` in both
+source-to-destination and destination-to-source directions, then calls
+`revalidatePath` for the deduplicated paths. A success response records invalidation;
+it does not prove fresh upstream content has rendered. See
+[Caching and Revalidation](/technical-guide/caching-and-revalidation).
+
+## Other route handlers
+
+The other **six** `route.ts` files publish crawl surfaces: `robots.txt`,
+`sitemap.xml`, `sitemap-content.xml`, `listing/sitemap-index.xml`,
+`listing/sitemap/[id]`, and `documentation/sitemap/[site]`. They belong to
+[SEO](/technical-guide/seo), not the interactive JSON API. The six metadata
+`sitemap.ts` files are separate from this 29-file handler inventory.
+
+## Evidence and limits
+
+This register was reconciled against handler exports and shared helpers. It is
+source evidence, not an HTTP replay of each integration. Credentials, deployment
+URLs and tenant records are intentionally absent. Mutation endpoints were not
+called while writing documentation.

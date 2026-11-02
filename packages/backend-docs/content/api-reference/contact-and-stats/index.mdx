@@ -1,0 +1,116 @@
+import { Callout } from 'nextra/components'
+
+# Contact, Stats & Tours
+
+Three small routers: `/contact` (`src/routes/contact.ts`), `/stats` (`src/routes/stats.ts`) and
+`/vtour` (`src/routes/vtour.ts`). Terms are defined in the [Glossary](/glossary).
+
+This page is the operation index. How a contact route reports to the CRM after it has answered
+is on [Events & Messaging](/architecture/events-and-messaging#engagement-reporting); the request
+sequence is [workflow W7](/architecture/flows).
+
+## Operations
+
+"Cached / header" names the server-side cache and the `Cache-Control` header the handler writes;
+"none" means neither. "passthrough" is `middleware.jwt.passthrough`: a guest with no token is
+allowed, a valid token makes the caller a user, an invalid token is a 401. "strict" is
+`middleware.jwt`.
+
+| Method & path                                          | Auth                      | Cached / header                                                                                                    | Side effects                                                                                                           | Errors                                                                                                                                      | Deep dive                                                                                                       |
+| ------------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `POST /api/contact/contactus`                          | passthrough               | none                                                                                                               | one Repliers Messages send, or one SMTP mail, awaited before the response; then a detached CRM event `General Inquiry` | 400 (validation); 401 (invalid token); relayed upstream status from the send                                                                | [Contact](#contact--contact), [Engagement reporting](/architecture/events-and-messaging#engagement-reporting)   |
+| `POST /api/contact/requestinfo`                        | passthrough               | none                                                                                                               | as `contactus`, with the listing attached to the message; detached CRM event `Inquiry`                                 | as `contactus`                                                                                                                              | as above                                                                                                        |
+| `POST /api/contact/schedule`                           | passthrough               | none                                                                                                               | as `contactus`; detached CRM event `Property Inquiry`                                                                  | as `contactus`                                                                                                                              | as above                                                                                                        |
+| `POST /api/contact/schedule/estimate`                  | passthrough               | none                                                                                                               | Repliers Messages send (never SMTP), then a CRM note and a CRM event started from inside `ContactService`              | 400 (validation); 401 (invalid token); 404 (estimate not found); relayed upstream status                                                    | [Contact](#contact--contact), [D06](/architecture/events-and-messaging#d06--second-handler-and-detached-report) |
+| `POST /api/contact/subscribe/newsletter`               | passthrough               | none                                                                                                               | detached CRM event `General Inquiry` only; no message is sent                                                          | 400 (validation); 401 (invalid token)                                                                                                       | [Contact](#contact--contact)                                                                                    |
+| `GET /api/stats/widgets`                               | passthrough               | `@cached("widgets")` (`CACHE_STATSWIDGET_TTL`) → `Cache-Control: private, max-age`                                 | none                                                                                                                   | 400 (validation); 401 (invalid token); relayed upstream status                                                                              | [Stats](#stats--stats)                                                                                          |
+| `GET /api/stats/neighborhoodsranking` (**Not in OSS**) | passthrough               | `@cached("nr")` and `@cached("stats")` (`CACHE_NEIGHBORHOODSRANKING_TTL`) for a signed-in caller → `Cache-Control` | none                                                                                                                   | 400 (validation); 401 (invalid token); relayed upstream status                                                                              | [Stats](#stats--stats)                                                                                          |
+| `GET /api/stats/communities`                           | none (no auth middleware) | none server-side; the handler always sets `Cache-Control: private, max-age = 86400`                                | none                                                                                                                   | 400 (validation); 204 (no community for `districtId`)                                                                                       | [Stats](#stats--stats)                                                                                          |
+| `POST /api/vtour`                                      | strict; Admin or Root     | none                                                                                                               | inserts one `vtour` row                                                                                                | 400 (validation); 401; 403; 409 (slug exists)                                                                                               | [Virtual tours](#virtual-tours--vtour)                                                                          |
+| `GET /api/vtour/{slug}`                                | strict; any role          | none                                                                                                               | none                                                                                                                   | 400 (slug format) and 404 (unknown slug), both before the JWT check; then 401                                                               | [Virtual tours](#virtual-tours--vtour)                                                                          |
+| `PUT /api/vtour/{slug}`                                | strict; Admin or Root     | none                                                                                                               | updates the row's `data`                                                                                               | 400 (slug format, validation, or the row belongs to another user) and 404 (unknown slug), the slug ones before the JWT check; then 401; 403 | [Virtual tours](#virtual-tours--vtour)                                                                          |
+| `DELETE /api/vtour/{slug}`                             | strict; Admin or Root     | none                                                                                                               | deletes the row                                                                                                        | 400 (slug format, or the row belongs to another user) and 404 (unknown slug), the slug ones before the JWT check; then 401; 403             | [Virtual tours](#virtual-tours--vtour)                                                                          |
+
+## Contact — `/contact`
+
+`src/routes/contact.ts`: guest-allowed, every route answers the string `"OK"` and sets
+`ctx.state['enable.xff']`. `contactus`, `requestinfo`, `schedule` and `subscribe/newsletter` chain
+the primary handler to the events-collection handler, which reports to the CRM after the response
+is decided; the per-route event, tags and failure behaviour are in the
+[engagement register](/architecture/events-and-messaging#engagement-reporting).
+`schedule/estimate` has no second handler: `ContactService.scheduleEstimate` starts its CRM note
+and event itself (see [D06](/architecture/events-and-messaging#d06--second-handler-and-detached-report)).
+
+| Endpoint                             | What it does                                                                                                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /contact/contactus`            | General contact form; accepts optional `tags` (up to 5 labels of up to 50 characters) that land on the CRM person                                                              |
+| `POST /contact/requestinfo`          | Property inquiry; the message carries the listing (`listings: [mlsNumber]`)                                                                                                    |
+| `POST /contact/schedule`             | Viewing request with `method` (`InPerson` or `LiveVideo`), `date`, `time`, `mlsNumber`; an optional `message` is appended to the email as `note:` and is the CRM event message |
+| `POST /contact/schedule/estimate`    | Estimate-appointment request for an `estimateId`; the message carries the estimate URL and the client URL                                                                      |
+| `POST /contact/subscribe/newsletter` | Newsletter signup (`email`, optional `pageUrl`); validates and answers `OK`, the CRM event is the only effect                                                                  |
+
+**Who the message is sent for.** `ContactService.defaultMessageFields` uses the caller's `clientId`
+(the JWT `sub`) and that client's agent (`RepliersClients.get`); a guest uses
+`REPLIERS_UNAUTHENTICATED_CLIENT_ID` and `REPLIERS_AGENT_ID`. Delivery is
+`RepliersMessages.send` (`POST /messages`), or one SMTP mail to `REPLIERS_AGENT_EMAIL` when
+`SMTP_ENABLED=true` and that address is set ([Email](/integrations/email)). `schedule/estimate`
+always uses the Messages API.
+
+**Per-instance validation.** `SETTINGS_VALIDATION_VERSION` (preset: `settings.validationVersion`)
+selects an override module in `src/validate/overrides/` that may replace the `contactus` and
+`requestinfo` schemas; anything it leaves out uses the shared schema. One override, for example,
+requires a name plus an email **or** a phone, treating a blank string as missing. An absent email
+or phone never reaches the CRM as an empty entry (`contactEntries`), and the notification email
+shows `—` in its place.
+
+### Gotchas
+
+- **`schedule/estimate` skips the events middleware.** Its CRM calls are made by
+  `ContactService.scheduleEstimate` through `EventsCollectionService`, so they run for guests and
+  signed-in callers alike and are not gated by the middleware's `boss.enabled` check; with
+  `BOSS_ENABLED=false` `BossService.request` returns an empty object instead
+  (`src/services/contact.ts`, `src/services/boss.ts`).
+- **`subscribe/newsletter` has no service call.** The handler validates and sets
+  `ctx.body = "OK"`; with `BOSS_ENABLED=false` the middleware is the empty one and nothing else
+  happens (`src/routes/contact.ts`, `src/providers/middleware/eventsCollection.ts`).
+- **`phone` is optional only on `schedule/estimate`.** Every other contact schema requires it
+  (`src/validate/contact.ts`, `scheduleEstimateSchema`).
+
+## Stats — `/stats`
+
+`src/routes/stats.ts`. `widgets` and `neighborhoodsranking` are passthrough; `communities` has
+no auth middleware at all. Cached results go through `sendCached`, which sets
+`Cache-Control: private, max-age=<seconds left>` from the `@cached` wrapper.
+
+| Endpoint                          | What it does                                                                                                                                                                                                                               |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /stats/widgets`              | Market-stats widgets (average and median sold price, volume, count, days on market, new and active counts). Six parallel `RepliersListings.search` calls (`listings=false` plus `statistics`); `community` is expanded to its district ids |
+| `GET /stats/neighborhoodsranking` | **Not in OSS.** Top-N neighborhood price movement over 30, 90 and 365 days, sorted by `sorting` (`APP_STATSTOP_LIMIT` is the default `limit`)                                                                                              |
+| `GET /stats/communities`          | The community → district-id table; with `districtId`, only the community that owns it, or 204                                                                                                                                              |
+
+<Callout type="info">
+  `GET /api/stats/neighborhoodsranking`, its service methods (`fetchStats`,
+  `neighborhoodsrankingAuthorised`, `neighborhoodsranking`), its schema and the
+  guest stub are in `@oss-remove` regions, and so is every entry of the
+  communities table (`src/services/stats/communities.ts`): the export keeps the
+  `communities` lookup with no entries, and the `widgets` route.
+</Callout>
+
+Status filters follow the instance's vocabulary: `standardStatus` `Closed` / `Active` on a RESO
+instance (one with `APP_ALLOWED_LISTINGS_STANDARD_STATUSES`), `status` `U` / `A` otherwise; see
+[Repliers API](/integrations/repliers-api#query-semantics-worth-knowing).
+
+## Virtual tours — `/vtour`
+
+`src/routes/vtour.ts`: stored in the local database ([persistence](/architecture/persistence)
+required), table `vtour` (`VtourRepository`). A tour is a slug plus a list of `{ type, title, url }`
+links (`url` must be `https`).
+
+- `router.param("slug")` runs for `GET`, `PUT` and `DELETE`: it validates the slug against
+  `^[a-z0-9-_]+$` (400), loads the row (404) and puts it in `ctx.state.vtour`, before the route's
+  own middleware.
+- `POST` takes `owner_id` from the JWT `sub`. `PUT` and `DELETE` validate that the row's `owner_id`
+  equals the caller's `sub`, so an Admin or Root changes only their own tours.
+- `DELETE` is registered with `router.del`.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

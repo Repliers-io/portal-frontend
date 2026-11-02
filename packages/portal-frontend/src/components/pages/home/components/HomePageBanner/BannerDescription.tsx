@@ -2,12 +2,12 @@ import React from 'react'
 
 import { Box, Container, Typography } from '@mui/material'
 
-const BannerDescription = ({
+export const BannerDescription = ({
   title = '',
   subtitle = ''
 }: {
   title?: string
-  subtitle?: string
+  subtitle?: React.ReactNode
 }) => {
   if (!title && !subtitle) return null
 
@@ -32,13 +32,12 @@ const BannerDescription = ({
         </Box>
       )}
       {subtitle && (
-        <Box sx={{ maxWidth: { xs: 'auto', sm: '60%', md: '50%' } }}>
+        <Box sx={{ maxWidth: { xs: 'auto', sm: '50%', md: '35%' } }}>
           <Typography
             variant="h4"
             color="common.white"
             sx={{
-              p: 1,
-              m: -1,
+              p: { xs: 1, sm: 2 },
               borderRadius: 2,
               textShadow: {
                 xs: '0 0 0px rgba(0,0,0,0.1)',
@@ -46,7 +45,7 @@ const BannerDescription = ({
               },
               bgcolor: {
                 xs: 'rgba(0, 0, 0, 0.6)',
-                sm: 'rgba(0, 0, 0, 0.1)'
+                sm: 'rgba(0, 0, 0, 0.4)'
               }
             }}
           >
@@ -57,5 +56,3 @@ const BannerDescription = ({
     </Container>
   )
 }
-
-export default BannerDescription

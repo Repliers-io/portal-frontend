@@ -1,0 +1,74 @@
+# Adding a CMS Widget
+
+Source review: `e30dd9b47`, 2026-11-02. The integration surface is
+`components/shared/CmsWidgets/registry.ts`, consumed by the existing parser,
+transformer and renderer. Search the registry first; do not create a parallel
+shortcode processor.
+
+## Verify the existing pipeline first
+
+Use this synthetic snippet in a local CMS/MDX fixture:
+
+```text
+[TestWidget title="Example widget" count=2 enabled=true]
+```
+
+The existing schema requires a title of 3–100 characters and a numeric count
+between 0 and 1000. The parser extracts string values and the transformer produces
+`{ title: 'Example widget', count: 2, enabled: true, tags: [], colors: [] }` using
+registry defaults. Use double quotes for values containing spaces; don't assume
+every quoting style mentioned in old comments behaves identically.
+
+## Add the component and registry entry
+
+For a new widget, first look for an existing shared component that implements
+the requested behavior. This small synthetic component illustrates the contract;
+its title is authored CMS content, not a hard-coded UI translation:
+
+```tsx
+import { Typography } from '@mui/material'
+
+export const HeadingWidget = ({ title }: { title: string }) => (
+  <Typography component="h2" variant="h4">{title}</Typography>
+)
+```
+
+Export it through `CmsWidgets/widgets/index.ts`, import it in `registry.ts`, and
+add this entry to the existing registry (which already imports Joi):
+
+```ts
+HeadingWidget: {
+  component: HeadingWidget,
+  params: { title: { type: 'string', required: true } },
+  validation: Joi.object({ title: Joi.string().min(3).max(100).required() })
+}
+```
+
+Then the content contract is:
+
+```text
+[HeadingWidget title="A local example"]
+```
+
+The example is a proposed extension, not a widget installed by this documentation
+change. Keep a new component in one file until responsibility or visual subparts
+justify splitting it. Add `'use client'` only if its behavior requires the client.
+
+## Verify and avoid the known traps
+
+Run the existing widget parser/transform tests, then check the valid fixture,
+missing required title, unknown widget and a widget-only paragraph in the actual
+renderer. `UnknownWidget` displays diagnostic name/props; it is not silent removal.
+The parser recognizes names beginning with uppercase and ending in `Widget`.
+Repeated properties become arrays; nested dotted properties are unflattened.
+
+The registry's prop descriptors convert input; Joi validates the resulting
+contract. Neither replaces allowlisting external values before putting them into
+URL path segments. Use the shared HTML renderer/sanitizer for CMS HTML instead
+of rendering a CMS string as trusted HTML in a new widget.
+
+Parser and transform suites were executed for this edition. An isolated fixture
+extracted the shortcode above and verified parsing, defaults and Joi validation;
+the proposed component and registry entry also passed TypeScript syntax
+transpilation. This is not a full application type check or renderer test of
+`HeadingWidget`; it was not installed or published to a CMS.

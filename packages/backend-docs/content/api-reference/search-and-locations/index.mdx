@@ -1,0 +1,52 @@
+# Search & Locations
+
+Three routers serve the search box and the map: `/api/autosuggest`
+(`src/routes/autosuggest.ts`), `/api/locations` (`src/routes/locations.ts`) and
+`/api/buildings` (`src/routes/buildings.ts`). They do not share an auth rule: the combined
+autosuggest and the two `/locations` routes use passthrough auth (a guest is allowed, an invalid
+token is a 401), while the other autosuggest routes and every buildings route resolve no JWT
+middleware at all, so a token is never read and never rejected. Terms are in the
+[Glossary](/glossary).
+
+This page is the operation index. The branches, ranking and failure behaviour are on the deep
+pages; the full parameter contract is in Swagger (`/swagger`).
+
+[Autosuggest](/api-reference/search-and-locations/autosuggest) ·
+[Locations & Buildings](/api-reference/search-and-locations/locations-and-buildings) ·
+[Geocoding providers](/integrations/geocoding) ·
+[MLS-number prefix](/architecture/mls-number-prefix) ·
+[W3 worked trace](/architecture/flows#w3--autosuggest-with-the-mls-number-leg)
+
+## Operations
+
+"Cached / header" names the cache namespace and the response header the handler writes; "none"
+means neither. Every route sets `enable.xff`. Validation errors are `400`; an upstream failure
+is relayed as described in [HTTP semantics](/api-reference).
+
+| Method & path                                 | Auth        | Cached / header                                                                                           | Side effects                                                                          | Errors                                                                                                                                                                                             | Deep dive                                                                                             |
+| --------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `GET /api/autosuggest`                        | passthrough | none                                                                                                      | none; up to four outbound calls (Mapbox, Repliers listings twice, Repliers locations) | 400 (validation: neither `searchSession` nor `mapboxSearchSession`, `q` shorter than 3, `resultsPerPage` above the cap); relayed upstream status when the Mapbox, listings or locations call fails | [Autosuggest](/api-reference/search-and-locations/autosuggest)                                        |
+| `GET /api/autosuggest/address`                | none        | none                                                                                                      | none; one Mapbox or Google call                                                       | 400 (validation, `q` shorter than 1); Mapbox error status relayed; a Google status other than `OK` / `ZERO_RESULTS` is a 500                                                                       | [Address](/api-reference/search-and-locations/autosuggest#address-endpoint)                           |
+| `GET /api/autosuggest/locations` (deprecated) | none        | `@cached("listings:autosuggest:locations")` with `CACHE_STATSWIDGET_TTL` → `Cache-Control`                | none                                                                                  | none produced by the route (no request parameters are read); relayed upstream status                                                                                                               | [Deprecated locations](/api-reference/search-and-locations/autosuggest#deprecated-locations-endpoint) |
+| `GET /api/locations`                          | passthrough | `@cached("locations:get")` → `Cache-Control`                                                              | none                                                                                  | 400 (validation, `radius` without `lat` and `long`); relayed upstream status                                                                                                                       | [Locations](/api-reference/search-and-locations/locations-and-buildings#get-locations)                |
+| `GET /api/locations/autocomplete`             | passthrough | none                                                                                                      | none                                                                                  | 400 (validation: `search` missing or shorter than 3, `resultsPerPage` above 10); relayed upstream status                                                                                           | [Autocomplete](/api-reference/search-and-locations/locations-and-buildings#get-locationsautocomplete) |
+| `GET /api/buildings`                          | none        | `@cached("buildings:search")` → `Cache-Control`                                                           | none                                                                                  | 400 (validation, `radius` without `lat` and `long`); relayed upstream status                                                                                                                       | [Buildings](/api-reference/search-and-locations/locations-and-buildings#buildings)                    |
+| `POST /api/buildings`                         | none        | `@cached("buildings:search")` → `Cache-Control`                                                           | none                                                                                  | as `GET /api/buildings`; the body accepts only `map`                                                                                                                                               | [Buildings](/api-reference/search-and-locations/locations-and-buildings#buildings)                    |
+| `GET /api/buildings/{addressKey}`             | none        | `@cached("buildings:single")`; the route sets no header and the body is the `{ result, expires }` wrapper | none                                                                                  | 400 (`addressKey` missing or over 255 characters); relayed upstream status                                                                                                                         | [Single building](/api-reference/search-and-locations/locations-and-buildings#single-building)        |
+
+## Autosuggest — `/autosuggest`
+
+Moved to [Autosuggest](/api-reference/search-and-locations/autosuggest): the combined search
+box, the address-only endpoint and the deprecated locations endpoint.
+
+## Locations — `/locations`
+
+Moved to [Locations & Buildings](/api-reference/search-and-locations/locations-and-buildings#locations):
+sources, paging bounds and the cache.
+
+## Buildings — `/buildings`
+
+Moved to [Locations & Buildings](/api-reference/search-and-locations/locations-and-buildings#buildings):
+the list, the single building and the cache.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

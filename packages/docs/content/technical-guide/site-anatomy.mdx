@@ -41,8 +41,35 @@ inside their own routes — see each section below and
 | AI Chat (built-in)   | [overview](/product-guide/ai-chat)        | [flow](/product-guide/ai-chat/technical#how-it-works) · [config](/product-guide/ai-chat/technical#configuration) · [gotchas](/product-guide/ai-chat/technical#gotchas--hints)                                                               | `ChatContent` in Search (uses `SearchProvider`)                             |
 | AI Agent (external)  | [overview](/product-guide/ai-agent)       | [protocol](/product-guide/ai-agent/technical#the-message-protocol) · [modes](/product-guide/ai-agent/technical#modes) · [config](/product-guide/ai-agent/technical#configuration)                                                           | `SupportAgent` in Search (postMessage)                                      |
 
-<Callout type="info">
-  This map is filled in section by section. **Search & Map** is the first
-  fully-wired row; the rest link to their functional pages until their **How it
-  works** sub-pages land.
-</Callout>
+All ten sections have technical anatomy pages. Review and execution status are tracked in [Coverage](/coverage).
+
+## Route entry inventory
+
+Source inventory at `e30dd9b47`, 2026-11-02: **46 `page.tsx` files**. Route
+groups do not add URL segments; catch-alls can resolve many URLs. The table owns
+page-entry coverage; [Frontend Route Handlers](/technical-guide/api-routes) owns
+the separate 29 handler files and [SEO](/technical-guide/seo) owns metadata routes.
+
+| Family / page paths | Files | Classification / documentation owner |
+| --- | --- | --- |
+| `/` | 1 | Public entry; home anatomy and generated root rewrites |
+| `/search`, `/search/[layout]` | 2 | Redirect and interactive search; map feature; F01–F03 |
+| `/listing/[[...listingName]]` | 1 | Request-specific listing detail; F04 |
+| `/favorites`, `/image-favorites`, `/saved-searches`, `/recently-viewed`, `/profile` | 5 | Client-page group; user feature/access gates; F06–F07 and user anatomy |
+| `/unsubscribe` | 1 | Account notification flow; user features |
+| `/login`, `/login2`, `/auth/[provider]/processing`, `/root` | 4 | Auth/service entries and alternate root; authentication/home anatomy |
+| `/estimate/[[...slugs]]`, `/estimate/embedded`, `/estimate/embedded/demo` | 3 | Estimate and embedding; F08 |
+| `/agent`, `/agent/client/[clientId]`, `/agent/client/[clientId]/estimate/[[...slugs]]` | 3 | Agent workspace and estimate reuse; agent portal / F08 |
+| `/admin/agents`, `/admin/revalidate` | 2 | Administrative surfaces; agent portal and revalidation contract |
+| `/dashboard`, `/dashboard/[city]`, `/dashboard/[city]/residential`, `/dashboard/[city]/condos` | 4 | Dashboard feature; market anatomy and cache register |
+| `/locations/[[...slugs]]`, `/locations/debug` | 2 | Generated geography catalog; debug route returns not-found in production; F11 |
+| `/page/[...slug]`, `/pages`, `/pages/[...path]` | 3 | CMS page and directory; F10 |
+| `/blog`, `/blog/[slug]`, `/blog/page/[page]`, `/blog/category/[...category]`, `/blog/tag/[tag]`, `/blog/tag/[tag]/page/[page]` | 6 | Blog feature; CMS anatomy / F10 |
+| `/authors`, `/author/[slug]` | 2 | Blog author surfaces; CMS and SEO |
+| `/buildings`, `/buildings/[...path]`, `/building/[...path]`, `/condos/[[...slugs]]`, `/condo/[...slugs]` | 5 | Building groups/catalog/detail; F11 |
+| `/widgets/[widgetName]` | 1 | Embedded widget surface; F10 and widget tutorial |
+| `/404` | 1 | Static error presentation; failure register |
+
+Feature checks and page templates are only part of route access. The
+[proxy/middleware](/technical-guide/middleware), generated rewrites and client
+guards also participate. This inventory does not declare every listed URL public.

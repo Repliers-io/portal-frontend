@@ -71,3 +71,16 @@ iframe over `postMessage`. Every message carries a generated `sessionId`.
   nothing happens (the observer just keeps waiting).
 - **NLP runs server-side** through `APIChat.fetchReply`; the returned token is reused across
   queries and reset by `ResetAgent`.
+
+## Verified protocol boundary
+
+Source review: `e30dd9b47`, 2026-11-02, including `SupportAgent.tsx` and
+`packages/ai-agent-client/src/App.tsx`. Outbound messages use `'*'`; receivers do
+not check origin/source or enforce session-id equality. Presence checks on some
+messages are not session authentication. The reference client emits `AgentReset`,
+while the portal handler is named `ResetAgent`, so that reset action does not
+match. No origin hardening or protocol change was made in this docs task.
+
+[F03](/technical-guide/workflows/content-and-build#f03--turn-language-into-search)
+traces extraction/apply separately and documents the null-filter failure path.
+This contract review does not claim an executed end-to-end assistant session.

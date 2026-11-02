@@ -18,6 +18,7 @@ import {
   getBedrooms,
   getLotSize,
   getSqft,
+  hiddenPrice,
   land,
   premium,
   rent,
@@ -58,10 +59,18 @@ export const getSeoUrl = (
     image?: string
   }
 ): string => {
-  const { address = {}, mlsNumber = '' } = listing
+  const { address, mlsNumber = '' } = listing
   const image = options?.image || listing.matchedImage
 
-  const addr = sanitizeAddress(address as ApiListing['address'])
+  let addr = sanitizeAddress(address ?? {})
+  if (listingsConfig.seoUnitFormat === 'labelled' && address?.unitNumber) {
+    const labelledAddress = sanitizeAddress({
+      streetName: formatTitleAddress(address),
+      city: address.city,
+      zip: address.zip
+    })
+    addr = /^[\w-]{1,100}$/.test(labelledAddress) ? labelledAddress : ''
+  }
   const slug = addr ? `${addr}-${mlsNumber}` : mlsNumber
 
   const routedBoardId = resolveBoardId(listing)
@@ -165,9 +174,11 @@ export const getSeoTitle = (listing: ApiListing): string => {
         ? !scrubbed(soldPrice) && soldPrice
           ? formatEnglishPrice(soldPrice)
           : ''
-        : !scrubbed(listPrice) && listPrice
-          ? formatEnglishPrice(listPrice)
-          : '',
+        : hiddenPrice(listing)
+          ? '$xxxx'
+          : !scrubbed(listPrice) && listPrice
+            ? formatEnglishPrice(listPrice)
+            : '',
       bedsString,
       bathsString,
       sqftString,
@@ -223,6 +234,11 @@ export const parseSeoUrl = (url: string) => {
 
   const city = capitalize(rest.pop() || '')
 
+  const labelledUnit =
+    listingsConfig.seoUnitFormat === 'labelled' && rest.at(-2) === 'unit'
+      ? rest.splice(-2)[1].toUpperCase()
+      : undefined
+
   let unitNumber: string | undefined = undefined
   let streetNumber: string | undefined = undefined
   if (rest[0].length <= 4 && /^\d+$/.test(rest[1])) {
@@ -238,7 +254,7 @@ export const parseSeoUrl = (url: string) => {
   const streetName = capitalize(rest.join(' '))
 
   return {
-    unitNumber,
+    unitNumber: labelledUnit || unitNumber,
     streetNumber,
     streetName,
     streetSuffix,

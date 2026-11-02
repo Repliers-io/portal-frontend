@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+import { documentationOnly } from '../documentation/utils'
+
 export const dynamic = 'force-static'
 
 export function GET() {
@@ -21,13 +23,21 @@ export function GET() {
     '/auth/',
     '/api/',
     '/_next/',
-    '/unsubscribe'
+    '/unsubscribe',
+    // Router prefetch URLs: Next serves them as full HTML duplicates to a plain GET.
+    // They cannot be redirected in proxy — Next strips `_rsc` and the RSC header first.
+    '/*_rsc='
   ]
+
+  // The longest matching rule wins, so the documentation (hub and sites) stays
+  // crawlable under the catch-all Disallow.
+  const rules = documentationOnly()
+    ? ['Allow: /documentation', 'Disallow: /']
+    : ['Allow: /', ...disallow.map((path) => `Disallow: ${path}`)]
 
   const text = [
     'User-agent: *',
-    'Allow: /',
-    ...disallow.map((path) => `Disallow: ${path}`),
+    ...rules,
     '',
     `Sitemap: ${baseUrl}/sitemap.xml`
   ].join('\n')

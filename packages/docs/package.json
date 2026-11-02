@@ -8,11 +8,14 @@
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "build:static": "next build && pagefind --site out --output-path out/_pagefind",
     "start": "next start -p 4000",
+    "check": "node ../backend-docs/scripts/check-site.mjs --root .",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "prettier": "prettier --check ./**/*.{ts,tsx,js,mdx}",
     "prettier:fix": "prettier --write ./**/*.{ts,tsx,js,mdx}"
   },
   "dependencies": {
+    "@next/third-parties": "^16.3.1",
+    "@theguild/remark-mermaid": "0.3.0",
     "next": "16.3.1",
     "nextra": "^4.6.1",
     "nextra-theme-docs": "^4.6.1",

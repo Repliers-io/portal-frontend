@@ -2,6 +2,11 @@
 
 Technical documentation for Portal's multi-source content system.
 
+Source review: `e30dd9b47`, 2026-11-02. Single-page resolution uses
+`CmsService.getPage(slug)` to apply `CmsResolver` strategies; `getPagesClient()`
+remains the bulk/client access path. The diagram below shows client selection,
+not the entire per-slug strategy decision.
+
 ## Architecture
 
 ```
@@ -84,7 +89,12 @@ staticPageSlugs: [
 | `GhostClient`     | `services/CMS/clients/GhostClient`     | → MarkdownClient |
 | `MarkdownClient`  | `services/CMS/clients/MarkdownClient`  | —                |
 
-All clients implement `CmsClient` interface. WordPress and Ghost clients automatically fallback to `MarkdownClient` when content is not found.
+All clients implement `CmsClient`. Client-level fallback and resolver strategy are
+separate layers: exact slug, longest wildcard, then `*` choose `localOnly`,
+`remoteOnly` or `remoteFirst`. The resolver merges defined local metadata over a
+remote page. An exception is not automatically treated as a missing page.
+[F10](/technical-guide/workflows/content-and-build#f10--resolve-a-cms-page-and-render-a-widget)
+traces the effective path, including widget parsing/validation.
 
 ## Local Content (MDX)
 
@@ -185,7 +195,7 @@ Each MDX page needs a `meta.json` file:
    const slug = 'my-page'
 
    export async function generateMetadata() {
-     const page = await CmsService.getPagesClient().getPage(slug)
+     const page = await CmsService.getPage(slug)
      return {
        title: page?.meta?.title || page?.title,
        description: page?.meta?.description
@@ -193,7 +203,7 @@ Each MDX page needs a `meta.json` file:
    }
 
    export default async function StaticPage() {
-     const page = await CmsService.getPagesClient().getPage(slug)
+     const page = await CmsService.getPage(slug)
 
      if (!page) return <Page40XTemplate />
 

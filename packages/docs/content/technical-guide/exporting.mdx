@@ -64,10 +64,10 @@ Runs three scripts into `../portal-monorepo-oss`:
    `.gitignore` + `pnpm-lock.yaml`, then prunes that lockfile to the exported packages
    (`pnpm install --lockfile-only`) — so the export installs the versions the monorepo tested.
 
-The export ships both docs sites inside the portal: `pnpm build:documentation` builds them as
+The export ships both docs sites inside the portal: `pnpm frontend:build:docs` builds them as
 static exports into `packages/portal-frontend/public/documentation` (served at
 `/documentation`, `/documentation/frontend`, `/documentation/backend`); run it before
-`pnpm frontend:build` / `pnpm frontend:dev`. `pnpm clean:documentation` removes them. In that
+`pnpm frontend:build` / `pnpm frontend:dev`. `pnpm frontend:clean:docs` removes them. In that
 build each site's navbar links the hub (**All Docs**) and the sibling site (desktop only);
 the standalone docs builds omit those links.
 
@@ -139,7 +139,7 @@ The config **alias mechanism stays live** (tenant-first tsconfig paths), while t
 <Callout type="info">
   **`/documentation` is served only while the folder exists.** `generate-rewrites.ts` emits
   the `/documentation` rewrites (and thereby the route-guard allowlist) only when
-  `public/documentation` is present, so `build:documentation` / `clean:documentation`
+  `public/documentation` is present, so `build:docs` / `clean:docs`
   regenerate the rewrites themselves. Restart a running dev server afterwards. On a Heroku deploy the docs are built in the Bitbucket pipeline (Heroku
   only sees `packages/portal-frontend`), opted in per deployment with `BUILD_DOCUMENTATION=true`.
 </Callout>

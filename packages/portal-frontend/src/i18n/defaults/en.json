@@ -1,7 +1,18 @@
 {
   "HomePage": {
-    "welcome": "DEFAULTNAME",
-    "welcomeDescription": "DEFAULTNAME serves over XX,XXX real estate professionals in DEFAULTSTATE. As a top-rated multiple listing service (MLS), we provide property information and innovative products.",
+    "welcome": "Repliers Portal",
+    "welcomeDescription": "",
+    "documentation": {
+      "frontend": {
+        "title": "Frontend Docs",
+        "description": "Getting started, product guide, technical guide and tutorials for the portal frontend."
+      },
+      "backend": {
+        "title": "Backend Docs",
+        "description": "Getting started, architecture, API reference, integrations and operations of the proxy backend."
+      },
+      "repository": "GitHub"
+    },
     "justListed": "Just Listed",
     "recentlySold": "Recently Sold",
     "trackMarket": "Track the {city} Market in Real Time"
@@ -229,6 +240,7 @@
     "geolocationDenied": "Location access denied. Enable location permission in your browser settings.",
     "geolocationUnavailable": "Couldn't determine your location. Please try again.",
     "webglUnavailable": "The map can't be loaded because WebGL is unavailable. Enable hardware acceleration in your browser settings and reload the page.",
+    "unavailable": "The map is unavailable right now.",
     "recenter": "Center map on this area",
     "showShadows": "Show sun and shadows",
     "hideShadows": "Hide sun and shadows",
@@ -429,6 +441,8 @@
     "yearsOnMarket": "{count, plural, other {# years on market}}",
     "updatedDaysAgo": "{count, plural, =0 {Updated today} =1 {Updated 1 day ago} other {Updated # days ago}}",
     "listedLabel": "Listed:",
+    "bedsCount": "{label} {count, plural, one {bed} other {beds}}",
+    "bathsCount": "{label} {count, plural, one {bath} other {baths}}",
     "soldDateLabel": "Sold date:",
     "leasedDateLabel": "Leased date:"
   },

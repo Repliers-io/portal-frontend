@@ -13,28 +13,38 @@ import { APIBase, stringifyOptions } from './APIBase'
 // sorting and pagination; the remaining filters are dropped.
 const featuredParams = ['sortBy', 'pageNum', 'resultsPerPage'] as const
 
+type SearchParams = { get?: any; post?: any }
+
 class APISearchClass extends APIBase {
-  fetch(params: { get?: any; post?: any }, options?: RequestInit) {
-    const { source, slug, ...getParams } = params.get ?? {}
+  fetch(params: SearchParams, options?: RequestInit) {
+    const { source, slug, ...get } = params.get ?? {}
 
     if (source === 'featured' && slug) {
-      return this.fetchFeatured(slug, getParams, options)
+      return this.fetchFeatured(slug, get, options)
     }
 
-    // GET params
-    const getParamsString = queryString.stringify(getParams, stringifyOptions)
-    // POST params
-    const postParamsString =
-      params.post && Object.keys(params.post).length
-        ? JSON.stringify(params.post)
-        : ''
+    return this.search('/listings/search', { ...params, get }, options)
+  }
+
+  // Aggregates-only twin of `/listings/search` (`listings` pinned to false),
+  // cached server-side per distinct set of parameters.
+  fetchGraph(params: SearchParams, options?: RequestInit) {
+    return this.search('/stats/graph', params, options)
+  }
+
+  // Filters go in the query; a non-empty `post` (map, queries, image search)
+  // turns the request into a POST with it as the body.
+  private search(
+    path: string,
+    { get, post }: SearchParams,
+    options?: RequestInit
+  ) {
+    const body = post && Object.keys(post).length ? JSON.stringify(post) : ''
 
     return this.fetchJSON<ApiQueryResponse>(
-      `/listings/search?${getParamsString}`,
+      `${path}?${queryString.stringify(get ?? {}, stringifyOptions)}`,
       {
-        ...(postParamsString
-          ? { method: 'POST', body: postParamsString }
-          : { method: 'GET' }),
+        ...(body ? { method: 'POST', body } : { method: 'GET' }),
         ...options
       }
     )

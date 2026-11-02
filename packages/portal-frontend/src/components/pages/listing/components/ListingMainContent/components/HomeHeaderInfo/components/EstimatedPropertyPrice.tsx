@@ -8,6 +8,7 @@ import { InfoOutlinedIcon } from '@configs/icons'
 
 import { type ApiListing } from 'services/API'
 import { formatDate, formatEnglishPrice } from 'utils/formatters'
+import { hiddenPrice } from 'utils/listings'
 
 import { PriceDifference } from '.'
 
@@ -42,7 +43,10 @@ export const EstimatedPropertyPrice = ({
           {formatEnglishPrice(roundedValue)}
         </Typography>
 
-        <PriceDifference before={listPrice} after={value} label="none" />
+        {/* the gap to the estimate would give the withheld list price away */}
+        {!hiddenPrice(listing) && (
+          <PriceDifference before={listPrice} after={value} label="none" />
+        )}
 
         <Tooltip
           arrow

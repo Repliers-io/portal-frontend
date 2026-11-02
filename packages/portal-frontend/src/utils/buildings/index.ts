@@ -1,3 +1,4 @@
+export { buildingAddressFilter } from './address'
 export { assembleBuilding } from './assembleBuilding'
 export {
   findCmsSlugByApiBuilding,

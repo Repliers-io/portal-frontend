@@ -1,0 +1,85 @@
+# Build and Deployment
+
+Source review: `e30dd9b47`, 2026-11-02. Monorepo, exported frontend and normalized
+tenant artifacts have different build entry points. Identify the repository
+shape before copying a command.
+
+## Application build paths
+
+| Path | Source / behavior |
+| --- | --- |
+| Monorepo development | Root `frontend:dev:<tenant>` delegates to the frontend tenant script; `dev` runs prebuild then `next dev --webpack` |
+| Prebuild | Generates tsconfig aliases, static features, rewrites and deployment id in that order |
+| Local webpack build | Frontend `build:local`: clean `.next`, then `next build --webpack` |
+| Production wrapper | Frontend `build`: prepare public assets, then `scripts/build-remote.js`; normalized mode or absent override plugin selects the alternate bundler path |
+| Tenant normalization | `scripts/normalize-build.js`; explicit `NORMALIZED_BUILD=true` path; inspect generated tree before treating it as the monorepo |
+| Export | Root `scripts/copy-oss.ts`, `export-tenant.ts` and shared helpers; see [Code Export](/technical-guide/exporting) |
+
+The root pins pnpm 12.6.0; the frontend package retains its own pnpm 10.34.4 pin
+for its package context. Frontend engines permit Node 24.x or 26.x. Use the pin
+applicable to the checkout instead of upgrading tools as part of a documentation
+change. `next.config.js` ignores TypeScript errors during build, so build success
+does not replace the separate type check.
+
+Generated rewrites, redirects, aliases and deployment identity must come from
+their generators. Do not hand-edit their output. Switching the shared generated
+tsconfig while another tenant is running changes that developer's resolution;
+coordinate tenant changes or use a separately authorized workspace.
+
+## Documentation delivery
+
+| Mode | Output | Base path |
+| --- | --- | --- |
+| Standalone frontend docs | `.next`; Pagefind under `public/_pagefind` | Empty |
+| Static frontend docs | `packages/docs/out` | `/documentation/frontend` |
+| Static backend docs | `packages/backend-docs/out` | `/documentation/backend` |
+| Portal bundle | `packages/portal-frontend/public/documentation` plus generated rewrites | Hub and both sites |
+
+From the monorepo root, standalone verification is:
+
+```powershell
+pnpm docs:frontend:build
+pnpm docs:frontend:type-check
+pnpm docs:frontend:check
+```
+
+Package-local static verification, without rewriting the running portal:
+
+```powershell
+$previousDocsBase = $env:DOCS_BASE_PATH
+try {
+  $env:DOCS_BASE_PATH = '/documentation/frontend'
+  pnpm --filter docs run build:static
+  if ($LASTEXITCODE -ne 0) { throw 'Static documentation build failed' }
+  pnpm --filter docs run check --base /documentation/frontend
+  if ($LASTEXITCODE -ne 0) { throw 'Static documentation check failed' }
+} finally {
+  $env:DOCS_BASE_PATH = $previousDocsBase
+}
+```
+
+The full `pnpm frontend:build:docs` command first cleans bundled documentation,
+builds/copies both sites, then regenerates portal rewrites. It changes the portal's
+generated artifacts; it is not required for every prose edit. The shared checker
+requires both docs packages in this monorepo and is not promised as a standalone
+frontend-export command.
+
+## Existing CI wiring
+
+`bitbucket-pipelines.yml` defines frontend Jest execution and deployment jobs.
+Documentation bundling is opt-in through `BUILD_DOCUMENTATION=true`; CI builds
+both sites and includes the generated bundle in a CI-only deployment commit.
+This does not mean the new docs checker runs automatically on every branch.
+No pipeline behavior was changed by this documentation task.
+
+The deployment script also handles deployment metadata and a CDN purge. These
+are descriptions of the pipeline, not instructions to run it from a local docs
+session. Confirm the selected environment before deploying.
+
+## Acceptance after an authorized deployment
+
+Verify the tenant's brand and features, one real search and listing, a direct
+deep link, metadata/sitemap contents, and the documentation hub/article/assets/
+Pagefind search. A successful static export only proves artifact creation; it
+does not prove routing, CDN freshness or production API access. Keep the deployed
+revision and generated deployment id with the release evidence.

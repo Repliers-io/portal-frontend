@@ -502,8 +502,21 @@ describe('widgetTransform', () => {
       const listings = { listingStatus: 'active', agentId: 'X' }
       const result = collapseMatchQueries(listings)
 
-      expect(result.listings).toBe(listings)
+      expect(result.listings).toEqual(listings)
       expect(result.errors).toEqual([])
+    })
+
+    it('flattens a base raw filter into its API field name', () => {
+      const result = collapseMatchQueries({
+        listingStatus: 'sold',
+        raw: { BuyerOfficeKey: 'NWM89768506' }
+      })
+
+      expect(result.errors).toEqual([])
+      expect(result.listings).toEqual({
+        listingStatus: 'sold',
+        'raw.BuyerOfficeKey': 'NWM89768506'
+      })
     })
 
     it('reports and drops an out-of-range match index', () => {

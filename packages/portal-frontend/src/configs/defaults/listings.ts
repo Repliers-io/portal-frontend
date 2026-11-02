@@ -16,6 +16,21 @@ const config = {
     premiumResidential: 1_125_000
   },
 
+  /**
+   * Guest gating beyond the MLS `displayPublic` flag; each rule reads a listing field.
+   * Off by default: guests see whatever `displayPublic` allows.
+   */
+  guestGate: {
+    /** gate every off-market listing (status `U`) */
+    offMarket: false,
+    /** gate listings whose `raw.exclusive` is set */
+    exclusive: false,
+    /** a set `raw.is_pinned` lifts the `displayPublic` gate */
+    pinnedPublic: false
+  },
+  /** `raw` flags that hide a listing's price wherever it renders. */
+  hiddenPriceFlags: [] as string[],
+
   gallery: {
     thumbWidth: 284,
     thumbHeight: 190,
@@ -52,6 +67,8 @@ const config = {
    * baths, sqft, address); 'compact' = "{address}, {city}, {STATE} {zip} | MLS# {mls}".
    */
   titleFormat: 'default' as 'default' | 'compact',
+  /** Unit placement in listing SEO titles and URLs. */
+  seoUnitFormat: 'default' as 'default' | 'labelled',
   notAvailable: 'N/A',
   listingBrowserContainerId: 'listing-content',
 

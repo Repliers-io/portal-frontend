@@ -1,0 +1,178 @@
+# User & Favorites
+
+The signed-in client's own surface: profile (`/api/user`), favorites (`/api/favorites`) and saved
+searches (`/api/searches`). The client record, favorites and searches live in Repliers; the
+backend validates, injects the caller's [`clientId`](/glossary#clientid) from the token's
+[`sub`](/glossary#jwt-sub) and forwards. Only user assets and linked social accounts are stored
+locally and need a database: no check of the persistence flag guards them, so with persistence off they fail at the database call ([Running without a database](/architecture/persistence#running-without-a-database)). Terms are in the [Glossary](/glossary).
+
+[Saved searches](/api-reference/user-and-favorites/saved-searches) ·
+[Scrubbing](/architecture/scrubbing) ·
+[Data ownership](/architecture/data-ownership#identity-and-ownership) ·
+[Events & messaging](/architecture/events-and-messaging) ·
+[W4 favorites](/architecture/flows#w4--favorite-lifecycle-with-a-restricted-listing) ·
+[W5 saved search](/architecture/flows#w5--saved-search-and-notification-preferences)
+
+## User — `/user`
+
+Sources: `src/routes/user.ts` and the sub-routers `src/routes/user/assets.ts`,
+`user/social.ts`, `user/boss.ts`. None of these routes caches or writes `Cache-Control`.
+"Errors" lists the statuses the route itself produces; a Repliers failure is relayed with its
+own status.
+
+| Method & path                                                | Auth        | Cached / header | Side effects                                                                                              | Errors                                            | Deep dive                         |
+| ------------------------------------------------------------ | ----------- | --------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------- |
+| `GET /api/user/me`                                           | strict      | none            | none                                                                                                      | 401                                               | [Profile](#profile)               |
+| `PATCH /api/user`                                            | strict      | none            | Repliers `PATCH /clients/{sub}`; detached `Unsubscribed` FUB event when `preferences.unsubscribe` is true | 400 (validation), 401                             | [PATCH semantics](#patch-apiuser) |
+| `GET /api/user/agent`                                        | passthrough | none            | none                                                                                                      | 401 (invalid token)                               | [Profile](#profile)               |
+| `POST /api/user/assets/{type}`                               | strict      | none            | insert into `assets`                                                                                      | 400, 401, 409 (id already stored)                 | [Assets](#assets)                 |
+| `GET /api/user/assets/{type}`                                | strict      | none            | none                                                                                                      | 400, 401                                          | [Assets](#assets)                 |
+| `POST /api/user/assets/{type}/remove`                        | strict      | none            | delete from `assets`                                                                                      | 400, 401                                          | [Assets](#assets)                 |
+| `GET /api/user/social/{provider}/url`                        | strict      | none            | none                                                                                                      | 400, 401                                          | [Social](#social-accounts)        |
+| `GET /api/user/social/{provider}/cb`                         | strict      | none            | token exchange; upsert into `social`                                                                      | 400 (`code` missing), 401                         | [Social](#social-accounts)        |
+| `GET /api/user/social/{provider}/refresh`                    | strict      | none            | provider refresh; update of `social`                                                                      | 400 (no stored tokens, no access token), 401      | [Social](#social-accounts)        |
+| `GET /api/user/social` and `GET /api/user/social/{provider}` | strict      | none            | none                                                                                                      | 400, 401                                          | [Social](#social-accounts)        |
+| `DELETE /api/user/social/{provider}`                         | strict      | none            | delete from `social`                                                                                      | 400, 401                                          | [Social](#social-accounts)        |
+| `POST /api/user/boss/tag`                                    | strict      | none            | FUB person read, then tag update                                                                          | 400, 401, 404 (no `externalId`, or no FUB person) | [CRM tag](#crm-tag)               |
+
+### Profile
+
+`GET /api/user/me` returns `RepliersClients.get(sub)` spread as it came back, plus `communities`:
+the record's comma-separated `tags` string split into an array (`UserService.info`). The record
+is not filtered, so Repliers' own keys (`agentId`, `externalId`, `proxyEmail`, `data`) are in the
+response.
+
+`GET /api/user/agent` returns `email`, `phone`, `fname`, `lname` and `avatar` of one agent
+(`_.pick` in `UserService.agent`): the agent of the client `sub` (two Repliers reads: client,
+then agent), or the `REPLIERS_AGENT_ID` agent when there is no token. The handler's 404 branch
+is not reached because `UserService.agent` always returns an object.
+
+### PATCH `/api/user`
+
+The body is merged as `{ ...body, clientId: sub }` and validated with `userUpdateSchema`
+(`src/validate/user.ts`); a `clientId` in the body is overwritten. The validated object is sent
+as `PATCH /clients/{sub}` with `clientId` split off the body (`RepliersClients.update`). No key
+has a default, so only supplied keys are forwarded.
+
+| Body                                                                        | Result                                                                                         |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| key omitted                                                                 | not in the forwarded body                                                                      |
+| `{}`                                                                        | valid; forwarded as `{}`                                                                       |
+| `phone: null`                                                               | valid (`phoneSchema.allow(null)`); forwarded as `null`                                         |
+| `null` on any other key (`fname`, `lname`, `status`, `tags`, `preferences`) | 400                                                                                            |
+| `fname: ""` or `lname: ""`                                                  | 400 (empty string)                                                                             |
+| `phone`                                                                     | must match `^(1)([0-9]{10})$`, else 400                                                        |
+| `tags: []`                                                                  | valid; forwarded as `[]`                                                                       |
+| `preferences: {}`                                                           | valid; forwarded as `{}`; `email`, `sms`, `unsubscribe` are optional booleans with no defaults |
+| `whatsapp`, `email`, `agentId`, any other key                               | 400 (unknown key)                                                                              |
+
+What Repliers does with `null`, `[]` or `{}` is not established by this checkout.
+
+**Unsubscribe event.** A second handler re-validates the same body and, when
+`preferences.unsubscribe` is truthy, reports an `Unsubscribed` FUB event tagged with
+`SETTINGS_EVENTS_COLLECTOR_EVENT_TAGS_UNSUBSCRIBED` (`SelectUnsubscribedParams`). It runs after
+the response body is set, is not awaited, and is an empty middleware when `BOSS_ENABLED` is
+false. Timing and the other events are in [Events & messaging](/architecture/events-and-messaging).
+
+### Assets
+
+`type` must be `image-favorites` (the only entry of `AssetTypesArray`). Rows are keyed by the
+token's `email`. `POST` validates `id` (string, required), `type` and `email`; any other body
+key is a 400, so the stored `data` is always `{}`. Responses: `POST` 201 `{ "result": true }`,
+`GET` an array of `{ id, ...data }`, `remove` `{ "result": <rows deleted> }` (`0` when the id was
+not stored). These routes do not set `enable.xff`.
+
+### Social accounts
+
+`SocialProvider` has one value, `pinterest`. `{provider}/url` returns `{ url }`; `cb` exchanges
+`?code=` and returns the provider's tokens, which `SocialRepository.createTokens` upserts by
+`(email, provider)`; `refresh` returns the updated `social` rows. The route
+`GET /{:provider}` declares the provider optional: `GET /api/user/social` returns every stored
+`{ type, tokens }` row of the token's `email`, `GET /api/user/social/pinterest` the single row.
+`DELETE` returns the number of deleted rows as the body.
+
+### CRM tag
+
+`POST /api/user/boss/tag` with `{ "tags": [..] }` reads the client (`UserService.info`), reads
+the FUB person by the client's [`externalId`](/glossary#externalid), unions the new tags with the
+person's existing ones and writes the union back (`BossService.peopleUpdate`), because a FUB tag
+update replaces the set. It answers 201 `{ result }`. With `BOSS_ENABLED=false` the FUB read
+returns `{}` and the route answers 404 `Person not found`. It does not touch the local database.
+`BossService` is resolved from the root container here, while `UserService` comes from the
+request container.
+
+## Favorites — `/favorites`
+
+Source: `src/routes/favorites.ts`, `FavoritesService` (`src/services/favorites.ts`), client
+`RepliersFavorites`. Favorites are Repliers records of the client; nothing is stored locally.
+
+| Method & path                        | Auth   | Cached / header | Side effects                                                                                                                                         | Errors                                             | Deep dive                                                                  |
+| ------------------------------------ | ------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
+| `POST /api/favorites`                | strict | none            | Repliers `POST /favorites`; clears the `favorites:featuredListings` keys when `sub` is a mapped featured client; detached `Saved Property` FUB event | 400 (validation), 401, relayed upstream status     | [W4](/architecture/flows#w4--favorite-lifecycle-with-a-restricted-listing) |
+| `GET /api/favorites`                 | strict | none            | none                                                                                                                                                 | 400 (unknown query key, bad `sortBy`), 401         | [Listing](#listing)                                                        |
+| `DELETE /api/favorites/{favoriteId}` | strict | none            | Repliers `GET /favorites`, then `DELETE /favorites/{id}`; clears the featured keys as above                                                          | 400 (invalid id; id not in the caller's list), 401 | [Delete](#delete)                                                          |
+
+### Listing
+
+Query keys accepted: `sortBy`, `lat`, `long` (strings), `status`, `lastStatus`,
+`standardStatus` (`favoritesGetSchema`); `clientId` always comes from `sub`. The upstream
+response is passed through `stripMlsNumbers` (see [MLS-number prefix](/architecture/mls-number-prefix)),
+and `dropRestricted` removes records whose `mlsNumber` is in `settings.restrictedListings`
+([Restricted listings](/architecture/restricted-listings)). `count`, `numPages` and `pageSize`
+keep the upstream values.
+`POST` forwards the body to Repliers (`FavoritesService.add`).
+
+### Delete
+
+`FavoritesService.delete` reads `RepliersFavorites.get({ clientId })` with no paging parameters
+and looks for the id in the response; absent means 400 `You are not owner of that favoriteId`.
+That read keeps restricted records (the filter is applied only in `get`), but it still runs
+`constrainStandardStatus`, so on an instance with `allowedListingsStandardStatuses` the list is
+narrowed to the allowed statuses. The success body is whatever Repliers returned for the
+`DELETE`; the backend sets no body of its own.
+
+## Saved searches — `/searches`
+
+Source: `src/routes/searches.ts`, `SearchesService`, `RepliersSearches`. The criteria, PATCH
+semantics, ownership checks and notification fields are on
+[Saved searches](/api-reference/user-and-favorites/saved-searches).
+
+| Method & path                     | Auth        | Cached / header | Side effects                                                          | Errors                                                    | Deep dive                                                                 |
+| --------------------------------- | ----------- | --------------- | --------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `POST /api/searches`              | strict      | none            | Repliers `POST /searches`; detached `Saved Property Search` FUB event | 400, 401, relayed upstream status                         | [Operations](/api-reference/user-and-favorites/saved-searches#operations) |
+| `GET /api/searches`               | strict      | none            | none                                                                  | 401                                                       | [Operations](/api-reference/user-and-favorites/saved-searches#operations) |
+| `GET /api/searches/{searchId}`    | passthrough | none            | none                                                                  | 400, 401 (invalid token)                                  | [Operations](/api-reference/user-and-favorites/saved-searches#operations) |
+| `PATCH /api/searches/{searchId}`  | strict      | none            | Repliers `PATCH /searches/{id}`                                       | 400, 401, relayed upstream status                         | [PATCH](/api-reference/user-and-favorites/saved-searches#patch-semantics) |
+| `DELETE /api/searches/{searchId}` | strict      | none            | Repliers `GET /searches`, then `DELETE /searches/{id}`                | 400 (invalid id; id not among the caller's searches), 401 | [Operations](/api-reference/user-and-favorites/saved-searches#operations) |
+
+## Gotchas
+
+1. **`GET /api/user/social` and `/api/user/social/{provider}` are one route.** The path is
+   `/{:provider}`; with the provider the body is one row, without it an array. Source:
+   `src/routes/user/social.ts` (`router.get("/{:provider}")`).
+2. **Asset bodies carry an `id` and nothing else.** The create schema lists three keys and
+   allows no others, so `data` is `{}` and the list returns `{ id }` objects. Source:
+   `src/validate/user/assets.ts` (`userAssetsCreateSchema`), `src/services/user/assets.ts`.
+3. **The favorites delete check and the favorites list read different sets.** The check keeps
+   restricted records; both apply the allowed standard statuses. Source:
+   `src/services/favorites.ts` (`get`, `delete`), `src/services/repliers/favorites.ts` (`get`).
+4. **Favorites responses keep the upstream `count` after restricted records are dropped.**
+   Source: `src/services/favorites.ts` (`get`), `src/services/listings/listingHelpers.ts`
+   (`dropRestricted`).
+5. **A token whose `sub` is an agent id is read as a client id** by `GET /api/user/me`,
+   `GET /api/user/agent` and `PATCH /api/user`. Source: `src/services/user.ts`,
+   [`sub`](/glossary#jwt-sub).
+6. **The unsubscribe event is built from the request body, not from the Repliers result.**
+   Source: `src/services/eventsCollection/selectors/selectUnsubscribedParams.ts` (`select`).
+
+## Evidence
+
+- `test/routes/favorites.test.ts`: list, `sortBy` / `lat` / `long` forwarding, allowed standard
+  statuses forwarded, invalid `sortBy` rejected, no token rejected.
+- `test/services/eventsCollection/selectors/selectUnsubscribedParams.test.ts`: no event for
+  `unsubscribe` unset or false; event, tags, email, `occurredAt` and referrer otherwise.
+- Read, not exercised: the user, assets, social, boss-tag and searches routes and services.
+- Not established by this checkout: how Repliers treats `null`, empty arrays or an empty body on
+  `PATCH /clients`, and the shape of its favorites `POST` / `DELETE` responses.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

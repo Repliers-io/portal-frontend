@@ -59,10 +59,12 @@ NEXT_PUBLIC_API_URL=https://<your-proxy-host> pnpm frontend:dev
 
 ## What prebuild does
 
-`pnpm frontend:dev` (and every build) runs `prebuild` first:
+`pnpm frontend:dev` explicitly runs these steps in order (`portal-frontend/package.json`, `prebuild`). The monorepo and exported production build paths differ; see [Multi-tenant System](/technical-guide/multi-tenant#normalized-turbopack-deploys).
 
 | Step                     | Script                              | Purpose                                                                                                                                                                                          |
 | ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `generate:tsconfig` | `scripts/generate-tsconfig.js` | Resolves tenant-first aliases used by the build. |
+| `generate:features` | `scripts/fetch-features.ts` | Synchronizes static flags when configured; otherwise uses existing files. |
 | `generate:rewrites`      | `scripts/generate-rewrites.ts`      | Builds the generated rewrite/redirect maps. |
 | `generate:deployment-id` | `scripts/generate-deployment-id.js` | Stamps a build id.                          |
 

@@ -1,0 +1,128 @@
+# Coverage and Evidence
+
+Review date: **2026-11-02**. Frontend source: monorepo **`e30dd9b47`** plus the
+documentation working tree. Backend reference: its documentation's recorded
+source **`997ae3e`** (2026-10-20), inspected from the sibling backend documentation
+set. This page distinguishes documentation coverage from executed behavior.
+
+## What changed
+
+The starting frontend set contained **54 MDX pages** and 468 captured route/anchor
+pairs. This edition adds **21 focused pages** while retaining the product overview
+and technical-anatomy split. Page count is an inventory, not a completeness score.
+The backend reference supplied the standard for source ownership, worked traces,
+failure outcomes and explicit evidence; its page count was not a target.
+
+Canonical registers now cover 46 page-entry files, 23 local API files with 25
+HTTP operations, six other route handlers and six metadata sitemap files. The
+commented `locations/_sitemap.ts` is excluded from active metadata routes.
+
+## Evidence labels
+
+| Label | Meaning |
+| --- | --- |
+| Source | Named implementation/symbol read at the recorded revision |
+| Unit | Relevant existing tests executed; mocks/alias limitations still apply |
+| Runtime | Specific browser/API scenario observed in the identified local environment |
+| Synthetic | Invented input illustrating source-derived transformations; no real mutation |
+| Pending | Work not performed; never counted as executed coverage |
+
+## Canonical ownership
+
+| Question | Owning documentation | Evidence / boundary |
+| --- | --- | --- |
+| Which routes exist? | [Site Anatomy](/technical-guide/site-anatomy#route-entry-inventory) | Source inventory; route groups and catch-alls counted as files |
+| Where does code execute? | [Rendering and Lifecycle](/technical-guide/rendering-and-lifecycle) | Source; request/static/browser boundaries |
+| Who owns state and identity? | [Data Ownership](/technical-guide/data-ownership) | Source; no authenticated mutation replay |
+| Which service calls which backend? | [API Services](/technical-guide/api-services) | Source and selected service tests |
+| What does a local endpoint accept? | [Frontend Route Handlers](/technical-guide/api-routes) | All method exports reconciled; not all integrations called |
+| Which variables enable capabilities? | [Environment Variables](/getting-started/environment-variables) | Consumers inspected; no secret values published |
+| How do failures appear? | [Failure and Degradation](/technical-guide/failure-and-degradation) | Source; no production fault injection |
+| What gets cached or indexed? | [Caching](/technical-guide/caching-and-revalidation), [SEO](/technical-guide/seo) | Source; production cache/crawler behavior pending |
+| How are forms validated? | [Forms](/technical-guide/forms-and-validation) | Source and validation tests; no mail/CRM delivery |
+| What happens across layers? | [F01–F12 workflow map](/technical-guide/workflows) | Source/synthetic traces; live search evidence recorded per flow |
+| How is it built and diagnosed? | [Operations](/operations) | Repository mechanisms and local checks; no deployment |
+
+## Existing-page disposition
+
+All 54 original pages retain their routes. This is a review/disposition register,
+not a claim that every old screenshot or tenant-specific paragraph was replayed.
+Product overviews remain product explanations; the linked technical/workflow
+owners carry the added engineering detail.
+
+| Existing pages | Disposition and evidence owner |
+| --- | --- |
+| Introduction; Glossary | Retain; add question-based navigation and lifecycle terminology |
+| Getting Started overview; First Launch; Configuration; Capabilities & Flags; Regional & MLS Limits | Retain; correct command/prerequisite drift and link environment/build registers; regional access remains dataset-specific |
+| Product Guide overview; Content Management; Integrations; Multi-tenant | Retain concept-level scope; canonical implementation in CMS, API, tenant and environment pages |
+| Search overview + technical | Extend with F01/F02, real URL vocabulary, cancellation/failure and executed local trace |
+| Listing Detail overview + technical | Extend with F04, board resolution, history fallback and metadata failure boundary |
+| User Features overview + technical | Extend with F06/F07 and persistence/failure differences |
+| Estimate overview + technical | Extend with F08, step validation, identity and result transitions |
+| Home overview + technical | Retain anatomy; connect build routing and per-route cache ownership |
+| Dashboard overview + technical | Retain anatomy; connect statistics ownership and daily route regeneration |
+| Locations overview + technical | Retain domain detail; connect F11 and generated-file/process-cache boundaries |
+| CMS Content overview + technical | Extend with F10/F11, resolver precedence, metadata merging and widget validation |
+| AI Chat overview + technical | Retain product split; connect F03 and distinct NLP/auth/session identities |
+| AI Agent overview + technical | Correct protocol guarantees using both ends; record reset-name and origin/session limitations |
+| Technical overview; Site Anatomy; Architecture | Retain existing anchors; add route/context/register navigation |
+| Shared Components; Middleware; Multi-tenant System | Retain mechanism reference; link rendering/routes/operations; tenant forks need tenant-specific review |
+| Feature Removal; Removing GrowthBook; Code Export | Retain specialized procedures; explicitly separate monorepo/export applicability; not executed here |
+| State Management; URL & State Sync; Authentication | Retain component/provider reference; correct verified drift and add canonical lifetime/workflow links |
+| Internationalization; Content Management; Agent Portal | Retain specialized explanations; source boundaries in forms/CMS/estimate workflows |
+| API Services; Data Models; Data Mappers | Retain API/type mapping role; correct transport/failure claims and add caller register |
+| Map Overlays | Retain detailed renderer reference; add extension recipe and verification boundary |
+| Development Guide; Reference | Correct versions, optional dependencies, endpoint and URL vocabulary |
+| Tutorials overview; Adding a New Tenant | Retain procedure and anchors; distinguish illustrative values and unexecuted creation/export steps |
+
+## Executed checks
+
+- Existing frontend suites: **28 suites, 296 tests passed** across search/API,
+  listing, conversion, forms, CMS widgets, locations and building assembly.
+- Shared checker fixtures: **3 tests passed**, including intentional broken
+  links/anchors/images and base-path handling.
+- Tutorial snippets: **3 temporary fixture tests passed** for filter state,
+  widget parsing/validation and overlay merging. Widget JSX/registry syntax was
+  transpiled; the proposed component was not installed or fully type-checked.
+- Frontend standalone and static builds generated all 75 documentation pages and
+  Pagefind entries. Integrity checks retained all 468 original anchors; frontend
+  TypeScript passed. The shared checker passed against the backend's existing
+  57-page static output, and backend TypeScript passed; no fresh backend build
+  was performed for this frontend content change.
+- Live environment: user-confirmed `defaults` frontend at localhost:3000 and
+  sample-data proxy at localhost:8080. The initial backend mismatch was corrected
+  by the user before recording the successful search trace.
+- Browser search: 500 results before filtering, 299 after `minBedrooms=2` and
+  `minPrice=600000`; reopening the generated URL retained those filters and the
+  observed result. Counts are a snapshot, not permanent expected values.
+- The selected listing's direct URL rendered matching MLS identity, price,
+  bedrooms and area. The search-dialog click is not counted as verified; see
+  [F04](/technical-guide/workflows/listing-and-auth#executed-detail-example).
+- Edge browser checks covered readable diagram text and scrolling at 1280px and
+  390px widths, the API register, widget tutorial, Pagefind results and a result
+  anchor, plus static navigation to backend docs and the shared hub.
+- All **17 diagrams** rendered in the standalone browser pass without Mermaid
+  errors. Standalone Pagefind navigation and the mobile menu also reached their
+  intended articles; the twelve workflows each have a sequence diagram.
+
+The local static-file preview returned 404 for Next's dotted RSC prefetch paths
+while exporting the corresponding segments as directories. The observed search
+result still reached its article/anchor through navigation fallback. This is a
+recorded delivery limitation, not a clean-console or deployed-rewrite claim;
+the portal's hosting behavior needs its own integration check.
+
+## Explicit limits
+
+No account mutations, real contact messages, CRM deliveries, OTP/OAuth exchanges,
+remote CMS publishing, location regeneration, tenant export, production cache
+invalidation or deployment were executed. Proposed tutorial components/config
+changes are examples, not application changes. Existing screenshots and every
+tenant fork have not been visually re-certified. External protocol and raw-response
+limitations are documented as current behavior, not silently repaired here.
+
+## Keeping this edition current
+
+When a source owner changes, update its register and corresponding workflow,
+record the new revision/evidence, run the smallest relevant tests and the docs
+checker, and review affected screenshots/diagrams. Preserve old routes and anchors;
+do not replace the baseline simply to make a removed heading pass.

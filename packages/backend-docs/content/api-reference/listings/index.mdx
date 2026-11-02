@@ -1,0 +1,68 @@
+import { Callout } from 'nextra/components'
+
+# Listings
+
+Everything under `/api/listings` is served by `src/routes/listings.ts`. Every route uses
+passthrough auth (`middleware.jwt.passthrough`): a guest with no token is allowed, a valid
+token makes the request a user, and an invalid token is a 401. Guest responses are
+[scrubbed](/architecture/scrubbing); [restricted listings](/architecture/restricted-listings)
+are removed at the exits listed in its [enforcement register](/architecture/restricted-listings#enforcement-register). Terms are defined in the [Glossary](/glossary).
+
+This page is the operation index. The summary table carries each endpoint's auth, caching,
+side effects and error statuses; the mechanisms, parameters and rationale are on the deep
+pages, and the full parameter contract is in Swagger (`/swagger`).
+
+[Search & Count pipeline](/api-reference/listings/search) ·
+[Detail, Similar & History](/api-reference/listings/detail-similar-history) ·
+[NLP, Featured & Misc](/api-reference/listings/nlp-featured-locations) ·
+[Scrubbing](/architecture/scrubbing) ·
+[Workflows W1 (search) and W2 (history)](/architecture/flows)
+
+## Operations
+
+Every route is passthrough auth; no role is required. "Cached / header" names the
+response cache header the handler writes; "none" means no `Cache-Control`.
+
+| Method & path                                      | Cached / header                                                                          | Side effects                                                                       | Errors                                                                                                                                              | Deep dive                                                                     |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `GET` / `POST /api/listings/search`                | none                                                                                     | none                                                                               | 400 (unknown key, `radius` without `lat`/`long`, bad `map`); relayed upstream status                                                                | [Search](/api-reference/listings/search)                                      |
+| `GET /api/listings/count`                          | `@cached("listings:count")` → `Cache-Control: private, max-age`                          | none                                                                               | 400 (validation; `fields`/`sortBy`/`resultsPerPage`/`pageNum`/`listings` and `raw.*` are **not allowed** on this schema); relayed upstream status   | [Count](/api-reference/listings/search#count)                                 |
+| `POST /api/listings/count`                         | none (array body written directly)                                                       | none                                                                               | as `GET /count`, per array item                                                                                                                     | [Count](/api-reference/listings/search#count)                                 |
+| `GET /api/listings/{mlsNumber}`                    | none                                                                                     | detached FUB "Viewed Property" event for a signed-in non-Agent when `BOSS_ENABLED` | 400 (validation); `settings.hide_unavailable_listings_http_code` (default **410**) for restricted / hidden / entire-listing-N; relayed upstream 404 | [Detail](/api-reference/listings/detail-similar-history#single-listing)       |
+| `GET /api/listings/{mlsNumber}/similar`            | none                                                                                     | none                                                                               | 400 (validation); relayed upstream status                                                                                                           | [Similar](/api-reference/listings/detail-similar-history#similar)             |
+| `GET /api/listings/history`                        | none                                                                                     | none                                                                               | 400 (validation); relayed upstream status                                                                                                           | [History](/api-reference/listings/detail-similar-history#history)             |
+| `POST /api/listings/nlp`                           | none                                                                                     | none                                                                               | 400 (validation); relayed upstream status                                                                                                           | [NLP](/api-reference/listings/nlp-featured-locations#nlp)                     |
+| `GET /api/listings/featured/{slug}`                | `@cached("favorites:featuredListings")` by slug, skipped with `lat`/`long`; header: none | none                                                                               | 400 (bad slug format); 404 when the slug is not mapped; relayed upstream status                                                                     | [Featured](/api-reference/listings/nlp-featured-locations#featured)           |
+| `GET /api/listings/locations` (deprecated)         | `@cached("listings:autosuggest:locations")` → `Cache-Control`                            | none                                                                               | 400 (validation); relayed upstream status                                                                                                           | [Locations](/api-reference/listings/nlp-featured-locations#locations)         |
+| `GET /api/listings/lastUpdatedOn` (**Not in OSS**) | `@cached("listings:lastUpdatedOn")` → `Cache-Control`                                    | none                                                                               | none produced by the route (no validation, no upstream call); only the generic 500 for an unexpected error                                          | [lastUpdatedOn](/api-reference/listings/nlp-featured-locations#lastupdatedon) |
+
+<Callout type="info">
+  `GET /api/listings/lastUpdatedOn` and its service method are in `@oss-remove`
+  regions, so they are absent from the open-source export.
+</Callout>
+
+## Route order
+
+`@koa/router` matches in registration order, so the declaration order in
+`src/routes/listings.ts` decides which handler a path reaches:
+
+- `search`, `count`, `locations`, `nlp`, `lastUpdatedOn`, `featured/{slug}` and `history` are
+  all declared before the parametric `/{mlsNumber}`, which would otherwise match them as an MLS
+  number.
+- `/{mlsNumber}/similar` is declared before `/featured/{slug}`, so
+  `GET /api/listings/featured/similar` reaches the similar handler with `mlsNumber = "featured"`,
+  not the featured handler.
+
+## Behavioral notes
+
+The behaviour that used to be listed here now lives with its mechanism:
+
+- **Search filters, status vocabularies, aggregates, `queries[]`, repeated values, the identity
+  fields added to `fields` / `clusterFields`** → [Search & Count](/api-reference/listings/search).
+- **Single availability and the 410, similar, cross-board history, and the event-selector
+  callers that reach `RepliersListings.single` directly** →
+  [Detail, Similar & History](/api-reference/listings/detail-similar-history).
+- **NLP, featured, locations and the synthetic `lastUpdatedOn`** →
+  [NLP, Featured & Misc](/api-reference/listings/nlp-featured-locations).
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

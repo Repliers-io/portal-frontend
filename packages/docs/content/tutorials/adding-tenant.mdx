@@ -5,6 +5,12 @@ import { Callout, Steps } from 'nextra/components'
 Create a new branded site (tenant) end to end. Every code block here matches the real
 config shapes in `configs/defaults/*` — hover any field in your IDE to see its JSDoc.
 
+This is a **monorepo** procedure. Placeholder branding/keys/regions are examples,
+not verified deployment values. A tenant was not created by the 2026-11-02 docs
+audit. Confirm the target dataset and effective defaults before using a snippet;
+only add overrides that differ. Exported/normalized repository steps belong to
+[Code Export](/technical-guide/exporting) and [Build and Deployment](/operations/deployment).
+
 ## Prerequisites
 
 - The app runs locally — see [Getting Started → First Launch](/getting-started/first-launch).
@@ -44,7 +50,8 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 
 # Maps
 NEXT_PUBLIC_MAPBOX_KEY=pk.xxx
-NEXT_PUBLIC_GMAPS_KEY=xxx
+# Optional Google imagery; not required for Mapbox-only operation
+# NEXT_PUBLIC_GMAPS_KEY=xxx
 
 # Optional: analytics
 NEXT_PUBLIC_GTAG_KEY=G-XXXXXXXXXX

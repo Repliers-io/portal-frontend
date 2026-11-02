@@ -12,8 +12,8 @@
   "scripts": {
     "dev": "pnpm run prebuild && next dev",
     "build": "pnpm run clean:public && node scripts/build-remote.js",
-    "build:documentation": "pnpm run clean:documentation && node scripts/build-documentation.js && pnpm run generate:rewrites",
-    "clean:documentation": "rimraf public/documentation && pnpm run generate:rewrites",
+    "build:docs": "pnpm run clean:docs && node scripts/build-documentation.js && pnpm run generate:rewrites",
+    "clean:docs": "rimraf public/documentation && pnpm run generate:rewrites",
     "start": "next start",
     "prebuild": "pnpm run generate:rewrites && pnpm run generate:deployment-id",
     "clean:public": "node scripts/prepare-public.js",

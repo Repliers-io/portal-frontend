@@ -1,15 +1,76 @@
+import { Callout } from 'nextra/components'
+
 # Caching
+
+The backend caches Repliers and statistics results in [Keyv](https://keyv.org/) stores, one
+store per **namespace**, written by the `@cached` decorator. Two more Keyv stores hold
+one-time passwords and revoked tokens; they are state, not caches. Terms are in the
+[Glossary](/glossary).
+
+[Data ownership](/architecture/data-ownership#keyv-stores-own-their-data) ·
+[Request lifecycle](/architecture/request-lifecycle) ·
+[Configuration resolution](/architecture/configuration-resolution) ·
+[HTTP semantics](/api-reference)
 
 ## Keyv stores
 
-All caching goes through [Keyv](https://keyv.org/). `CacheFactory`
-(`src/lib/decorators/cached.ts`) creates one store per **namespace** and reuses it for
-the process lifetime. With `REDIS_KEYV_ENABLE=true` stores are backed by Redis
-(`REDIS_URL` / `REDISCLOUD_URL`); otherwise they are in-memory — correct for a single
-dev process, insufficient across dynos.
+`CacheFactory` (`src/lib/decorators/cached.ts`) creates one `Keyv` per namespace the first
+time a decorator names it and reuses that instance for the process lifetime. The decorator
+resolves its store when the class is defined (module load), not per request, so every
+request-scoped service instance reads the same store.
 
-Two special-purpose stores live in `src/providers/`: `keyv.otp.ts` (one-time
-passwords) and `keyv.blocklist.ts` (see [Authentication](/architecture/authentication)).
+| Backend                        | Selected by                                                                                          | Scope                                                         | After a restart              |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------- |
+| In-memory (Keyv default `Map`) | `REDIS_KEYV_ENABLE` unset or not `"true"`                                                            | One process: each process has its own copy of every namespace | Empty                        |
+| Redis                          | `REDIS_KEYV_ENABLE=true`; URL from `REDIS_URL`, else `REDISCLOUD_URL`, else `redis://localhost:6379` | Every process that points at the same Redis and namespace     | Entries live until their TTL |
+
+With Redis, each store constructs its own `new KeyvRedis(url)` and passes it to
+`new Keyv({ store, namespace })`. Reading `keyv` 5.6.0 and `@keyv/redis` 5.1.6: Keyv keeps
+`useKeyPrefix` on, so it prefixes every key with `<namespace>:`, and it also sets the
+namespace on the Redis adapter, which prefixes `<namespace>::` (the adapter turns
+`useKeyPrefix` off only in its own `createKeyv` helper, which this code does not use). The
+literal Redis key is therefore probably `<namespace>::<namespace>:<JSON args>`; that was read,
+not observed, because no Redis was run. Entries carry a TTL set at write time (`cache.set(key, value, ttl_ms)`); in
+memory an expired entry is treated as absent when read. Nothing sweeps the in-memory store
+and nothing bounds its size.
+
+### Stores that are not result caches
+
+`keyv.otp` (namespace `otp`) and `keyv.blocklist` (namespace `blocklist`) are built by
+providers (`src/providers/keyv.otp.ts`, `src/providers/keyv.blocklist.ts`) with the same
+`REDIS_KEYV_ENABLE` switch, but they hold one-time codes and revoked-token ids. Their keys,
+values and lifetimes are in [Keyv stores own their data](/architecture/data-ownership#keyv-stores-own-their-data)
+and their use in [Authentication](/architecture/authentication). Without Redis they are
+per-process too: a code issued by one process is unknown to another.
+
+## Cache state
+
+Each row is written only by the decorated method itself, on a miss. The one other writer of
+the stores is the featured-listings invalidation (below). TTL values are milliseconds read at
+startup from `config.cache.*` (`src/config.ts`); the default applies when the variable is
+unset.
+
+| Namespace                               | Key: arguments of the method                                                                                                                                                                                                                                   | Value                                      | TTL (env, default)                           | Read by                                                                                                                                                                                  | Invalidation                                                                                                                                                                                                            | Source                                                                                                                         |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `buildings:search`                      | `[params, usePost]`: the validated buildings query (including `body.map` on POST); `usePost` separates GET from POST entries                                                                                                                                   | Repliers buildings search response         | `CACHE_BUILDINGS_SEARCH_TTL`, 24 h           | `GET /api/buildings`, `POST /api/buildings` (through `sendCached`)                                                                                                                       | TTL only                                                                                                                                                                                                                | `src/services/buildings.ts` (`BuildingsService.search`)                                                                        |
+| `buildings:single`                      | `[addressKey]`                                                                                                                                                                                                                                                 | Repliers single-building response          | `CACHE_BUILDINGS_SINGLE_TTL`, 1 h            | `GET /api/buildings/{addressKey}`: the route assigns the method result to `ctx.body` without `sendCached`, so the body is the `{ result, expires }` object and no `Cache-Control` is set | TTL only                                                                                                                                                                                                                | `src/services/buildings.ts` (`BuildingsService.single`); `src/routes/buildings.ts`                                             |
+| `listings:count`                        | `[params]`: the validated count query. The count schema omits `app_state`, `fields`, `listings`, `resultsPerPage`, `pageNum` and `sortBy`                                                                                                                      | `{ count, lastUpdatedOn }`                 | `CACHE_LISTINGS_COUNT_TTL`, 24 h             | `GET /api/listings/count` (`sendCached`); `POST /api/listings/count` calls the method once per array item, unwraps `result` and sets no header                                           | TTL only                                                                                                                                                                                                                | `src/services/listings.ts` (`ListingsService.count`, `countArray`)                                                             |
+| `listings:autosuggest:locations`        | `[params]`: `class`, `dropCoordinates`, optional `area`/`city`/`neighborhood`/`boardId`, `activeCountLimit`. The two routes build different `params` (below)                                                                                                   | Reshaped locations hierarchy               | `CACHE_STATSWIDGET_TTL`, 24 h                | `GET /api/listings/locations` and the deprecated `GET /api/autosuggest/locations` (`sendCached`)                                                                                         | TTL only                                                                                                                                                                                                                | `src/services/listings.ts` (`ListingsService.locations`)                                                                       |
+| `listings:lastUpdatedOn` **Not in OSS** | `[]` (no arguments: one entry)                                                                                                                                                                                                                                 | `{ lastUpdatedOn }`, a synthetic timestamp | `CACHE_LISTINGS_LAST_UPDATED_ON_TTL`, 20 min | `GET /api/listings/lastUpdatedOn` (`sendCached`)                                                                                                                                         | TTL only                                                                                                                                                                                                                | `src/services/listings.ts` (`ListingsService.lastUpdatedOn`)                                                                   |
+| `locations:get`                         | `[params]`: the validated `/locations` query (`type`, `state`, `area`, `city`, `neighborhood`, `locationId`, `fields`, `resultsPerPage`, `pageNum`, `map`, `radius`, `lat`, `long`, `sortBy`, `hasBoundary`, `minSize`, `maxSize`, `source`, `classification`) | Repliers locations response                | `CACHE_LOCATIONS_TTL`, 24 h                  | `GET /api/locations` (`sendCached`)                                                                                                                                                      | TTL only                                                                                                                                                                                                                | `src/services/locations.ts` (`LocationsService.get`)                                                                           |
+| `widgets`                               | `[params]`: `map`, `class`, `area`, `city`, `neighborhood`, `district`, `community`, `historyMonthsCount`                                                                                                                                                      | Statistics widgets object                  | `CACHE_STATSWIDGET_TTL`, 24 h                | `GET /api/stats/widgets` (`sendCached`)                                                                                                                                                  | TTL only                                                                                                                                                                                                                | `src/services/stats.ts` (`StatsService.widgets`)                                                                               |
+| `stats` (caller **Not in OSS**)         | `[{ class }]`                                                                                                                                                                                                                                                  | Per-neighborhood statistics array          | `CACHE_NEIGHBORHOODSRANKING_TTL`, 24 h       | `StatsService.neighborhoodsrankingAuthorised` (**Not in OSS**); no route calls it                                                                                                        | TTL only                                                                                                                                                                                                                | `src/services/stats.ts` (`StatsService.fetchStats`)                                                                            |
+| `nr` **Not in OSS**                     | `[params]`: `class`, `limit`, `sorting`                                                                                                                                                                                                                        | Ranking object                             | `CACHE_NEIGHBORHOODSRANKING_TTL`, 24 h       | `GET /api/stats/neighborhoodsranking` (`sendCached`) for a request with a JWT user; a request without one gets a fixed stub that bypasses the cache                                      | TTL only                                                                                                                                                                                                                | `src/services/stats.ts` (`neighborhoodsrankingAuthorised`, `neighborhoodsranking`)                                             |
+| `favorites:featuredListings`            | `[slug]`, or `[slug, sortBy]` when `sortBy` is sent. A request with `lat` or `long` skips the cache                                                                                                                                                            | Featured response before scrubbing         | `CACHE_FEATURED_LISTINGS_TTL`, 1 h           | `GET /api/listings/featured/{slug}`: the service unwraps the cache entry before scrubbing, so `sendCached` receives a plain value and sets no header                                     | Deleted on favorite add and delete for the slug's client: the `[slug]` key and one `[slug, sortBy]` key per `RplSortBy` value. Behaviour and tests: [Featured](/api-reference/listings/nlp-featured-locations#featured) | `src/services/favorites.ts` (`FavoritesService.featuredListings`, `cachedFeaturedListings`, `invalidateFeaturedListingsCache`) |
+
+`config.cache.autosuggest_locations` (`CACHE_AUTOSUGGEST_LOCATIONS_TTL`, 24 h) is defined but
+no code reads it; the locations namespace takes `config.cache.statswidget.ttl_ms`.
+
+The `/api/listings/locations` route builds `params` from the query plus `class` set to
+residential and condo and `dropCoordinates` defaulted from the instance settings; the
+deprecated `/api/autosuggest/locations` route builds `class`, `boardId`, `dropCoordinates` and
+`activeCountLimit` from the instance settings only. The same arguments produce the same key
+in either route.
 
 ## The `@cached` decorator
 
@@ -21,29 +82,78 @@ async count(params) { ... }
 
 Mechanics (`src/lib/decorators/cached.ts`):
 
-- The cache key is **`JSON.stringify(args)`** — every argument, in order.
-- The value is wrapped as `Cached<T> = { result, expires }`, where `expires` is the
-  *remaining* TTL in seconds.
-- Routes send it through `sendCached(ctx, data)`, which unwraps `result` and sets
-  `Cache-Control: private, max-age=<expires>` — so HTTP caching mirrors the server
-  cache's real remaining lifetime.
-
-TTLs are env-tunable per domain (`CACHE_*_TTL`, milliseconds) — counts, featured
-listings, buildings, locations, rankings, stats widgets.
+- **Key.** `JSON.stringify(args)`: every argument, in order, so object key order and array
+  order are part of the key and `undefined` object properties are dropped (an `undefined` array element becomes `null`). The
+  namespace is not part of the argument string; the Keyv layers add their prefixes
+  ([Keyv stores](#keyv-stores)).
+- **Stored value.** `{ data, created }`, `created` being the write time in Unix seconds.
+- **Hit.** Returns `{ result: data, expires }`, `expires` being the TTL in seconds minus the
+  whole seconds elapsed since `created`.
+- **Miss.** Calls the original method, starts `cache.set(key, ..., ttl_ms)` without awaiting
+  it, and returns `{ result, expires }` with `expires` the full TTL in seconds. Concurrent
+  misses on one key each call the method; there is no single-flight.
+- **Errors.** A method that throws caches nothing.
+- **Response.** Routes pass the value to `sendCached(ctx, data)`, which, when the value is an
+  object with an `expires` key, writes `result` as the body and sets
+  `Cache-Control: private, max-age=<expires>`; any other value is sent as it is with no header
+  ([HTTP semantics](/api-reference)). Two identical requests therefore see a decreasing
+  `max-age` until the entry expires.
 
 ### Typing quirk
 
 A `@cached` method's declared return type is `Promise<T | Cached<T>>` even though it
 always returns `Cached<T>` at runtime — TypeScript cannot see through decorated
-return types. `sendCached` handles both shapes, so call sites stay clean.
+return types. `sendCached` handles both shapes, and internal callers that need the data
+read `.result` (`ListingsService.countArray`, `StatsService.neighborhoodsrankingAuthorised`).
 
-### When *not* to cache — the `app_state` trap
+### When _not_ to cache — the `app_state` trap
 
-The key being `JSON.stringify(args)` has a sharp consequence: **never cache a method
-whose arguments include `app_state`** (the per-user state). Including it scopes every
-cache entry to one user — useless. Stripping it would be worse: a guest-scrubbed
-response could be served to an authenticated user (or the reverse) from the same key.
+The key is `JSON.stringify(args)`, so any argument that differs per caller becomes part of
+the key. `app_state` is the per-request object that carries the JWT user for the scrubber.
+The listing methods that take it (`search`, `single`, `history`, `similar`) carry
+`@scrubbed` and no `@cached`; none of the ten `@cached` methods above receives `app_state`
+in its arguments:
 
-This is why `listings.history()` carries no `@cached` while `single()` and `count()`
-do — the same data differs per caller only by scrubbing, and the scrubbing happens
-inside the cached call. When adding a cache, check what the arguments contain first.
+- `count` uses a schema that omits `app_state`, and the count routes do not add it.
+- Featured listings take `app_state` in the public method, strip it with
+  `const { slug, app_state, ...query } = params`, cache the inner `cachedFeaturedListings(slug,
+sortBy?)`, and run `@scrubbed("listings")` on the unwrapped result. The cache holds the
+  list before scrubbing; the scrubbing decision is made per request ([Scrubbing](/architecture/scrubbing)).
+- `neighborhoodsranking` takes the user only to choose between the stub and
+  `neighborhoodsrankingAuthorised(params)`; the user is not an argument of the cached method.
+
+Before adding `@cached`, read what the method's arguments contain.
+
+## Gotchas
+
+1. **Only the featured namespace is ever cleared by code.** Every other namespace lives
+   until its TTL, per process unless Redis is on ([Keyv stores](#keyv-stores)). Source:
+   `src/services/favorites.ts` (`invalidateFeaturedListingsCache`), the only use of
+   `getCacheStore`.
+2. **`max-age` can differ from the configured TTL.** On a hit it is the remaining lifetime;
+   on a miss it is the full TTL. A client that stores the response honours the remaining time.
+   Source: `src/lib/decorators/cached.ts` (`sendCached`, default export).
+3. **Routes that bypass `sendCached` expose different shapes.** `GET /api/buildings/{addressKey}`
+   returns the `{ result, expires }` object; `POST /api/listings/count` and the featured route
+   return plain values with no `Cache-Control`. Source: `src/routes/buildings.ts`,
+   `src/routes/listings.ts`.
+4. **Argument order and defaults decide the key.** Two requests with the same meaning but
+   differently ordered arrays, or a defaulted versus an explicit value, are separate entries.
+   Source: `src/lib/decorators/cached.ts` (default export, `JSON.stringify(args)`).
+5. **`stats` and `nr` are an inner and an outer cache.** `nr` calls `fetchStats` through the
+   `stats` namespace, so a `nr` miss may still be served from `stats` (both 24 h by default).
+   Source: `src/services/stats.ts` (`neighborhoodsrankingAuthorised`, `fetchStats`).
+
+## Evidence
+
+- `test/lib/decorators/cached.test.ts`: `cacheKey` serialisation, one store per namespace,
+  invalidation through `getCacheStore`, hits by argument, `expires` in seconds, `sendCached`
+  header and plain-value cases.
+- `test/routes/featured.test.ts`: cache by slug and `sortBy`, no caching with `lat`/`long`,
+  invalidation on favorite add and delete, no invalidation for a non-featured client.
+- Source read for every `@cached` call site, `src/providers/keyv.*.ts` and the `cache`
+  block of `src/config.ts`.
+- Not established by this checkout: Redis behaviour under eviction or failover; Keyv
+  version-specific serialisation beyond `keyv` 5.6.0 and `@keyv/redis` 5.1.6.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

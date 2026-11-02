@@ -1,0 +1,48 @@
+# Estimates
+
+Everything under `/api/estimate` is served by `src/routes/estimate.ts`: the AVM (automated
+valuation model) surface, a proxy to the Repliers estimates API
+(`src/services/repliers/estimate.ts`) with owner-adjustment and property-details logic in
+`src/services/estimate.ts`. Terms are defined in the [Glossary](/glossary).
+
+This page is the operation index. The summary table carries each endpoint's auth, caching,
+side effects and error statuses; the mechanisms (enrichment, tax adjustment, ownership,
+notifications, the agent entry points) are on the [pipeline page](/api-reference/estimate/pipeline).
+
+[Estimate pipeline](/api-reference/estimate/pipeline) ·
+[Workflow W6](/architecture/flows) ·
+[Email](/integrations/email) ·
+[Scrubbing](/architecture/scrubbing)
+
+## Operations
+
+"Cached / header" names the response cache header the handler writes; no estimate route
+caches or sets `Cache-Control`. "Passthrough" is `middleware.jwt.passthrough` (a guest is
+allowed, an invalid token is a 401); "strict" is `middleware.jwt`. Every handler sets
+`ctx.state["enable.xff"]`.
+
+| Method & path                        | Auth                       | Cached / header | Side effects                                                                                                                                                                                                                                                     | Errors                                                                                                                                                                                                                                                                                                    | Deep dive                                                             |
+| ------------------------------------ | -------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `POST /api/estimate`                 | passthrough                | none            | Estimate created upstream; for a user the estimate is saved to the `clientId` and the email flags are sent with the preset defaults (a guest's flags are forwarded only when present in the body); detached FUB "Seller Inquiry" event and note, guests included | 400 (validation; `boardId` is the only required top-level field, and `details`, `address` and `taxes` carry required fields when sent); relayed upstream status                                                                                                                                           | [Create](/api-reference/estimate/pipeline#creating-an-estimate)       |
+| `GET /api/estimate`                  | passthrough                | none            | Detached FUB view event when `BOSS_REPORT_CLIENT_VIEW_ESTIMATE` and the caller is a signed-in user                                                                                                                                                               | 400 (neither `estimateId` nor `ulid`; `estimateId` above `settings.max_estimate_id`, which the `defaults` preset sets to 0, so there any positive `estimateId` is a 400 and only `ulid` reads work; `ulid` not 26 characters); 404 `Not found` when upstream returns no estimate; relayed upstream status | [Reading](/api-reference/estimate/pipeline#reading-estimates)         |
+| `GET /api/estimate/my`               | strict                     | none            | none                                                                                                                                                                                                                                                             | 401; relayed upstream status                                                                                                                                                                                                                                                                              | [Reading](/api-reference/estimate/pipeline#reading-estimates)         |
+| `PATCH /api/estimate/{estimateId}`   | strict + `assertOwnership` | none            | Estimate updated upstream                                                                                                                                                                                                                                        | 401; 403 `You are not allowed to access this estimate`; 404 (estimate unknown, from the ownership read); 400 (validation); relayed upstream status                                                                                                                                                        | [Ownership](/api-reference/estimate/pipeline#ownership)               |
+| `DELETE /api/estimate/{estimateId}`  | strict + `assertOwnership` | none            | Estimate deleted upstream                                                                                                                                                                                                                                        | 401; 403; 404 (unknown estimate, or the upstream returned nothing); 400; relayed upstream status                                                                                                                                                                                                          | [Ownership](/api-reference/estimate/pipeline#ownership)               |
+| `GET /api/estimate/property_details` | passthrough                | none            | none                                                                                                                                                                                                                                                             | 400 (`city`, `streetName`, `streetNumber` required); relayed upstream status                                                                                                                                                                                                                              | [Property details](/api-reference/estimate/pipeline#property-details) |
+
+`GET /api/estimate/property_details` reads listings through `RepliersListings.search`, not
+`ListingsService`, so the [scrubber](/architecture/scrubbing) does not run on its response.
+When nothing is found and `SETTINGS_EXTENDED_PROPERTY_DETAILS` is off, the handler assigns an
+empty body.
+
+## Email and CRM links
+
+Email delivery of estimates (immediate and monthly) is controlled by
+`REPLIERS_ESTIMATES_SEND_EMAIL_NOW` / `_MONTHLY`; see the
+[notification rules](/api-reference/estimate/pipeline#notifications) and
+[Email](/integrations/email).
+
+Estimate links in CRM events use the `eventsCollection.estimateUrl` template; see
+[Follow Up Boss](/integrations/follow-up-boss).
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

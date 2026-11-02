@@ -66,6 +66,9 @@ Most widgets share a small set of base props:
 
 Data-driven widgets also accept a nested `listings.*` object — any MLS query field (`listings.city`, `listings.listingType`, `listings.listingStatus`, `listings.maxPrice`, `listings.sortBy`, …) is forwarded to the Repliers search API.
 
+- `listings.raw.<Field>` filters on a raw MLS field, e.g. `listings.raw.BuyerOfficeKey=…` for the deals an office closed on the buy side.
+- `listings.match1.*` … `listings.match9.*` are OR-branches sent as the API `queries` union; every other `listings.*` param applies to all of them. Sell side + buy side: `listings.match1.officeId=… listings.match2.raw.BuyerOfficeKey=…`.
+
 Every param is validated before render. The schema declares its `type`, whether it is `required`, an optional `defaultValue`, and whether a single value is coerced into an array (`forceArray`). Invalid values surface as inline errors — see the last section.
 
 ---

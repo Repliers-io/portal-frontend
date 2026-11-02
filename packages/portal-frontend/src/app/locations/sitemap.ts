@@ -3,7 +3,12 @@
 import features from '@configs/features'
 import locationConfig from '@configs/location'
 
-import { getAreaUrl, loadStaticTree } from 'services/LocationsTree'
+import {
+  getAreaUrl,
+  loadStaticTree,
+  resolveLocation
+} from 'services/LocationsTree'
+import { excludedArea } from 'utils/indexing'
 import { getLocationUrl } from 'utils/urls'
 
 export const revalidate = 3600
@@ -40,6 +45,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const area of tree.areas) {
       for (const city of area.cities || []) {
+        const { parentArea } = resolveLocation(tree, { city: city.name })
+        if (excludedArea(parentArea?.name)) continue
+
         entries.push({
           url: `${baseUrl}${getLocationUrl({ city: city.name })}`,
           lastModified: new Date(),

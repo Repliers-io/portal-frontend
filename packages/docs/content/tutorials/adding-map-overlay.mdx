@@ -1,0 +1,63 @@
+# Adding a Map Overlay
+
+Source review: `e30dd9b47`, 2026-11-02. Use the existing overlay definition,
+fetching, selection and renderer pipeline. A layer's availability, initial active
+state and zoom threshold are separate settings.
+
+## Start with an existing layer
+
+`configs/defaults/overlays/liveBy.ts` already exports `livebyPostalCode` with
+`id: 'livebyPostalCode'`, `locationTypes: ['postalCode']`, `activationMinZoom: 10`
+and `fetchLocations(..., { type: 'postalCode', source: 'LiveBy' })`. Its polygons
+are selectable. Confirm the active dataset supports that source before enabling it.
+
+This complete transformation illustrates making that existing layer initially
+active on the search surface while retaining all other definition fields:
+
+```ts
+import { overlayLayers as defaultLayers } from '@defaults/overlays/liveBy'
+
+export const overlayLayers = defaultLayers.map((layer) =>
+  layer.id === 'livebyPostalCode'
+    ? { ...layer, showOn: { ...layer.showOn, search: { active: true } } }
+    : layer
+)
+```
+
+Apply such a transformation in the tenant's existing overlay configuration and
+preserve its required exports and other customized layers. This example uses
+defaults to demonstrate the merge; it is not a replacement for an already
+customized tenant file. If `features.liveBy` produced an empty default list,
+mapping it cannot enable the missing capability.
+
+## For a genuinely new data source
+
+1. Inspect `OverlayLayerDefinition` in `configs/defaults/map.ts` and the nearest
+   existing layer. Choose a stable id, supported location types and surface flags.
+2. Reuse an existing fetch utility when the source already exists. If a frontend
+   handler is needed, copy its nearest equivalent's `map` polygon contract and
+   validation; do not invent a second bbox parameter scheme.
+3. Return GeoJSON with identity and all useful nongeometry properties intact.
+   Keep coordinate/nested-geometry fields out of properties when they would be
+   structurally harmful. Marker/polygon linkage uses the existing shared id field.
+4. Register a tooltip through `OverlayMarkerPopup/tooltipRegistry.ts` if required,
+   reusing shared cards. Add translated UI labels through the existing i18n path.
+5. Connect the definition to the effective map overlays list and check the feature
+   gate. Re-run the supported alias generator only when adding a new override file
+   and after coordinating with the active development session.
+
+## Verify the whole lifecycle
+
+Check initial active state versus menu availability, zoom above/below the threshold,
+fetch cancellation on movement, point and polygon rendering, hover, selection,
+hide/show cleanup, and URL reopening. Search and listing maps have different
+surface defaults. A bare `search: true` makes a layer available but not initially
+active; `{ active: true }` opts into initial activation.
+
+Current point/cluster overlays use DOM markers; boundaries use GL fill/line
+layers. Do not reuse an older GL-circle recipe without checking the current
+renderer. A successful GeoJSON response does not prove selection or popup behavior.
+An isolated fixture extracted this transformation and verified that it activates
+the selected layer without mutating the input or losing other layers/fields.
+It was not applied to a tenant or checked against a live overlay service.
+See [Map Overlays](/technical-guide/map-overlays) for renderer ownership.

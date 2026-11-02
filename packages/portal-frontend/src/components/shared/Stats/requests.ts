@@ -1,7 +1,7 @@
 import filtersConfig from '@configs/filters'
 
-import { type ApiClass } from 'services/API'
-import SearchService from 'services/Search'
+import { type ApiClass, APISearch } from 'services/API'
+import { processParams } from 'services/Search/adapter'
 import { soldDateRange } from 'utils/listings'
 
 import { type ChartStatsParams } from './types'
@@ -11,38 +11,31 @@ const { statusFilters } = filtersConfig
 
 export const fetchStatistics = async (
   statistics: string,
-  params: ChartStatsParams,
-  independent = false
+  params: ChartStatsParams
 ) => {
   const { timeRange, propertyClass, ...location } = params
 
   try {
-    const response = await SearchService.fetch(
-      {
+    const response = await APISearch.fetchGraph(
+      processParams({
         ...location,
         statistics,
         ...statusFilters.unavailable,
         type: 'sale',
-        listings: false,
         class: propertyClass as ApiClass,
         ...soldDateRange(getWindowStart(timeRange), getWindowEnd())
-      },
-      independent
+      })
     )
-    return response!.statistics
+    return response.statistics
   } catch {
     return {}
   }
 }
 
-export const fetchSalePrice = async (
-  params: ChartStatsParams,
-  independent = false
-) => {
+export const fetchSalePrice = async (params: ChartStatsParams) => {
   const { soldPrice } = await fetchStatistics(
     'med-soldPrice,avg-soldPrice,grp-mth',
-    params,
-    independent
+    params
   )
 
   if (!soldPrice) return null

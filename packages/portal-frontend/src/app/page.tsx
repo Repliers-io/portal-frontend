@@ -8,6 +8,7 @@ import HomePageContent from '@pages/home'
 export const metadata: Metadata = {
   title: content.pagesMeta.home.title ?? undefined,
   description: content.pagesMeta.home.description ?? undefined,
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     title: content.pagesMeta.home.title ?? undefined,

@@ -55,6 +55,10 @@ export const StatsGraph = ({
   useEffect(() => {
     if (!visible) return
 
+    // A response that lands after the action/params changed belongs to the
+    // previous chart — drop it.
+    let current = true
+
     const fetchChartData = async () => {
       const propertyClassArray = (
         propertyClass === 'all' ? ['residential', 'condo'] : [propertyClass]
@@ -78,16 +82,21 @@ export const StatsGraph = ({
       try {
         setLoading(true)
         const data = await fetchFunction(params)
+        if (!current) return
         setChartData(data)
         setLoadedAction(action)
       } catch (error) {
         console.error('[StatsGraph] error fetching data:', error)
       } finally {
-        setLoading(false)
+        if (current) setLoading(false)
       }
     }
 
     fetchChartData()
+
+    return () => {
+      current = false
+    }
   }, [visible, action, propertyClass, area, city, timeRange])
 
   return (

@@ -1,4 +1,5 @@
 import listingsConfig from '@configs/listings'
+import locationConfig from '@configs/location'
 
 import { APISearch } from 'services/API'
 
@@ -13,6 +14,38 @@ const request = {} as Request
 
 describe('listing sitemap route', () => {
   afterEach(() => jest.restoreAllMocks())
+
+  it('omits outside listings without narrowing the cache warm-up requests', async () => {
+    const { indexAreas } = locationConfig
+    locationConfig.indexAreas = ['King']
+    try {
+      const spy = jest
+        .spyOn(APISearch, 'fetch')
+        .mockResolvedValueOnce({
+          numPages: 2,
+          listings: [
+            { mlsNumber: '2598131', address: { area: 'King' } },
+            { mlsNumber: '2593312', address: { area: 'Pierce' } }
+          ]
+        } as never)
+        .mockResolvedValue({ numPages: 2, listings: [] } as never)
+      const response = await GET(request, {
+        params: Promise.resolve({ id: '0.xml' })
+      })
+      const xml = await response.text()
+      expect(xml).toContain('2598131')
+      expect(xml).not.toContain('2593312')
+      expect(spy.mock.calls.map(([params]) => params.get.pageNum)).toEqual([
+        1, 2
+      ])
+      for (const [params] of spy.mock.calls) {
+        expect(params.get.displayPublic).toBe('Y')
+        expect(params.get.area).toBeUndefined()
+      }
+    } finally {
+      locationConfig.indexAreas = indexAreas
+    }
+  })
 
   it('fetches the api pages for the requested sitemap id', async () => {
     const spy = jest

@@ -1,0 +1,21 @@
+# Workflow map
+
+These traces connect route entry, state, services and the resulting UI. Each distinguishes an executed check from a synthetic example derived from code. Individual component anatomy remains in the [Product Guide](/product-guide) and [Site Anatomy](/technical-guide/site-anatomy).
+
+| Workflow | Reading path | Evidence |
+| --- | --- | --- |
+| F01: initialize a shared search | [Search initialization](/technical-guide/workflows/search#f01--open-a-shared-search) | Source, unit tests and defaults/sample-data runtime |
+| F02: change and share a search | [Filter change](/technical-guide/workflows/search#f02--change-a-filter-and-share-the-result) | Source, unit tests and browser change/reopen |
+| F03: language to search | [NLP and iframe bridge](/technical-guide/workflows/content-and-build#f03--turn-language-into-search) | Both protocol ends read; synthetic request |
+| F04: open a listing | [Detail and identity](/technical-guide/workflows/listing-and-auth#f04--open-a-listing) | Source and existing tests; live evidence recorded below the trace |
+| F05: authenticate and leave | [Session lifecycle](/technical-guide/workflows/listing-and-auth#f05--authenticate-refresh-and-leave) | Source; no account mutation |
+| F06: favorite a listing | [Favorite transaction](/technical-guide/workflows/user-actions#f06--save-or-remove-a-favorite) | Source; synthetic mutation |
+| F07: save and reopen a search | [Persisted geometry](/technical-guide/workflows/user-actions#f07--save-a-search-and-reopen-it) | Source and conversion tests |
+| F08: estimate | [Step and result lifecycle](/technical-guide/workflows/user-actions#f08--complete-an-estimate) | Source and conversion tests |
+| F09: contact | [Submission boundary](/technical-guide/workflows/user-actions#f09--contact-submission) | Source and validation tests; no message sent |
+| F10: CMS and widget | [Resolve and render](/technical-guide/workflows/content-and-build#f10--resolve-a-cms-page-and-render-a-widget) | Source, parser/transform tests |
+| F11: geography and buildings | [Generated content](/technical-guide/workflows/content-and-build#f11--publish-geography-and-building-content) | Source and pipeline/assembly tests |
+| F12: build and delivery | [Artifact flow](/technical-guide/workflows/content-and-build#f12--build-and-publish-an-artifact) | Docs package builds; deployment not executed |
+
+See [Coverage](/coverage) for the revision, executed checks and remaining external
+boundaries. A source trace does not imply that a production integration was exercised.

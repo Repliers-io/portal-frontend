@@ -23,6 +23,8 @@ const location = {
    * Every tenant MUST set it; the spread base won't carry a correct value.
    */
   stateFilter: 'TX',
+  /** Areas eligible for listing/location indexing; empty leaves indexing unrestricted. */
+  indexAreas: [] as string[],
   /** Primary city (home-page stats + default map framing). */
   city: 'Austin',
   /** Filters seeded on the home page market stats. */

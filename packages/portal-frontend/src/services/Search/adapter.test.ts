@@ -233,6 +233,42 @@ describe('SearchService/adapter', () => {
     })
   })
 
+  describe('processParams — pinned union', () => {
+    it('unions the status fragment with the pinned listings of the Both fragment', () => {
+      const result = processParams({
+        boardId: 75,
+        listingStatus: 'active',
+        pinned: true
+      } as unknown as Partial<ApiQueryParams>)
+
+      // The trap: a key both at the top level and inside `queries` is a 400.
+      expect(result.get).not.toHaveProperty('status')
+      expect(result.get).not.toHaveProperty('lastStatus')
+      expect(result.get).not.toHaveProperty('pinned')
+      // the type axis stays top-level and ANDs with both elements
+      expect(result.get.type).toBe('sale')
+      expect(result.post.queries).toEqual([
+        {
+          status: 'A',
+          lastStatus: ['Cs', 'Ext', 'Lc', 'New', 'Pc', 'Sc', 'Sce']
+        },
+        { 'raw.is_pinned': 'true', status: ['A', 'U'] }
+      ])
+    })
+
+    // The advanced dialog merges the `false` default into every search.
+    it('keeps a false pinned out of the request', () => {
+      const result = processParams({
+        listingStatus: 'active',
+        pinned: false
+      } as unknown as Partial<ApiQueryParams>)
+
+      expect(result.get).not.toHaveProperty('pinned')
+      expect(result.get.status).toBe('A')
+      expect(result.post).toEqual({})
+    })
+  })
+
   describe('applySoldPriceAndDate', () => {
     it('bounds sold results by the sold price and orders them by sale date', () => {
       const params = applySoldPriceAndDate({

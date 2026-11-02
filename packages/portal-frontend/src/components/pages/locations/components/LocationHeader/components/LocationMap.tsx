@@ -32,9 +32,9 @@ import {
   getBoundaryBounds,
   getDefaultBounds,
   getMapStyleUrl,
+  mapUnavailable,
   removePolygon,
-  styleReady,
-  webglSupported
+  styleReady
 } from 'utils/map'
 
 import { LocationMapControls } from './LocationMapControls'
@@ -130,9 +130,9 @@ export const LocationMap = ({ markers }: { markers?: MapMarker[] }) => {
   }, [boundary, center, zoom])
 
   useEffect(() => {
-    // No WebGL (e.g. hardware acceleration off) — the Map constructor would
-    // throw and crash the page; MapContainer renders the message instead.
-    if (!containerRef.current || !webglSupported()) return
+    // No Mapbox key or no WebGL — the Map constructor would throw and crash
+    // the page; MapContainer renders the message instead.
+    if (!containerRef.current || mapUnavailable()) return
 
     // Initialize map only once
     if (!mapRef.current) {

@@ -1,0 +1,63 @@
+# SEO and Crawl Surfaces
+
+Source review: `e30dd9b47`, 2026-11-02. Metadata, canonical URLs, sitemap membership
+and robots rules are separate decisions. A routable page is not automatically
+indexable, and robots exclusion is not access control.
+
+## Ownership register
+
+| Surface | Source owner | Responsibility |
+| --- | --- | --- |
+| Site metadata base | `app/layout.tsx`, tenant content config | Domain and shared metadata |
+| Search metadata | `app/search/[layout]/page.tsx`, `_utils.ts` | Parse filters/camera for descriptive metadata and map imagery |
+| Listing metadata | `app/listing/[[...listingName]]/page.tsx`, `utils/listings/seo.ts` | Fetch identity-specific record; format listing metadata; transient-error noindex |
+| Location metadata | `app/locations/[[...slugs]]/page.tsx` | Resolve location path using generated geography |
+| CMS/blog metadata | Corresponding page `generateMetadata` functions | CMS metadata plus route-specific canonical decisions |
+| Condo canonical | `app/condo/[...slugs]/page.tsx` | Collapse alternate forms onto the canonical building/address route |
+| Indexing policy | `content.noIndex`, `app/documentation/utils.ts` | Per-build indexing policy and documentation-only behavior |
+| Robots | `app/robots.txt/route.ts` | Exclude search, user/service/debug surfaces and RSC query duplicates |
+| Sitemap index | `app/sitemap.xml/route.ts` | Select feature-gated portal sitemaps and installed docs sites |
+
+## Sitemap inventory
+
+There are six metadata `sitemap.ts` files: `author`, `blog`, `condo`, `condos`,
+`dashboard` and `locations`. Reconcile this list when routes change with the
+inventory command below.
+
+The XML route handlers separately implement the top-level index, static content,
+listing index/chunks and bundled documentation sitemaps. `locations/_sitemap.ts`
+is a commented implementation artifact, not an active metadata route. Feature
+gates suppress relevant sitemap output; `DISABLE_SSG` is checked by individual
+generators and is not a universal sitemap switch.
+
+```powershell
+rg --files packages/portal-frontend/src/app -g sitemap.ts -g route.ts
+```
+
+The index includes listing sitemaps under the map feature, locations/dashboard
+under their own flags, blog and author under blog, and condos/condo under buildings.
+`documentationOnly()` suppresses portal entries and makes robots allow
+`/documentation` under a general disallow rule. Documentation entries are built
+from the available exported sites rather than hard-coded article names.
+
+## Worked failure: listing metadata
+
+The listing page and its metadata call the cached `fetchListing` helper with parsed
+MLS and board identity. On a transient API error, metadata uses the missing-property
+copy with `{ index: false, follow: true }`; the body attempts nearby listings and
+renders `Listing40XTemplate`. This is not evidence that the MLS record was deleted.
+Check the API status before treating a fallback page as a genuine missing listing.
+
+## Change verification
+
+1. Confirm domain, indexing policy, route features and source identity for the build.
+2. Inspect the rendered title, canonical, robots and social-image URLs for one
+   representative route, including an alternate path and a missing record.
+3. Follow the sitemap index into its child XML; verify actual URL content and
+   feature exclusions, not only HTTP 200.
+4. Reconcile generated rewrites/redirects with canonical destinations. Invalidate
+   both aliased and destination paths when the content changes.
+
+Source and existing SEO unit tests support the implementation description. Search
+engine indexing, production canonical headers and live crawler behavior were not
+verified for an unspecified tenant.

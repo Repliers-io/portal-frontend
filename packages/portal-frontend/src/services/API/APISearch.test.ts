@@ -60,6 +60,31 @@ describe('APISearch.fetch — featured source', () => {
   })
 })
 
+describe('APISearch.fetchGraph', () => {
+  afterEach(() => jest.restoreAllMocks())
+
+  it('sends filters in the query and a polygon in a POST body', async () => {
+    const spy = spyRequests()
+    const map = [
+      [
+        [-75.7, 45.4],
+        [-75.6, 45.4],
+        [-75.7, 45.4]
+      ]
+    ]
+
+    await APISearch.fetchGraph({
+      get: { city: 'Ottawa', statistics: 'sum-soldPrice,grp-mth' },
+      post: { map }
+    })
+
+    expect(spy).toHaveBeenCalledWith(
+      '/stats/graph?city=Ottawa&statistics=sum-soldPrice%2Cgrp-mth',
+      { method: 'POST', body: JSON.stringify({ map }) }
+    )
+  })
+})
+
 describe('APISearch.fetchAggregates', () => {
   afterEach(() => jest.restoreAllMocks())
 

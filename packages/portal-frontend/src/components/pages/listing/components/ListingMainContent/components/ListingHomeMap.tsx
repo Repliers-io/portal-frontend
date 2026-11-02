@@ -3,11 +3,12 @@ import mapboxgl from 'mapbox-gl'
 
 import mapConfig from '@configs/map'
 import { HomeMap } from '@shared/Map'
+import { hiddenPriceLabel } from '@shared/Map/hooks/useListingMarkers/features'
 
 import { useDialog } from 'providers/DialogProvider'
 import { useListing } from 'providers/ListingProvider'
 import { useMapOptions } from 'providers/MapOptionsProvider'
-import { formatShortAddress, getMakiSymbol } from 'utils/listings'
+import { formatShortAddress, getMakiSymbol, hiddenPrice } from 'utils/listings'
 
 const { mapFlyCurve } = mapConfig
 
@@ -59,7 +60,13 @@ export const ListingHomeMap = ({
       zoom={zoom}
       title={title}
       recenterThreshold={20}
-      marker={{ symbol, status, price: listPrice, size: 'tag' }}
+      marker={{
+        symbol,
+        status,
+        price: listPrice,
+        label: hiddenPrice(listing) ? hiddenPriceLabel : undefined,
+        size: 'tag'
+      }}
       onClick={handleStaticMapClick}
     />
   )

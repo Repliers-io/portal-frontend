@@ -8,12 +8,16 @@ import { formatPrice } from 'utils/formatters'
 import {
   displayOnMap,
   getMarkerLabel,
+  hiddenPrice,
   type ListingMarkerColor,
   multiUnitKey,
   resolveListingMarkerColor,
   scrubbed
 } from 'utils/listings'
 import { getCenter, toMapboxPoint } from 'utils/map'
+
+// the tag of a withheld price (L/src/services/Map/helper.tsx:29)
+export const hiddenPriceLabel = 'Listing'
 
 // A plain description of one marker to render. The manager diffs these by `key`
 // and only creates/removes the DOM markers that actually changed.
@@ -82,9 +86,11 @@ export const listingDescriptors = (
     const { lng, lat } = toMapboxPoint(map)
     const label = multiUnit
       ? `${group!.mlsNumbers.length} units`
-      : !scrubbed(listPrice)
-        ? formatPrice(listPrice)
-        : getMarkerLabel(listing)
+      : hiddenPrice(listing)
+        ? hiddenPriceLabel
+        : !scrubbed(listPrice)
+          ? formatPrice(listPrice)
+          : getMarkerLabel(listing)
 
     const { color, hoverColor } = resolveListingMarkerColor({ listing })
 

@@ -28,7 +28,8 @@ lives in a cookie and is attached as a `Bearer` header on every API call.
 - **Google / Facebook** — OAuth redirect flow (`APIAuth.auth` → provider URL → `authCallback`).
 - **OTP** — passwordless email one-time passcode. `requestOtpLogin` calls `APIAuth.login`;
   a `404` means the user does not exist yet, so it falls through to `APIAuth.signup` and
-  re-requests. `loginWithOtp` confirms the code via `APIAuth.confirmOtp` (`/auth/otp`).
+  returns the signup result without a second login request. `loginWithOtp` confirms
+  the code via `APIAuth.confirmOtp` (`/auth/otp`).
 
 ## Flow
 
@@ -71,10 +72,21 @@ Three boolean flags derived from `profile.role` gate the UI (used ~50 times app-
   (`history.replaceState`) so the secret never lingers in the address bar or history.
 - **`401` clears the token.** `APIBase.fetchRaw` calls `clearToken()` on any `401` response.
 - **Token lives in a cookie, profile in localStorage.** `getTokenSync` reads the `js-cookie`
-  value; client `logged` isn't reactive, which is why callbacks use hard navigation.
+  value; client `logged` is reactive provider state initialized after mount.
+  OAuth callbacks also use hard navigation to the saved callback URL.
 - **OTP as a second factor.** A `412` from a `?token=` login means OTP is required — the
   handler opens the `otp-auth` dialog.
 - **Proxy-driven, not Repliers-direct.** The frontend never performs OAuth itself and never
   calls the MLS API directly — the backend proxy owns the handshake and issues the JWT.
 
 See also [User Features](/product-guide/user-features).
+
+## Lifecycle and verification
+
+Source review: `e30dd9b47`, 2026-11-02. The current UI logout clears local
+profile/token state and reloads; it does not invoke `APIAuth.logout`. Clearing
+a token after a 401 is not the same as resetting every mounted provider.
+[F05](/technical-guide/workflows/listing-and-auth#f05--authenticate-refresh-and-leave)
+traces the transitions and [Data Ownership](/technical-guide/data-ownership)
+describes persistence. No OAuth, OTP or server revocation flow was executed for
+this documentation edition.

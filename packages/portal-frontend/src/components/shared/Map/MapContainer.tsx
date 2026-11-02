@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 
 import { Box, type BoxProps, Typography } from '@mui/material'
 
-import { webglSupported } from 'utils/map'
+import { mapUnavailable } from 'utils/map'
 
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -18,12 +18,13 @@ type MapContainerProps = BoxProps & {
 export const MapContainer = React.forwardRef<HTMLDivElement, MapContainerProps>(
   ({ loading, ...props }, ref) => {
     const t = useTranslations('Map')
-    // Probed after mount — the check needs `document`, and starting at false
+    // Probed after mount — the check needs `document`, and starting at null
     // keeps server and first client render identical.
-    const [webglError, setWebglError] = useState(false)
+    const [unavailable, setUnavailable] =
+      useState<ReturnType<typeof mapUnavailable>>(null)
 
     useEffect(() => {
-      setWebglError(!webglSupported())
+      setUnavailable(mapUnavailable())
     }, [])
 
     return (
@@ -76,7 +77,7 @@ export const MapContainer = React.forwardRef<HTMLDivElement, MapContainerProps>(
             }
           }}
         />
-        {webglError ? (
+        {unavailable ? (
           <Typography
             variant="body2"
             color="text.secondary"
@@ -91,7 +92,7 @@ export const MapContainer = React.forwardRef<HTMLDivElement, MapContainerProps>(
               width: 'min(320px, 80%)'
             }}
           >
-            {t('webglUnavailable')}
+            {t(unavailable === 'webgl' ? 'webglUnavailable' : 'unavailable')}
           </Typography>
         ) : (
           loading && <MapBackdropIcon />

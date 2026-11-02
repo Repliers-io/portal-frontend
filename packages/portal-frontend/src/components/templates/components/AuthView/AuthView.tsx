@@ -13,10 +13,13 @@ import styles from './FadeIn.module.css'
 
 const { headerHeight } = layoutConfig
 
-export const contentHeight = {
-  xs: `calc(100vh - ${headerHeight.xs}px)`,
-  sm: `calc(100vh - ${headerHeight.sm}px)`
-}
+// one entry per breakpoint the tenant's header height defines
+export const contentHeight = Object.fromEntries(
+  Object.entries(headerHeight).map(([breakpoint, height]) => [
+    breakpoint,
+    `calc(100vh - ${height}px)`
+  ])
+)
 
 export const AuthView = () => {
   const { showDialogInstantly, showDialog } = useDialog('auth')

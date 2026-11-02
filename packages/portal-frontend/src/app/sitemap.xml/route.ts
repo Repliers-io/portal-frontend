@@ -3,20 +3,30 @@ import { NextResponse } from 'next/server'
 import features from '@configs/features'
 import routes from '@configs/routes'
 
+import { documentationOnly, documentationSites } from '../documentation/utils'
+
 export const dynamic = 'force-static'
 
 export function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_DOMAIN || ''
 
+  // A site that exposes only its documentation lists nothing it keeps out of the index.
+  const portalSitemaps = documentationOnly()
+    ? []
+    : [
+        '/sitemap-content.xml',
+        features.map && `${routes.listing}/sitemap-index.xml`,
+        features.locations && `${routes.locations}/sitemap.xml`,
+        features.dashboard && `${routes.dashboard}/sitemap.xml`,
+        features.blog && `${routes.blog}/sitemap.xml`,
+        features.blog && `${routes.author}/sitemap.xml`,
+        features.buildings && `${routes.condos}/sitemap.xml`,
+        features.buildings && `${routes.condo}/sitemap.xml`
+      ]
+
   const sitemaps = [
-    '/sitemap-content.xml',
-    features.map && `${routes.listing}/sitemap-index.xml`,
-    features.locations && `${routes.locations}/sitemap.xml`,
-    features.dashboard && `${routes.dashboard}/sitemap.xml`,
-    features.blog && `${routes.blog}/sitemap.xml`,
-    features.blog && `${routes.author}/sitemap.xml`,
-    features.buildings && `${routes.condos}/sitemap.xml`,
-    features.buildings && `${routes.condo}/sitemap.xml`
+    ...portalSitemaps,
+    ...documentationSites().map((site) => `/documentation/sitemap/${site}.xml`)
   ]
     .filter((s): s is string => !!s)
     .map((path) => `${baseUrl}${path}`)

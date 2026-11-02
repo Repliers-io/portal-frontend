@@ -1,0 +1,150 @@
+import { Callout } from 'nextra/components'
+
+# Listing detail, similar & history
+
+Three read endpoints that return one property's data rather than a search page: the single
+listing, its "similar" listings, and its cross-board history. All three go through
+`ListingsService` and the `RepliersListings` client, apply the MLS-number prefix codec, drop
+restricted listings and scrub per caller — but they differ in how a property is identified and
+in which permission checks run. Terms are in the [Glossary](/glossary).
+
+[Listings endpoints](/api-reference/listings) ·
+[Search & Count](/api-reference/listings/search) ·
+[Scrubbing](/architecture/scrubbing) ·
+[Restricted listings](/architecture/restricted-listings) ·
+[W2 worked trace](/architecture/flows#w2--property-history)
+
+## At a glance
+
+|                     | Single `/{mlsNumber}`                         | Similar `/{mlsNumber}/similar`      | History `/history`                                    |
+| ------------------- | --------------------------------------------- | ----------------------------------- | ----------------------------------------------------- |
+| Upstream            | `GET /listings/{mlsNumber}`                   | `GET /listings/{mlsNumber}/similar` | `GET /listings/history?mlsNumber=`                    |
+| Identity            | one listing on one board                      | subject's board only                | the **property** across every board the account reads |
+| `boardId` param     | required if the instance has >1 default board | accepted (default preset)           | not accepted                                          |
+| Restricted handling | `validateAvailability` refuses (410)          | `dropRestricted` inside the method  | `dropRestricted` after `servable`                     |
+| Entire-listing-N    | refused (410)                                 | —                                   | record dropped (`servable`)                           |
+| Scrubber key        | `@scrubbed()` (whole result)                  | `@scrubbed("similar")`              | `@scrubbed("history")`                                |
+| Side effect         | detached view event (non-Agent user)          | none                                | none                                                  |
+| Cached              | no                                            | no                                  | no                                                    |
+
+## Single listing
+
+`ListingsService.single` calls `RepliersListings.single`, which sends
+`GET /listings/{addMlsPrefix(mlsNumber)}` with the remaining validated params, then
+`stripMlsNumbers` the response. The service then runs `validateAvailability(listing)` and the
+`@scrubbed()` decorator scrubs the whole result.
+
+`validateAvailability` (`src/services/listings.ts`) throws an `ApiError` with
+`settings.hide_unavailable_listings_http_code` (default **410**) when, in order:
+
+1. the `mlsNumber` is in `settings.restrictedListings` — message `Not found. Restricted listing`;
+2. `permissions.displayInternetEntireListing === "N"` — message `Not found.
+displayInternetEntireListing === N`;
+3. `lastStatus` is in `settings.hide_unavailable_listings_statuses`;
+4. `standardStatus` is in `settings.hide_unavailable_listings_standard_statuses`.
+
+A guest otherwise sees the scrubbed listing. Two optional parameters add upstream work:
+`dynamicComparables=true` asks Repliers to return `comparables`, and `locations=true` (with
+`locationsSource` / `locationsType`) returns nested `locations`. `fields` on this route accepts
+only `raw` / `reso` (`csvFieldValidator`). The nested `history` and `comparables` arrays are
+scrubbed for a guest but not for a user
+([Scrubbing](/architecture/scrubbing#listing-history)).
+
+<Callout type="info">
+  **View event.** A second handler on this route, declared after the main one,
+  fires a fire-and-forget FUB "Viewed Property" event
+  (`SelectViewPropertyParams`, `src/routes/listings.ts`). The event-collection
+  middleware is the real middleware only when `config.boss.enabled` is not
+  `false` (otherwise it is an empty middleware,
+  `src/providers/middleware/eventsCollection.ts`), and the handler skips an
+  Agent token, so the event is created only for a signed-in non-Agent. It is not
+  awaited — the handler starts `selector(ctx).then(...)` and returns — so it
+  never blocks the response ([Events &
+  Messaging](/architecture/events-and-messaging)).
+</Callout>
+
+## Similar
+
+`ListingsService.similar` runs `ensureRequiredFields(params)`, calls `RepliersListings.similar`
+(`GET /listings/{mlsNumber}/similar`), spreads the response and replaces `similar` with
+`dropRestricted(similar, settings.restrictedListings)`, then `@scrubbed("similar")` scrubs the
+array. The exclusion runs inside the method,
+before the decorator, so `count`, `numPages` and `pageSize` are the upstream values, spread
+unchanged after the drop.
+
+Parameters: `boardId` (default preset), `listPriceRange`, `radius`, `sortBy`, `fields`. The
+response is `{ page, numPages, pageSize, count, similar: [...] }`, each entry carrying a
+`distance`. With no `radius` Repliers may return an empty `similar` set; a `radius` widens the
+candidate set and adds the distance sort (upstream behaviour, observed 2026-10-20).
+
+The route is declared before `/featured/{slug}`, so `GET /api/listings/featured/similar`
+matches this handler with `mlsNumber = "featured"`
+([route order](/api-reference/listings#route-order)).
+
+## History
+
+`GET /api/listings/history` proxies the Repliers property-history endpoint. Repliers resolves
+the _property_ behind the MLS number, so the answer spans every board the account reads —
+unlike the `history` array nested in a single listing, which is board-scoped. There is no
+`boardId` parameter (`listingsHistorySchema` accepts only `mlsNumber`); the upstream endpoint
+does not take one.
+
+`RepliersListings.history` sends `GET /listings/history?mlsNumber={addMlsPrefix(mlsNumber)}`
+and `stripMlsNumbers` the response. `ListingsService.history` then, in order
+(`src/services/listings.ts`):
+
+1. **`servable`** drops records without a numeric `boardId` (the scrubber's board gate
+   reads it) and records with `displayInternetEntireListing=N`;
+2. **`dropRestricted`** removes blocklisted numbers;
+3. **`withPermissions`** gives a record without `permissions` the object from
+   `permissionsFromLastStatus` (`displayPublic: "Y"` when `status` is `A` or `lastStatus` is
+   one of `New`/`Pc`/`Ext`/`Cs`, otherwise `"N"`) — without it a closed record would carry no
+   `displayPublic: "N"` for the guest scrubber to act on;
+4. **`@scrubbed("history")`** scrubs each record on its own `boardId` and `permissions`.
+
+Records arrive in Repliers' own order, not date-ordered; the requested listing is among them;
+and a listing syndicated across boards appears once per board under the same MLS number.
+Ordering and de-duplication are the consumer's concern — the route passes them through. The
+endpoint is not cached: its only argument carries `app_state`, so a user-scoped cache key
+would be useless and a shared key would serve one caller's scrubbing to another. It records no
+view event. The full step-by-step guest-vs-user trace is
+[W2](/architecture/flows#w2--property-history).
+
+## Callers that reach `single` directly
+
+Besides the HTTP routes, the event-collection selectors call
+`RepliersListings.single` straight through `RepliersService`, not through `ListingsService`:
+`BaseEventCollectionSelector.getProperty` (`src/services/eventsCollection/selectors/baseEventCollectionSelector.ts`),
+used by `selectSavePropertyParams`, `selectScheduleParams` and `selectRequestInfoParams`, fetches
+the property to attach to a CRM event. The payload goes to the CRM, not to the client, and the
+`ListingsService` steps (`validateAvailability`, `dropRestricted`, `@scrubbed`) are not on that
+path; they belong to the HTTP `/{mlsNumber}` route.
+
+## Gotchas
+
+1. **A restricted single answers like an unavailable listing.** The same status code and error
+   class as a hidden status or `displayInternetEntireListing=N`, with a different message.
+   Source: `src/services/listings.ts` (`validateAvailability`).
+2. **The event selectors read a listing through the client, not `ListingsService`.**
+   `getProperty` calls `RepliersListings.single` for the CRM payload. Source:
+   `src/services/eventsCollection/selectors/baseEventCollectionSelector.ts` (`getProperty`).
+3. **History is per-property, not per-listing, and spans boards.** No `boardId` narrows it; a
+   syndicated listing recurs per board. Source: `src/validate/listings.ts`
+   (`listingsHistorySchema`), `src/services/repliers/listings.ts` (`history`).
+
+## Evidence
+
+- `test/routes/listings.test.ts`: single returns the listing; 410 for `Ter`, `Exp`, an unknown
+  `lastStatus`, a hidden `standardStatus`, and `displayInternetEntireListing=N`; history scrubs
+  a closed record for a guest, passes a record through when its board is outside the gate, drops
+  boardless and entire-listing-N records, scrubs a record arriving without permissions.
+- `test/services/listings/history.test.ts`: `servable` keeps a numeric-board record and drops
+  missing/`null`/string boards and entire-listing-N; `withPermissions` derives public vs
+  non-public permissions from `lastStatus`.
+- Executed against the sample-data key, 2026-10-20: a `fields`-less single and similar; history
+  guest vs user for a property with several board records; similar empty without `radius` and
+  populated with one.
+- Not established by this checkout: Repliers' similarity model and distance computation; how
+  Repliers orders history records.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.

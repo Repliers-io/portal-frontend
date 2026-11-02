@@ -58,7 +58,18 @@ export const ActiveRangeFilter = ({ size }: { size: 'medium' | 'small' }) => {
       // the theme's own hover rule, which is itself a three-class selector
       // (`.MuiFilledInput-root.MuiInputBase-colorPrimary:hover`) — otherwise
       // hovering a selected pill would lighten it back to the idle hover tint.
-      sx={{ ...(value && { '&&&, &&&:hover': { bgcolor: activeBg } }) }}
+      // An unset pill reads grey until it opens.
+      sx={{
+        fontWeight: 300,
+        ...(value
+          ? { '&&&, &&&:hover': { bgcolor: activeBg } }
+          : {
+              color: 'text.disabled',
+              '&.Mui-focused, &:has([aria-expanded="true"])': {
+                color: 'text.primary'
+              }
+            })
+      }}
       renderValue={() => {
         if (!value) {
           return 'Active'
@@ -69,7 +80,7 @@ export const ActiveRangeFilter = ({ size }: { size: 'medium' | 'small' }) => {
             sx={{ display: 'inline-flex', alignItems: 'baseline', gap: 1 }}
           >
             Active
-            <Box component="span" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>
+            <Box component="span" sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
               {selectedOption?.short ?? value}
             </Box>
           </Box>

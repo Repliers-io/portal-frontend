@@ -1,0 +1,73 @@
+# MLS-number prefix codec
+
+Some boards store MLS numbers with a letter prefix (`ABC1000002`) while the portal's API deals only in clean numbers (`1000002`). This page lists where the translation happens, what it touches and what it leaves alone. Terms are defined in the [Glossary](/glossary#mlsnumber).
+
+[Repliers proxy](/architecture/repliers-proxy) | [Restricted listings](/architecture/restricted-listings) | [Repliers API: query semantics](/integrations/repliers-api#query-semantics-worth-knowing)
+
+## Codec surface
+
+The codec is `src/services/listings/mlsNumberPrefix.ts`. It is driven by `settings.mlsNumberPrefix`, which comes from `SETTINGS_MLSNUMBER_PREFIX` (`src/config.ts`, default empty) and can be set by an instance preset. With an empty prefix every function returns its input unchanged.
+
+| Function                             | Direction | What it does                                                                                             |
+| ------------------------------------ | --------- | -------------------------------------------------------------------------------------------------------- |
+| `addMlsPrefix(value, prefix)`        | request   | prepends the prefix to one string unless it already starts with it                                       |
+| `stripMlsPrefix(value, prefix)`      | response  | removes a leading prefix from one string                                                                 |
+| `addMlsNumbers(data, prefix)`        | request   | walks `data` (objects and arrays, in place) and prefixes every `mlsNumber` value, string or string array |
+| `stripMlsNumbers(data, prefix)`      | response  | the same walk with `stripMlsPrefix`                                                                      |
+| `mlsNumberCandidate(value)`          | check     | true for a digit-only string (`/^\d+$/`)                                                                 |
+| `addMlsSearchVariant(query, prefix)` | request   | rewrites a free-text `search` to two keywords under `OR` (see [Search widening](#search-widening))       |
+
+The walk skips every `raw` key, so the board's raw payload stays verbatim. Every function is idempotent: `addMlsPrefix` does nothing to an already-prefixed value and `stripMlsPrefix` does nothing to a clean one.
+
+## Where it is wired
+
+| Call site                                | Source                                                                  | Request side                                                                                                  | Response side                                                                                            |
+| ---------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Listings search (`GET`/`POST /listings`) | `src/services/repliers/listings.ts` (`search`)                          | `addMlsNumbers` on the query and on `body` (so `body.queries[]` too); restriction exclusions added afterwards | `stripMlsNumbers` on the result, deep: listings, history, comparables, similar, cluster-inlined listings |
+| Single listing                           | `RepliersListings.single`                                               | `addMlsPrefix` on the path segment `/listings/{mlsNumber}`                                                    | `stripMlsNumbers`                                                                                        |
+| Similar listings                         | `RepliersListings.similar`                                              | `addMlsPrefix` on `/listings/{mlsNumber}/similar`                                                             | `stripMlsNumbers`                                                                                        |
+| Property history                         | `RepliersListings.history`                                              | `addMlsPrefix` on the `mlsNumber` query value                                                                 | `stripMlsNumbers`                                                                                        |
+| Favorites: add                           | `src/services/repliers/favorites.ts` (`add`)                            | `addMlsNumbers` on a copy of the params                                                                       | none                                                                                                     |
+| Favorites: list                          | `RepliersFavorites.get`                                                 | none                                                                                                          | `stripMlsNumbers`                                                                                        |
+| Restricted-listing exclusions            | `src/services/listings/listingHelpers.ts` (`excludeRestrictedListings`) | `addMlsPrefix` on each number inside `not:<mlsNumber>`                                                        | none                                                                                                     |
+| Autosuggest MLS leg                      | `src/services/autosuggest.ts`                                           | `addMlsSearchVariant`                                                                                         | the leg goes through `ListingsService.search`, so the listings client strips                             |
+
+Callers above the `src/services/repliers/` clients see only clean numbers. Locations, estimates, clients, searches, agents and messages do not touch the codec.
+
+## Ordering
+
+`excludeRestrictedListings` must run after `addMlsNumbers`. `addMlsNumbers` prefixes the value of every `mlsNumber` key, so a `not:1000001` entry already in the query would become `ABCnot:1000001`; the helper prefixes the number itself and builds `not:ABC1000001` after the walk. See [Restricted listings](/architecture/restricted-listings).
+
+## Search widening
+
+Repliers' `search` is a per-keyword, case-insensitive starts-with match, so a clean number cannot match a stored prefixed one. `addMlsSearchVariant` rewrites `search=1000002` to `search=1000002 ABC1000002` with `searchOperator=OR` only when all of these hold:
+
+- a prefix is configured and `search` is a digit-only string;
+- `searchFields` is present and, once split on commas and trimmed, contains `mlsNumber` and does not contain `address.streetNumber`.
+
+Everything else passes through untouched: a non-digit or multi-token `search`, an already-prefixed number, an absent `searchFields` and a field list without `mlsNumber`. A rewritten query holds two tokens, so running the function again is a no-op.
+
+The guard exists because of a Repliers behaviour recorded in the code comments and tests (`src/services/autosuggest.ts`, `test/services/listings/mlsNumberPrefix.test.ts`): with `searchOperator=OR` and `address.streetNumber` in `searchFields`, or with `searchFields` absent, a digit keyword that matches no street number empties the whole union. This checkout cannot re-verify that behaviour against the live API.
+
+## Autosuggest MLS leg
+
+`AutosuggestService` is the only caller of `addMlsSearchVariant`. The primary listings request uses the configured autosuggest `searchFields`, which are never widened. For an instance with a prefix and a digit-only `q`, it starts a second `ListingsService.search` in parallel with `searchFields: "mlsNumber"`, widened with the prefixed variant.
+
+- **Same filters.** The leg copies the primary request's parameters, including the status filter (`standardStatus`, or `status` and `lastStatus`), `type`, `class`, the proximity values (`lat`, `long`, `radius`) and `boardId`, then replaces `searchFields`.
+- **Failure.** A rejection of the leg is caught and written to the `debug` logger (`repliers:services:autosuggest`), and the leg yields `null`, so the endpoint answers with the primary results.
+- **Merge.** `mergeMlsNumberListings` appends the leg's listings after the primary ones, removes duplicates by `mlsNumber`, cuts the list to `resultsPerPage`, and sets `count` to the sum of both counts. An empty or failed leg returns the primary block unchanged.
+
+## Gotchas
+
+1. **The codec is not at `src/lib/`.** It lives next to the listings helpers in `src/services/listings/mlsNumberPrefix.ts`; the Repliers clients import it from there.
+2. **Query keys other than `mlsNumber` are not translated.** The walk matches the key `mlsNumber` only; a number placed in `search` is handled by `addMlsSearchVariant` or not at all.
+3. **`raw` is left verbatim.** A consumer reading `raw` sees the board's own prefixed number next to a clean `mlsNumber` (`src/services/listings/mlsNumberPrefix.ts`, `transformMlsNumbers`).
+4. **Favorites requests are prefixed on a copy.** `RepliersFavorites.add` spreads the params before `addMlsNumbers` (`src/services/repliers/favorites.ts`), so the caller's object keeps the clean number.
+5. **The MLS leg has the primary request's filters.** An exact number whose listing is outside those filters does not appear in autosuggest (`src/services/autosuggest.ts`).
+
+## Evidence
+
+- `test/services/listings/mlsNumberPrefix.test.ts`: each function, idempotence, deep walks, skipped `raw`, every `addMlsSearchVariant` guard.
+- Not established by this checkout: the live Repliers behaviour behind the widening guard.
+
+Verified against portal-backend `997ae3e`, 2026-10-20.
